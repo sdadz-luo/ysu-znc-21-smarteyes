@@ -97,8 +97,9 @@ void imu_get(void){
     float gyro_z_f   = gyroFilter(&gyro_filter_z, gyro_z_raw);
     gyro_z = gyro_z_f * PI / 180.0f / 14.3f;
 
-    // 4. 自适应死区（阈值由初始化时静止噪声3σ确定）
+    // 4. 死区
     if (fabsf(gyro_z) <= gyro_z_dead) gyro_z = 0;
+    else gyro_z -= 0.0003;
 
     // 5. 第二级 IIR 低通滤波，抑制麦克纳姆轮高频振动（α=0.3, fc≈11Hz）
     static float gyro_z_lp = 0;

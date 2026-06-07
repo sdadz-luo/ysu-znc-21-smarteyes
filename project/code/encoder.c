@@ -31,7 +31,7 @@
 #define C               (2 * PI * 3)                // 轮子周长 (2 * PI * 半径3.0cm)
 
 #define x_xiu            3/4
-#define y_xiu            2.85/4
+#define y_xiu            2.9/4
 
 // ================= 全局变量 =================
 float x_enc = 0, y_enc = 0;             // 全局累积位移 (单位: cm)

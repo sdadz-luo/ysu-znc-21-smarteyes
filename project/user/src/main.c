@@ -154,7 +154,8 @@ static void Init(void){
     tft_init();
     tft180_clear();
     my_key_init();
-    // menu(); // 进入菜单界面选择模式
+    flash_init();
+    menu();                                 // 进入菜单界面选择模式
     system_delay_ms(2000);
     tft180_show_string(0, 0, "Init... ");
     encoder_init(); 						// 编码器初始化
@@ -178,8 +179,8 @@ static void state_judgment(void){
             // 检测是否进入开始区域
             if (x_cam >= 0 && x_cam <= 2.5 * x_cam_uint && y_cam >= 5 * y_cam_uint && y_cam <= 7 * y_cam_uint){
                 // 根据摄像头坐标初始化车辆位置
-                // x_enc = (x_cam / x_cam_uint) * x_enc_uint;
-                // y_enc = (y_cam / y_cam_uint) * y_enc_uint;
+                x_enc = (x_cam / x_cam_uint) * x_enc_uint;
+                y_enc = (y_cam / y_cam_uint) * y_enc_uint;
                 car_state = GameMap;
                 return;
             }
