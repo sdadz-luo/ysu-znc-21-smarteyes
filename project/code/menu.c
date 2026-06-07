@@ -4,7 +4,7 @@
 #define FLASH_SECTION_INDEX       (127)                                         // 存储数据用的扇区 倒数第一个扇区
 #define FLASH_PAGE_INDEX          (FLASH_PAGE_3)                                // 存储数据用的页码 倒数第一个页码
 
-float pid_x_p = 0.0, pid_x_i = 0.005, pid_x_d = 5.0;
+float pid_x_p = 2.0, pid_x_i = 0.005, pid_x_d = 5.0;
 float pid_y_p = -2.0, pid_y_i = -0.005, pid_y_d = -5.0;
 uint8_t pid_x_speed = 80, pid_y_speed = 80;
 float origin_x_enc = 0.75, origin_y_enc = 0.73, origin_yaw = 0.00025;
