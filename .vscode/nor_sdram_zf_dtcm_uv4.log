@@ -1,0 +1,7 @@
+*** Using Compiler 'V6.24', folder: 'D:\keil5\ARM\ARMCLANG\Bin'
+Build target 'nor_sdram_zf_dtcm'
+compiling main.c...
+linking...
+Program Size: Code=119720 RO-data=9056 RW-data=172 ZI-data=2426756  
+".\Objects\rt1064.axf" - 0 Error(s), 0 Warning(s).
+Build Time Elapsed:  00:00:06
