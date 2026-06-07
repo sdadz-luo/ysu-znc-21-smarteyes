@@ -23,10 +23,10 @@ void pid_init(void);
 void pid_target(pid* pid_struct,float target);
 void pid_yaw_target(float yaw);							
 void pid_wheel_target(float FL,float FR,float BL,float BR);
-void pid_position_target(int x,int y);
+void pid_position_target(float x,float y);
 int pid_increm(pid* pid_struct,float now_value);
 float pid_location(pid* pid_struct,float now_value);
 float pid_location_weizi(pid* pid_struct,float now_value);
-void pid_location_target(int x,int y);
+void pid_location_target(float x,float y);
 
 #endif

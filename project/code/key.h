@@ -9,8 +9,6 @@ struct keys{
 	int time;
 	int double_time;
 	bool single_flag;
-	bool long_flag;
-	bool double_flag;
 };
 
 extern struct keys key[4];

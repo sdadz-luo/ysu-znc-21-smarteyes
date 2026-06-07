@@ -1,6 +1,6 @@
 #include "encoder.h"
 #include "zf_common_headfile.h"
- 
+
 // ================= 硬件引脚定义 =================
 // 左前轮 (FL) - QTIMER1 Encoder1
 #define ENCODER_FL       (QTIMER1_ENCODER1)
@@ -28,16 +28,16 @@
 #define GEAR_ENCODER    30              // 编码器齿轮齿数
 #define GEAR_WHEEL      70              // 轮子大齿轮齿数
 #define B               (GEAR_ENCODER / (float)GEAR_WHEEL)  // = 30/70 = 3/7
-#define C   (2 * PI * 3)                // 轮子周长 (2 * PI * 半径3.0cm)
+#define C               (2 * PI * 3)                // 轮子周长 (2 * PI * 半径3.0cm)
 
-#define x_xiu  3/4
-#define y_xiu  2.85/4
+#define x_xiu            3/4
+#define y_xiu            2.85/4
 
 // ================= 全局变量 =================
 float x_enc = 0, y_enc = 0;             // 全局累积位移 (单位: cm)
 // dc = 编码器每1个脉冲对应的轮子位移
 //     编码器1脉冲 → 编码器转 1/N 圈 → 轮子转 B/N 圈 → 位移 C*B/N
-float dc = C / (B * N);                  // (cm/脉冲)
+static float dc = C / (B * N);                  // (cm/脉冲)
 
 // 原始编码器数据 (中间值，每次读取后清零)
 int encoder_data_FL = 0;
@@ -74,25 +74,26 @@ void encoder_get(void){
     encoder_data_BL =  encoder_get_count(ENCODER_BL);
     encoder_data_BR = -encoder_get_count(ENCODER_BR);
 
+    // 2. 一阶低通滤波 (Alpha = 0.8)
+    encoder_data_FL = 0.8f * encoder_data_FL + 0.2f * encoder_data_FL_last;
+    encoder_data_FL_last = encoder_data_FL;
+    
+    encoder_data_FR = 0.8f * encoder_data_FR + 0.2f * encoder_data_FR_last;
+    encoder_data_FR_last = encoder_data_FR;
+    
+    encoder_data_BL = 0.8f * encoder_data_BL + 0.2f * encoder_data_BL_last;
+    encoder_data_BL_last = encoder_data_BL;
+    
+    encoder_data_BR = 0.8f * encoder_data_BR + 0.2f * encoder_data_BR_last;
+    encoder_data_BR_last = encoder_data_BR;
+
+    // 3. 快照滤波后的数据用于航迹推算
     encoder_data_FL_enc = encoder_data_FL;
     encoder_data_FR_enc = encoder_data_FR;
     encoder_data_BL_enc = encoder_data_BL;
     encoder_data_BR_enc = encoder_data_BR;
     
-    // 2. 一阶低通滤波 (Alpha = 0.8)
-    encoder_data_FL = 0.8 * encoder_data_FL + 0.2 * encoder_data_FL_last;
-    encoder_data_FL_last = encoder_data_FL;
-    
-    encoder_data_FR = 0.8 * encoder_data_FR + 0.2 * encoder_data_FR_last;
-    encoder_data_FR_last = encoder_data_FR;
-    
-    encoder_data_BL = 0.8 * encoder_data_BL + 0.2 * encoder_data_BL_last;
-    encoder_data_BL_last = encoder_data_BL;
-    
-    encoder_data_BR = 0.8 * encoder_data_BR + 0.2 * encoder_data_BR_last;
-    encoder_data_BR_last = encoder_data_BR;
-    
-    // 3. 清除硬件计数器，以便下次读取的是增量值
+    // 4. 清除硬件计数器，以便下次读取的是增量值
     encoder_clear_count(ENCODER_FL);
     encoder_clear_count(ENCODER_FR);
     encoder_clear_count(ENCODER_BL);
@@ -100,7 +101,7 @@ void encoder_get(void){
 }
 
 // ================= 纯编码器里程计解算 =================
-void distance(float yaw){
+void distance(){
     
     // ========== 1. 车体系位移增量（脉冲/10ms）==========
     // 标准麦克纳姆轮正向运动学
@@ -113,15 +114,7 @@ void distance(float yaw){
     float shift_x = dx * dc;    // 车体x方向位移 (cm)
     float shift_y = dy * dc;    // 车体y方向位移 (cm)
     
-    // ========== 3. 坐标旋转：车体系 → 全局坐标系 ==========
-    float yaw_rad = yaw * PI / 180.0f;
-    float cos_y = cosf(yaw_rad);
-    float sin_y = sinf(yaw_rad);
-    
-    float global_dx = shift_x * cos_y - shift_y * sin_y;
-    float global_dy = shift_x * sin_y + shift_y * cos_y;
-    
-    // ========== 4. 累加到全局位置 ==========
-    x_enc += global_dx * x_xiu;
-    y_enc += global_dy * y_xiu;
+    // ========== 3. 累加到全局位置 ==========
+    x_enc += shift_x * x_xiu;
+    y_enc += shift_y * y_xiu;
 }

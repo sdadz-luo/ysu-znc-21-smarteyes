@@ -8,7 +8,7 @@
 /* ---- 地图基本尺寸 ---- */
 #define MAP_ROWS             12         /* 地图行数 */
 #define MAP_COLS             16         /* 地图列数 */
-#define MAX_BOXES            3          /* 最大箱子数量 */
+#define MAX_BOXES            4          /* 最大箱子数量 */
 #define MAX_PATH_LEN         500        /* 最大路径长度 */
 #define INF                  65535U     /* 无穷大值 */
 #define DIR_COUNT            4          /* 方向数量 */
@@ -23,7 +23,7 @@
 
 /* ---- A* 相关常量 ---- */
 #define MAX_OPENSET          50000      /* 哈希表容量（推箱A*） */
-#define MAX_PERMUTATIONS     12         /* 排列数上限 */
+#define MAX_PERMUTATIONS     24         /* 排列数上限 */
 #define MAX_PQ_SIZE          10000      /* 优先队列容量 */
 #define MAX_SEARCH_CNT       50000      /* A*最大搜索步数 */
 #define SINGLE_STEP_MAX_PATH 500        /* 单步A*最大路径长度 */
@@ -33,7 +33,7 @@
 /* ---- 模式3（炸弹破局）容量上限 ---- */
 #define MAX_BOMBS            4          /* 最大炸弹数量 */
 #define MAX_BREAK_WALLS      100        /* 最大可炸墙数量 */
-#define MAX_DETONATE_POINTS  100        /* 最大爆炸点候选数量 */
+#define MAX_DETONATE_POINTS  40         /* 最大爆炸点候选数量 */
 #define MAX_PROBLEM_POINTS   10         /* 最大死锁问题点数量 */
 #define MAX_PLANS_PER_BOMB   50         /* 每炸弹最大方案数 */
 #define MAX_ENCLOSED_REGIONS 10         /* 最大封闭区域数量 */
@@ -45,9 +45,10 @@
 #define DEADLOCK_ENCLOSED    0x04
 
 /* ---- 死锁待解决点类型标记 ---- */
-#define PROBLEM_ENCLOSED     0x01   /* 封闭区域：影响域∩玩家区=? */
-#define PROBLEM_SEPARATED    0x02   /* 分隔死锁：影响域∩目标=? */
-#define PROBLEM_NEED_SIM     0x04   /* 待验证：连通性OK，需推箱BFS确认 */
+#define PROBLEM_ENCLOSED            0x01    /* 封闭区域：影响域∩玩家区=? */
+#define PROBLEM_SEPARATED           0x02    /* 分隔死锁：影响域∩目标=? */
+#define PROBLEM_NEED_SIM            0x04    /* 待验证：连通性OK，需推箱BFS确认 */
+#define PROBLEM_TARGET_UNREACHABLE  0x08    /* 目标不可达：无箱子能推到该目标 */
 
 /* 压缩状态编码：px:4 py:4 bx:4 by:4 = 16bit */
 #define ENCODE_STATE(px, py, bx, by) \
@@ -304,8 +305,6 @@ static uint8_t is_goal(const State *s);
 static void get_successors(const State *cur, State *res, uint8_t *cnt);
 static AStarResult solve_single_box_a_star(Point player, Point box, Point target,
                                            uint16_t dynamic_walls[MAP_ROWS]);
-static void convert_astar_to_path(const AStarResult *res, Path *out_path);
-
 /* --- 3.6 模式1：贪心配对与回溯验证 --- */
 static void generate_greedy_pairing(SolutionSequence* sol);
 static bool backtrack_validate(SolutionSequence* sol);
@@ -338,6 +337,9 @@ static bool simulate_box_deadlock(uint8_t box_idx, const uint16_t obstacles[MAP_
                                    const Point targets[], uint8_t target_count,
                                    const uint16_t walls[MAP_ROWS],
                                    Point start_player, Point start_box);
+static bool simulate_box_to_target(uint8_t box_idx, Point target,
+                                    const uint16_t walls[MAP_ROWS],
+                                    Point start_player, Point start_box);
 static void detect_and_generate_problems(void);
 static DeadlockResult detect_all_deadlocks(uint8_t map[MAP_ROWS][MAP_COLS]);
 static uint8_t check_problems_resolved_incremental(const uint16_t modified_walls[MAP_ROWS]);
@@ -348,6 +350,7 @@ static inline bool bomb_reach_get(uint8_t bomb_idx, Point p);
 static bool is_valid_detonation_point(Point pos);
 static inline bool can_explosion_cover_wall(Point detonate_pos, Point target_wall);
 static void find_detonation_points_for_wall(Point target_wall, Point out_points[], uint8_t *out_count);
+static bool verify_bomb_push_feasibility(const DetonatePlan *plan);
 static uint16_t estimate_bomb_push_distance(Point bomb_pos, Point detonate_pos, Point player_pos);
 static void find_walls_for_enclosed(const uint16_t region_mask[MAP_ROWS],
                                      BreakableWall out_walls[], uint8_t *out_count);

@@ -1,14 +1,6 @@
 #ifndef _CODE_imu963_h_
 #define _CODE_imu963_h_
 
-// 定义四元数结构体，方便使用
-typedef struct {
-    float w;  // 实部
-    float x;  // 绕X轴虚部
-    float y;  // 绕Y轴虚部
-    float z;  // 绕Z轴虚部
-} Quaternion;
-
 // 定义欧拉角结构体（单位：度）
 typedef struct {
     float roll;   // 滚转角（绕X轴，顺时针为正，范围-180~180°）
@@ -16,8 +8,8 @@ typedef struct {
     float yaw;    // 偏航角（绕Z轴，逆时针为正，范围-180~180°）
 } EulerAngle;
 
-// 滑动滤波参数
-#define FILTER_SIZE 5
+// 滑动滤波参数（15点窗口，截止频率~4.2Hz，抑制麦克纳姆轮30Hz+振动）
+#define FILTER_SIZE 15
 
 // 滑动滤波器结构体
 typedef struct {
