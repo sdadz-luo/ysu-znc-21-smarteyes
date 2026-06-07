@@ -30,9 +30,6 @@
 #define B               (GEAR_ENCODER / (float)GEAR_WHEEL)  // = 30/70 = 3/7
 #define C               (2 * PI * 3)                // 轮子周长 (2 * PI * 半径3.0cm)
 
-#define x_xiu            3/4
-#define y_xiu            2.9/4
-
 // ================= 全局变量 =================
 float x_enc = 0, y_enc = 0;             // 全局累积位移 (单位: cm)
 // dc = 编码器每1个脉冲对应的轮子位移
@@ -115,6 +112,6 @@ void distance(){
     float shift_y = dy * dc;    // 车体y方向位移 (cm)
     
     // ========== 3. 累加到全局位置 ==========
-    x_enc += shift_x * x_xiu;
-    y_enc += shift_y * y_xiu;
+    x_enc += shift_x * corr_x_enc;
+    y_enc += shift_y * corr_y_enc;
 }
