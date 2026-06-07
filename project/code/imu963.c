@@ -99,7 +99,7 @@ void imu_get(void){
 
     // 4. 死区
     if (fabsf(gyro_z) <= gyro_z_dead) gyro_z = 0;
-    else gyro_z -= 0.0003;
+    else gyro_z -= corr_yaw;
 
     // 5. 第二级 IIR 低通滤波，抑制麦克纳姆轮高频振动（α=0.3, fc≈11Hz）
     static float gyro_z_lp = 0;

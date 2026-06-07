@@ -189,8 +189,8 @@ static void state_judgment(void){
         
         case GameMap:{
             // 设置初始目标位置
-            x_target = 2.5 * x_enc_uint;
-            y_target = 6.5 * y_enc_uint;
+            x_target = (origin_x_enc + 0.5) * x_enc_uint;
+            y_target = (origin_y_enc + 0.5) * y_enc_uint;
             car_state = Run;
             return;
             break;
@@ -283,8 +283,8 @@ static void state_judgment(void){
 //串口数据更新处理
 static void uart_updata(void){
     // 获取摄像头检测到的车位中心坐标
-    x_cam = car_data.car_cx;
-    y_cam = car_data.car_cy;        // 减去摄像头偏移量
+    x_cam = car_data.car_cx - corr_x_cam;
+    y_cam = car_data.car_cy - corr_y_cam;        // 减去摄像头偏移量
 
     // 对摄像头数据进行低通滤波平滑处理
     x_cam = x_cam * 0.8 + x_cam_last * 0.2;

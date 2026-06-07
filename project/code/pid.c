@@ -88,8 +88,8 @@ void pid_init(void){
 	PID_init(&pid_FR,60,10,100,1000,7000,0,1);
 	PID_init(&pid_BL,60,10,100,1000,7000,0,1);
 	PID_init(&pid_BR,50,10,90,1000,7000,0,1);
-	PID_init(&pid_x,2,0.005,5,1000,80,0,1);
-	PID_init(&pid_y,-2,-0.005,-5,1000,80,0,1);
+	PID_init(&pid_x,pid_x_p,pid_x_i,pid_x_d,1000,pid_x_speed,0,1);
+	PID_init(&pid_y,pid_y_p,pid_y_i,pid_y_d,1000,pid_y_speed,0,1);
 	PID_init(&pid_yaw,3,0.001,10,1000,60,0,0.1);
 
 }
