@@ -8,7 +8,6 @@
 #define x_enc_uint					 20
 #define y_enc_uint					 20
 
-
 // ================= 状态机定义 =================
 typedef enum {
     NoGame,     // 空闲/未开始
