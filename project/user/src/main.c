@@ -67,6 +67,7 @@ static uint8_t boom_flag = 0;        // 炸弹破局标志
 
 static uint8_t grid[MAP_ROWS][MAP_COLS] = {0};
 
+extern float x_imu,y_imu,x_a,y_a;
 int main(void){
     clock_init(SYSTEM_CLOCK_600M);  // 初始化系统时钟为 600MHz
     debug_init();                   // 初始化调试串口
@@ -81,7 +82,14 @@ int main(void){
 	while(1){ 
 
         // 状态机判断与状态转换处理
-		state_judgment();
+		// state_judgment();
+
+        tft180_show_float(0,0,x_enc,3,1);
+        tft180_show_float(0,16,y_enc,3,1);
+        tft180_show_float(64,0,x_imu,3,1);
+        tft180_show_float(64,16,y_imu,3,1);
+        tft180_show_float(0,32,x_a,3,1);
+        tft180_show_float(64,32,y_a,3,1);
 
 	}
 }
@@ -101,6 +109,7 @@ void PIT_IRQHandler(void){
         encoder_get(); // 读取编码器数据
         imu_get();     // 读取 IMU 数据
         if (car_state != Look) distance(); // 航迹推算
+        imu_distance();
 
         // 2. 位置环 PID 计算
         if (time % 2 == 0 && (car_state == Run || car_state == GameOver)){

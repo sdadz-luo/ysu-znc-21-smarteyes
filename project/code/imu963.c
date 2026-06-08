@@ -88,9 +88,9 @@ void imu_get(void){
 
     // 2. 加速度计零偏修正 + 一阶低通滤波 + 单位转换 (cm/s?)
     //    ±8g量程 → 4096 LSB/g, 1g = 980 cm/s?
-    acc_x = ((float)(imu963ra_acc_x - acc_x_offset) * 0.15f * 980.0f) / 4098.0f + acc_x * 0.85f;
-    acc_y = ((float)(imu963ra_acc_y - acc_y_offset) * 0.15f * 980.0f) / 4098.0f + acc_y * 0.85f;
-    acc_z = ((float)(imu963ra_acc_z - acc_z_offset) * 0.15f * 980.0f) / 4098.0f + acc_z * 0.85f;
+    acc_y = -((float)(imu963ra_acc_x - acc_x_offset) * 0.15f * 980.0f) / 4098.0f + acc_y * 0.85f;
+    acc_x =  ((float)(imu963ra_acc_y - acc_y_offset) * 0.15f * 980.0f) / 4098.0f + acc_x * 0.85f;
+    acc_z = -((float)(imu963ra_acc_z - acc_z_offset) * 0.15f * 980.0f) / 4098.0f + acc_z * 0.85f;
 
     // 3. 陀螺仪去偏 → 滑动滤波 → 单位转换 (rad/s)
     float gyro_z_raw = ((float)imu963ra_gyro_z - gyro_z_offset);
