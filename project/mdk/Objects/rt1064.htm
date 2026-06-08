@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\rt1064.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\rt1064.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Mon Jun  8 16:06:32 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Mon Jun  8 20:11:07 2026
 <BR><P>
 <H3>Maximum Stack Usage =       1320 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1981,14 +1981,14 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[1a5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pit_init
 </UL>
 
-<P><STRONG><a name="[84]"></a>PIT_IRQHandler</STRONG> (Thumb, 664 bytes, Stack size 232 bytes, main.o(.text.PIT_IRQHandler))
+<P><STRONG><a name="[84]"></a>PIT_IRQHandler</STRONG> (Thumb, 648 bytes, Stack size 232 bytes, main.o(.text.PIT_IRQHandler))
 <BR><BR>[Stack]<UL><LI>Max Depth = 1320<LI>Call Chain = PIT_IRQHandler &rArr; cam_uart1_read &rArr; fifo_read_buffer &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[14e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cam_uart1_read
 <LI><a href="#[14d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;motor_duty
 <LI><a href="#[14c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pid_increm
 <LI><a href="#[14b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;motor_solution
-<LI><a href="#[14a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pid_yaw_target
+<LI><a href="#[14a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pid_yaw
 <LI><a href="#[149]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pid_location
 <LI><a href="#[148]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pid_position_target
 <LI><a href="#[147]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;imu_distance
@@ -2719,7 +2719,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;imu_init
 </UL>
 
-<P><STRONG><a name="[147]"></a>imu_distance</STRONG> (Thumb, 480 bytes, Stack size 80 bytes, encoder.o(.text.imu_distance))
+<P><STRONG><a name="[147]"></a>imu_distance</STRONG> (Thumb, 456 bytes, Stack size 80 bytes, encoder.o(.text.imu_distance))
 <BR><BR>[Stack]<UL><LI>Max Depth = 80<LI>Call Chain = imu_distance
 </UL>
 <BR>[Calls]<UL><LI><a href="#[19c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fabsf
@@ -2781,7 +2781,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[1a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;menu
 </UL>
 
-<P><STRONG><a name="[a9]"></a>main</STRONG> (Thumb, 340 bytes, Stack size 0 bytes, main.o(.text.main))
+<P><STRONG><a name="[a9]"></a>main</STRONG> (Thumb, 312 bytes, Stack size 0 bytes, main.o(.text.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 1000<LI>Call Chain = main &rArr; menu &rArr; tft180_show_float &rArr; tft180_show_string &rArr; tft180_show_char &rArr; tft180_set_region &rArr; spi_write_8bit &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tft180_show_float
@@ -2874,7 +2874,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[84]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PIT_IRQHandler
 </UL>
 
-<P><STRONG><a name="[1a4]"></a>pid_init</STRONG> (Thumb, 418 bytes, Stack size 16 bytes, pid.o(.text.pid_init))
+<P><STRONG><a name="[1a4]"></a>pid_init</STRONG> (Thumb, 360 bytes, Stack size 16 bytes, pid.o(.text.pid_init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = pid_init
 </UL>
 <BR>[Called By]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
@@ -2896,8 +2896,12 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[14b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;motor_solution
 </UL>
 
-<P><STRONG><a name="[14a]"></a>pid_yaw_target</STRONG> (Thumb, 56 bytes, Stack size 0 bytes, pid.o(.text.pid_yaw_target))
-<BR><BR>[Called By]<UL><LI><a href="#[84]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PIT_IRQHandler
+<P><STRONG><a name="[14a]"></a>pid_yaw</STRONG> (Thumb, 336 bytes, Stack size 16 bytes, pid.o(.text.pid_yaw))
+<BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = pid_yaw
+</UL>
+<BR>[Calls]<UL><LI><a href="#[19c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fabsf
+</UL>
+<BR>[Called By]<UL><LI><a href="#[84]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PIT_IRQHandler
 </UL>
 
 <P><STRONG><a name="[1a5]"></a>pit_init</STRONG> (Thumb, 152 bytes, Stack size 24 bytes, zf_driver_pit.o(.text.pit_init))
@@ -3408,6 +3412,7 @@ Global Symbols
 <P><STRONG><a name="[19c]"></a>__hardfp_fabsf</STRONG> (Thumb, 14 bytes, Stack size 0 bytes, fabsfc99.o(i.__hardfp_fabsf))
 <BR><BR>[Called By]<UL><LI><a href="#[14c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pid_increm
 <LI><a href="#[14b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;motor_solution
+<LI><a href="#[14a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pid_yaw
 <LI><a href="#[149]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pid_location
 <LI><a href="#[147]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;imu_distance
 <LI><a href="#[145]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;imu_get

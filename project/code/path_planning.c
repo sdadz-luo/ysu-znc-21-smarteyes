@@ -911,6 +911,12 @@ static bool backtrack_validate(SolutionSequence* sol) {
                 Point obs = sol->pairs[g_remaining[m]].box_pos;
                 g_current_walls[obs.x] |= (1 << obs.y);
             }
+        /* 非配对目标点视为墙，防止箱子被推到错误的目标上 */
+        for (uint8_t t = 0; t < sol->count; t++) {
+            if (t == try_idx) continue;
+            Point tp = sol->pairs[t].target_pos;
+            g_current_walls[tp.x] |= (1 << tp.y);
+        }
         if (!pos_equal(cur_box, cur_target) && is_corner_deadlock(cur_box, g_current_walls))
             continue;
 

@@ -39,7 +39,7 @@ extern int encoder_data_FL, encoder_data_FR, encoder_data_BL, encoder_data_BR; 	
 extern float x_enc, y_enc;   													// 小车当前位置坐标 (X, Y)
 extern float yaw;            													// 小车当前角度 (航向角)
 extern pid pid_FL, pid_FR, pid_BL, pid_BR; 										// 四个轮子的速度环 PID
-extern pid pid_yaw, pid_x, pid_y;          										// 角度环 PID, X/Y 位置环 PID
+extern pid pid_x, pid_y;          										        // 角度环 PID, X/Y 位置环 PID
 
 // ================= 全局变量 =================
 static int time = 0;             												// 时间计数器 (每 10ms 加1)
@@ -67,7 +67,7 @@ static uint8_t boom_flag = 0;        // 炸弹破局标志
 
 static uint8_t grid[MAP_ROWS][MAP_COLS] = {0};
 
-extern float x_imu,y_imu,x_a,y_a;
+extern float x_imu,y_imu,gyro_z;
 int main(void){
     clock_init(SYSTEM_CLOCK_600M);  // 初始化系统时钟为 600MHz
     debug_init();                   // 初始化调试串口
@@ -88,8 +88,7 @@ int main(void){
         tft180_show_float(0,16,y_enc,3,1);
         tft180_show_float(64,0,x_imu,3,1);
         tft180_show_float(64,16,y_imu,3,1);
-        tft180_show_float(0,32,x_a,3,1);
-        tft180_show_float(64,32,y_a,3,1);
+        tft180_show_float(0,32,gyro_z,3,3);
 
 	}
 }
@@ -121,8 +120,7 @@ void PIT_IRQHandler(void){
 
         // 3. 角度环 PID 计算 
         if (time % 2 == 0){
-            pid_yaw_target(yaw_target); 		    // 更新角度环目标值
-            vz = pid_location(&pid_yaw, yaw); 	    // 计算旋转速度输出
+            vz = pid_yaw(yaw_target, yaw);      // 双KD角度环: 平方P + 陀螺仪直接D
         } 
         
         // 4. 运动学解算: 将合成速度 (vx, vy, vz) 分解到四个轮子

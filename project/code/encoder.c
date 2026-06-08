@@ -127,8 +127,6 @@ void distance(){
     y_enc += shift_y * corr_y_enc;
 }
 
-float x_a = 0,y_a = 0;
-
 // ================= IMU 加速度二次积分里程计 =================
 // 基于 IMU 加速度计数据二次积分计算世界坐标系位移
 // 调用频率: 与 imu_get() 一致 (5ms 周期)，在 distance() 之后调用
@@ -158,8 +156,6 @@ void imu_distance(void) {
     // ========== 3. 加速度死区 ==========
     float acc_w_x = acc_x_lp2;
     float acc_w_y = acc_y_lp2;
-    x_a = acc_w_x;  // 调试用
-    y_a = acc_w_y;
     if (fabsf(acc_w_x) < 1.0f) acc_w_x = 0;
     if (fabsf(acc_w_y) < 1.0f) acc_w_y = 0;
 

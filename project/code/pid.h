@@ -28,5 +28,6 @@ int pid_increm(pid* pid_struct,float now_value);
 float pid_location(pid* pid_struct,float now_value);
 float pid_location_weizi(pid* pid_struct,float now_value);
 void pid_location_target(float x,float y);
+float pid_yaw(float target, float current);  // ½Ç¶È»·Ë«KD¿ØÖÆÆ÷
 
 #endif

@@ -8,7 +8,7 @@
 /* ---- 地图基本尺寸 ---- */
 #define MAP_ROWS             12         /* 地图行数 */
 #define MAP_COLS             16         /* 地图列数 */
-#define MAX_BOXES            4          /* 最大箱子数量 */
+#define MAX_BOXES            5          /* 最大箱子数量 */
 #define MAX_PATH_LEN         500        /* 最大路径长度 */
 #define INF                  65535U     /* 无穷大值 */
 #define DIR_COUNT            4          /* 方向数量 */
@@ -23,7 +23,7 @@
 
 /* ---- A* 相关常量 ---- */
 #define MAX_OPENSET          50000      /* 哈希表容量（推箱A*） */
-#define MAX_PERMUTATIONS     24         /* 排列数上限 */
+#define MAX_PERMUTATIONS     120        /* 排列数上限 */
 #define MAX_PQ_SIZE          10000      /* 优先队列容量 */
 #define MAX_SEARCH_CNT       50000      /* A*最大搜索步数 */
 #define SINGLE_STEP_MAX_PATH 500        /* 单步A*最大路径长度 */
