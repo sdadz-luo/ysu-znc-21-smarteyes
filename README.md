@@ -23,12 +23,11 @@
 |------|------|
 | **MCU** | NXP MIMXRT1064DVL6A (Cortex-M7, 600MHz) |
 | **核心板** | 逐飞科技 RT1064 核心板 |
-| **相机** | MT9V03X / OV7725 / SCC8660 / TSL1401 线阵CCD |
-| **显示器** | IPS114 (1.14") / IPS200 (2.0") / TFT180 (1.8") / OLED (0.96") |
-| **IMU** | MPU6050 / ICM20602 / IMU660RA / IMU963RA |
-| **测距** | DL1A / DL1B TOF |
-| **无线通信** | BLE6A20 蓝牙 / CH9141 蓝牙 / WiFi-SPI / WiFi-UART |
-| **其他** | 绝对编码器 / GNSS/GPS / 虚拟示波器 |
+| **相机** | OPENARTPLUS OPENMV5-RT |
+| **显示器** | TFT180 (1.8")|
+| **IMU** | IMU963RA |
+| **无线通信** | BLE6A20 蓝牙 |
+| **其他** | 正交编码器 |
 
 ---
 
@@ -77,9 +76,9 @@ ysu-znc-21-smarteyes/
 
 | 工具 | 版本 |
 |------|------|
-| **IAR Embedded Workbench** | 8.32.4 |
 | **Keil MDK (µVision)** | 5.33 |
-| **编译器** | IAR ICCARM / ARMCLANG |
+| **VSCODE** |
+| **编译器** | ARMCLANG |
 
 > ⚠️ 项目配置了 `nor_sdram_zf_dtcm` 构建目标，使能了 `XIP_EXTERNAL_FLASH`、`USB_STACK_BM` 等宏。
 
@@ -139,11 +138,6 @@ ysu-znc-21-smarteyes/
 ---
 
 ## 🚀 构建与烧录
-
-### IAR
-1. 打开 `project/iar/rt1064.ewp`
-2. 选择构建目标：`nor_sdram_zf_dtcm`
-3. 编译 → 下载到 RT1064 核心板
 
 ### Keil MDK
 1. 打开 `project/mdk/rt1064.uvprojx`
