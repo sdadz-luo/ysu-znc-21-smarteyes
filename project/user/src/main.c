@@ -39,7 +39,7 @@ extern int encoder_data_FL, encoder_data_FR, encoder_data_BL, encoder_data_BR; 	
 extern float x_enc, y_enc;   													// 小车当前位置坐标 (X, Y)
 extern float yaw;            													// 小车当前角度 (航向角)
 extern pid pid_FL, pid_FR, pid_BL, pid_BR; 										// 四个轮子的速度环 PID
-extern pid pid_x, pid_y;          										        // 角度环 PID, X/Y 位置环 PID
+extern pid pid_gyro,pid_yaw,pid_x, pid_y;          							    // 角速度环，角度环, X/Y位置环 PID
 
 // ================= 全局变量 =================
 static int time = 0;             												// 时间计数器 (每 10ms 加1)
@@ -120,8 +120,10 @@ void PIT_IRQHandler(void){
 
         // 3. 角度环 PID 计算 
         if (time % 2 == 0){
-            vz = pid_yaw(yaw_target, yaw);      // 双KD角度环: 平方P + 陀螺仪直接D
+            pid_target(&pid_yaw,yaw_target);
+            pid_target(&pid_gyro,pid_location(&pid_yaw,yaw)); 
         } 
+        vz = pid_location(&pid_gyro,gyro_z);
         
         // 4. 运动学解算: 将合成速度 (vx, vy, vz) 分解到四个轮子
         motor_solution(vx, vy, yaw, vz);
@@ -285,8 +287,8 @@ static void state_judgment(void){
     }
 }
 
-// static uint8 data_len;
-// static uint8 data_buffer[64];
+static uint8 data_len;
+static uint8 data_buffer[64];
 //串口数据更新处理
 static void uart_updata(void){
     // 获取摄像头检测到的车位中心坐标
@@ -300,29 +302,29 @@ static void uart_updata(void){
     x_cam_last = x_cam;
     y_cam_last = y_cam;
 	
-	// data_len = wireless_uart_read_buffer(data_buffer, 64);                    // 读取无线串口数据 注意缓冲区大小 WIRELESS_UART_BUFFER_SIZE 至少 64 字节
-    // if(data_len != 0){
-    //         data_buffer[data_len] = '\0';  // 添加字符串结束符'\0'
+	data_len = wireless_uart_read_buffer(data_buffer, 64);                    // 读取无线串口数据 注意缓冲区大小 WIRELESS_UART_BUFFER_SIZE 至少 64 字节
+    if(data_len != 0){
+            data_buffer[data_len] = '\0';  // 添加字符串结束符'\0'
                 
-    //         //解析无线串口发送的x/y坐标指令
-    // char *token = NULL;
-    // // 提取第一个参数x坐标
-    // token = strtok((char *)data_buffer, ",");
-    // if(token != NULL){
-    //             x_target = (atoi(token) + 0.5) * x_enc_uint;  // 转换为实际坐标并乘以比例系数
-    //     // 提取第二个参数y坐标
-    //     token = strtok(NULL, ",");
-    //     if(token != NULL){
-    //                 y_target = (atoi(token) + 0.5) * y_enc_uint;
-    //             }
-    //         token = strtok(NULL, ",");
-    //         if(token != NULL){
-    //             yaw_target = atoi(token);
-    //         }
-    //             car_state = Run;
-    //         }
-    //         memset(data_buffer, 0, 64);	
-    //     }
+            //解析无线串口发送的x/y坐标指令
+    char *token = NULL;
+    // 提取第一个参数x坐标
+    token = strtok((char *)data_buffer, ",");
+    if(token != NULL){
+                x_target = (atoi(token) + 0.5) * x_enc_uint;  // 转换为实际坐标并乘以比例系数
+        // 提取第二个参数y坐标
+        token = strtok(NULL, ",");
+        if(token != NULL){
+                    y_target = (atoi(token) + 0.5) * y_enc_uint;
+                }
+            token = strtok(NULL, ",");
+            if(token != NULL){
+                yaw_target = atoi(token);
+            }
+                car_state = Run;
+            }
+            memset(data_buffer, 0, 64);	
+        }
 }
  
 //路径规划与跟踪处理
