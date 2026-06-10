@@ -1,114 +1,170 @@
-#include "zf_common_headfile.h"
 #include "imu963.h"
+#include "zf_common_headfile.h"
+#include "stdint.h"
+#include "string.h"
+#include "math.h"
 
-// 陀螺仪滑动滤波器实例（初始化全零）
-// 在原始整数域（int16）做滤波，避免浮点运算，保持原始分辨率
-static FILTER_TYPE gyro_filter_x = {{0}, 0, 0, 0};
-static FILTER_TYPE gyro_filter_y = {{0}, 0, 0, 0};
-static FILTER_TYPE gyro_filter_z = {{0}, 0, 0, 0};
 
-/**
- * @brief 滑动平均滤波（整数域，O(1) 时间复杂度优化版）
- * @param filter 滤波器结构体指针
- * @param newVal 新采集的原始整数数据（int16 转 float 传入）
- * @return 滤波后的均值（浮点，用于后续单位转换）
- * @note 使用累积和 + 循环缓冲区，每次插入 O(1)
- *       在单位转换前滤波，保持原始分辨率
- */
-static float gyroFilter(FILTER_TYPE *filter, float newVal) {
-    unsigned char i = filter->index;
-    
-    // 1. 更新累积和：减掉被覆盖的旧值，加入新值
-    filter->sum -= filter->buf[i];
-    filter->buf[i] = newVal;
-    filter->sum += newVal;
-    
-    // 2. 循环索引递增
-    filter->index = (i + 1) % FILTER_SIZE;
-    
-    // 3. 填满标记
-    if (!filter->filled) {
-        filter->filled = (filter->index == 0) ? 1 : 0;
-        return filter->sum / (filter->index ? filter->index : FILTER_SIZE);
-    }
-    
-    return filter->sum / FILTER_SIZE;
-}
+// Mahony算法参数
+#define Kp 0.3f    // 比例增益（加速度计/磁力计修正）
+#define Ki 0.002f  // 积分增益（可选，若不需要积分可设为0）
 
 float yaw = 0.0;
-float gyro_x = 0, gyro_y = 0, gyro_z = 0;
-float acc_x = 0, acc_y = 0, acc_z = 0;
-static float gyro_x_offset = 0, gyro_y_offset = 0, gyro_z_offset = 0;
-static float acc_x_offset = 0, acc_y_offset = 0, acc_z_offset = 0;
-static float gyro_z_dead = 0.003f;  // 陀螺仪Z轴死区(rad/s)，初始化时由3σ噪声自动计算
+// 全局变量扩展：添加四元数、欧拉角、采样时间、积分误差
+float acc_x = 0,acc_y = 0,acc_z = 0;
+float gyro_x = 0,gyro_y = 0,gyro_z = 0;
+static float gyro_x_offset = 0,gyro_y_offset = 0,gyro_z_offset = 0;
+static float acc_x_offset = 0,acc_y_offset = 0;
+static Quaternion q = {1.0f, 0.0f, 0.0f, 0.0f}; // 全局四元数（初始无旋转）
+static EulerAngle euler = {0.0f, 0.0f, 0.0f};   // 全局欧拉角
+static float integral_fx = 0, integral_fy = 0, integral_fz = 0; // 积分误差
 
-void imu_init(void){
-    imu963ra_init();
-    
-    // 传感器稳定预热
-    for (int i = 0; i < 100; i++){
-        imu963ra_get_acc();
-        imu963ra_get_gyro();
-        system_delay_ms(5);
-    }
+/**
+ * @brief 四元数转欧拉角（适配前右上坐标系，X/Y顺时针正，Z逆时针正）
+ * @param q 输入四元数（单位四元数）
+ * @return 欧拉角（roll/pitch/yaw，单位：度，范围0~360°）
+ */
+static EulerAngle quaternion_to_euler(Quaternion q) {
+    EulerAngle angle;
+    const float RAD_TO_DEG = 180 / PI;
 
-    // 陀螺仪零偏校准（同时统计Z轴噪声用于死区计算）
-    float gyro_z_sq_sum = 0;
-    for (int i = 0; i < 600; i++){
-        imu963ra_get_acc();
-        imu963ra_get_gyro();
-        gyro_x_offset += imu963ra_gyro_x;
-        gyro_y_offset += imu963ra_gyro_y;
-        gyro_z_offset += imu963ra_gyro_z;
-        acc_x_offset += imu963ra_acc_x;
-        acc_y_offset += imu963ra_acc_y;
-        acc_z_offset += imu963ra_acc_z;
-        system_delay_ms(5);
-    }
-    gyro_x_offset /= 600;
-    gyro_y_offset /= 600;
-    gyro_z_offset /= 600;
-    acc_x_offset /= 600;
-    acc_y_offset /= 600;
-    acc_z_offset /= 600;
+    // 1. 计算滚转角Roll（绕X轴，顺时针为正）
+    float roll_rad = -atan2(2 * (q.w*q.x + q.y*q.z), 1 - 2 * (q.x*q.x + q.y*q.y));
+    angle.roll = roll_rad * RAD_TO_DEG;
 
+    // 2. 计算俯仰角Pitch（绕Y轴，顺时针为正）
+    float pitch_rad = -asin(2 * (q.w*q.y - q.x*q.z));
+    angle.pitch = pitch_rad * RAD_TO_DEG;
+
+    // 3. 计算偏航角Yaw（绕Z轴，逆时针为正）
+    float yaw_rad = atan2(2 * (q.x*q.y - q.w*q.z), 1 - 2 * (q.y*q.y + q.z*q.z));
+    angle.yaw = yaw_rad * RAD_TO_DEG;
+
+    // 4. 修正角度范围到 0~360°（也可保留-180~180°，根据需求调整）
+    if (angle.roll > 180) angle.roll -= 360;
+    if (angle.pitch > 180) angle.pitch -= 360;
+    if (angle.yaw > 180) angle.yaw -= 360;
+
+    return angle;
 }
 
 /**
- * @brief 获取IMU数据并直接积分计算偏航角
- * @note  仅使用陀螺仪Z轴角速度积分，无加速度计/磁力计修正
- *        初始化时已做零偏校准和自适应死区计算
+ * @brief Mahony互补滤波算法：从IMU数据更新四元数
+ * @param gx/gy/gz 陀螺仪角速度（rad/s，已去偏置）
+ * @param ax/ay/az 加速度计数据（m/s2，已滤波）
+ * @param dt 采样时间（s）
  */
+static void mahony_update(float gx, float gy, float gz, float ax, float ay, float az, float dt) {
+    float norm;
+    float vx, vy, vz;
+    float ex, ey, ez;
+
+    // 1. 归一化加速度计数据（单位向量）
+    norm = sqrt(ax*ax + ay*ay + az*az);
+    if (norm < 0.001f) return; // 避免除零（加速度计无数据）
+    ax /= norm;
+    ay /= norm;
+    az /= norm;
+
+    // 2. 从四元数计算重力向量（机体坐标系→导航坐标系）
+    vx = 2*(q.x*q.z - q.w*q.y);
+    vy = 2*(q.w*q.x + q.y*q.z);
+    vz = q.w*q.w - q.x*q.x - q.y*q.y + q.z*q.z;
+
+    // 3. 计算误差（加速度计测量值与理论重力向量的叉乘）
+    ex = (ay*vz - az*vy);
+    ey = (az*vx - ax*vz);
+    ez = (ax*vy - ay*vx);
+
+    // 4. 积分误差（可选，Ki=0则关闭积分）
+    integral_fx += ex * Ki * dt;
+    integral_fy += ey * Ki * dt;
+    integral_fz += ez * Ki * dt;
+		
+		// 限幅到±1.0，避免积分发散
+    integral_fx = fabs(integral_fx) > 1.0f ? (integral_fx>0?1.0f:-1.0f) : integral_fx;
+    integral_fy = fabs(integral_fy) > 1.0f ? (integral_fy>0?1.0f:-1.0f) : integral_fy;
+    integral_fz = fabs(integral_fz) > 1.0f ? (integral_fz>0?1.0f:-1.0f) : integral_fz;
+
+    // 5. 陀螺仪数据修正（比例+积分）
+    gx += Kp * ex + integral_fx;
+    gy += Kp * ey + integral_fy;
+    gz += Kp * ez + integral_fz;
+
+    // 6. 四元数微分更新（四元数动力学方程）
+    float qw_dot = -0.5f * (q.x*gx + q.y*gy + q.z*gz);
+    float qx_dot = 0.5f * (q.w*gx + q.y*gz - q.z*gy);
+    float qy_dot = 0.5f * (q.w*gy + q.z*gx - q.x*gz);
+    float qz_dot = 0.5f * (q.w*gz + q.x*gy - q.y*gx);
+
+    // 7. 积分更新四元数
+    q.w += qw_dot * dt;
+    q.x += qx_dot * dt;
+    q.y += qy_dot * dt;
+    q.z += qz_dot * dt;
+
+    // 8. 归一化四元数（保证单位四元数）
+    norm = sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
+    q.w /= norm;
+    q.x /= norm;
+    q.y /= norm;
+    q.z /= norm;
+}
+
+
+void imu_init(void){
+    // 初始化四元数（无旋转）
+    q.w = 1.0f; q.x = 0.0f; q.y = 0.0f; q.z = 0.0f;
+    EulerAngle angle1 = quaternion_to_euler(q);
+	
+    imu963ra_init();
+	
+    // 陀螺仪偏置校准
+    for (int i = 0;i < 400;i++){
+        imu963ra_get_acc(); 
+		imu963ra_get_gyro();
+        gyro_x_offset  += imu963ra_gyro_x;
+        gyro_y_offset  += imu963ra_gyro_y;
+        gyro_z_offset  += imu963ra_gyro_z;
+		acc_x_offset += imu963ra_acc_x;
+		acc_y_offset += imu963ra_acc_y;
+        system_delay_ms(5);
+    }
+    gyro_x_offset /= 400;
+    gyro_y_offset /= 400;
+    gyro_z_offset /= 400;
+	acc_x_offset  /= 400;
+	acc_y_offset  /= 400;
+}
+
 void imu_get(void){
-    static const float dt = 0.005f;  // 5ms 采样周期
 
-    // 1. 获取IMU原始数据
+    float dt = 0.005;
+
+    // 2. 读取IMU原始数据
     imu963ra_get_acc();
-    imu963ra_get_gyro();
+    imu963ra_get_gyro();  
+	
+    // 3. 加速度计一阶低通滤波+单位转换（m/s2）
+    acc_x = (((float) imu963ra_acc_x - acc_x_offset) * 0.06 * 9.8f) / 4098 + acc_x * (1 - 0.06);
+    acc_y = (((float) imu963ra_acc_y - acc_y_offset) * 0.06 * 9.8f) / 4098 + acc_y * (1 - 0.06);
+    acc_z = -(((float) imu963ra_acc_z) * 0.06 * 9.8f) / 4098 + acc_z * (1 - 0.06);
 
-    // 2. 加速度计零偏修正 + 一阶低通滤波 + 单位转换 (cm/s?)
-    //    ±8g量程 → 4096 LSB/g, 1g = 980 cm/s?
-    acc_y = -((float)(imu963ra_acc_x - acc_x_offset) * 0.15f * 980.0f) / 4098.0f + acc_y * 0.85f;
-    acc_x =  ((float)(imu963ra_acc_y - acc_y_offset) * 0.15f * 980.0f) / 4098.0f + acc_x * 0.85f;
-    acc_z = -((float)(imu963ra_acc_z - acc_z_offset) * 0.15f * 980.0f) / 4098.0f + acc_z * 0.85f;
+    // 4. 陀螺仪去偏置+单位转换（deg/s → rad/s）
+    gyro_x = -((float) imu963ra_gyro_x - gyro_x_offset) * 0.25 * PI / 180 / 14.3f + gyro_x * (1 - 0.25);
+    gyro_y = -((float) imu963ra_gyro_y - gyro_y_offset) * 0.25 * PI / 180 / 14.3f + gyro_y * (1 - 0.25);
+    gyro_z = ((float) imu963ra_gyro_z - gyro_z_offset) * 0.25 * PI / 180 / 14.3f + gyro_z * (1 - 0.25);
+		
+	if (fabs(gyro_x) <= 0.005) gyro_x = 0;
+	if (fabs(gyro_y) <= 0.005) gyro_y = 0;
+	if (fabs(gyro_z) <= 0.005) gyro_z = 0;
 
-    // 3. 陀螺仪去偏 → 滑动滤波 → 单位转换 (rad/s)
-    float gyro_z_raw = ((float)imu963ra_gyro_z - gyro_z_offset);
-    float gyro_z_f   = gyroFilter(&gyro_filter_z, gyro_z_raw);
-    gyro_z = gyro_z_f * PI / 180.0f / 14.3f;
+    // 5. 核心：调用Mahony算法更新四元数（接入IMU数据）
+    mahony_update(gyro_x, gyro_y, gyro_z, acc_x, acc_y, acc_z, dt);
 
-    // 4. 死区
-    if (fabsf(gyro_z) <= gyro_z_dead) gyro_z = 0;
-    else gyro_z -= corr_yaw;
-
-    // 5. 第二级 IIR 低通滤波，抑制麦克纳姆轮高频振动（α=0.3, fc≈11Hz）
-    static float gyro_z_lp = 0;
-    gyro_z_lp = gyro_z * 0.3f + gyro_z_lp * 0.7f;
-    gyro_z = gyro_z_lp;
-
-    // 6. 直接积分得到偏航角（度），归一化至 [-180, 180]
-    yaw -= gyro_z * 180.0f / PI * dt;
-    while (yaw > 180.0f)  yaw -= 360.0f;
-    while (yaw < -180.0f) yaw += 360.0f;
-
+    // 6. 四元数转欧拉角（得到最终的roll/pitch/yaw）
+    euler = quaternion_to_euler(q);
+		
+	yaw = euler.yaw;
+		
 }

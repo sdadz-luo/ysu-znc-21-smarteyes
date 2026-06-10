@@ -1,4 +1,4 @@
-./objects/imu963.o: ..\code\imu963.c \
+./objects/imu963.o: ..\code\imu963.c ..\code\imu963.h \
   ..\..\libraries\zf_common\zf_common_headfile.h \
   ..\..\libraries\sdk\drives\fsl_common.h \
   ..\..\libraries\sdk\deceive\fsl_device_registers.h \
@@ -92,6 +92,6 @@
   ..\..\libraries\components\sdmmc\common\fsl_sdmmc_spec.h \
   ..\..\libraries\components\sdmmc\sdmmc_config.h \
   ..\..\libraries\sdk\board\clock_config.h ..\code\tft180.h \
-  ..\code\encoder.h ..\code\imu963.h ..\code\wireless_uart.h \
-  ..\code\motor.h ..\code\pid.h ..\code\key.h ..\code\control.h \
-  ..\code\menu.h ..\code\path_planning.h ..\code\cam_uart.h
+  ..\code\encoder.h ..\code\wireless_uart.h ..\code\motor.h \
+  ..\code\pid.h ..\code\key.h ..\code\control.h ..\code\menu.h \
+  ..\code\path_planning.h ..\code\cam_uart.h
