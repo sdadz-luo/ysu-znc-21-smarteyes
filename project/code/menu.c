@@ -139,8 +139,7 @@ static void apply_edit(menu_state_t menu, int8_t item, bool increment)
                 case 3: if (increment) { if (corr_y_cam < 127)  corr_y_cam += STEP_CORR_CAM; }
                         else            { if (corr_y_cam > -128) corr_y_cam -= STEP_CORR_CAM; } break;
                 case 4: if (increment) corr_yaw += STEP_CORR_YAW;
-                        else            corr_yaw -= STEP_CORR_YAW;
-                        if (corr_yaw < 0) corr_yaw = 0;      break;
+                        else            corr_yaw -= STEP_CORR_YAW; break;
                 default: break;
             }
             break;
@@ -325,7 +324,7 @@ static void show_menu(void)
             tft180_show_float(64, 32, corr_y_enc, 1, 3);
             tft180_show_int  (64, 48, corr_x_cam, 3);
             tft180_show_int  (64, 64, corr_y_cam, 3);
-            tft180_show_float(64, 80, corr_yaw,   1, 5);
+            tft180_show_float(56, 80, corr_yaw,   1, 6);
             break;
 
         /* ======== CONTROL ×Ó²Ëµ¥ ======== */

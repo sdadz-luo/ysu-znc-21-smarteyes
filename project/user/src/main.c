@@ -19,7 +19,7 @@ typedef enum {
     End         // 完全结束
 } Car_State;
 
-static volatile Car_State car_state = NoGame; // 初始状态
+static volatile Car_State car_state = GameMap; // 初始状态
 // ================= 路径结构体 (占用 SDRAM 或较大 RAM) =================
 Path path_car = {0};          		// 正常行驶路径
 Path_Look path_look_car = {0}; 		// 观察路径
@@ -49,7 +49,7 @@ static volatile float x_target = 10, y_target = 130; 							// 目标位置坐标
 static float x_cam = 0, y_cam = 0, x_cam_last = 0, y_cam_last = 0; 				// 摄像头检测到的车位坐标及上次值
 static uint8_t has_2 = 0, has_3 = 0, has_6 = 0;
 static uint8_t map_has_car = 0;
-static volatile float yaw_target = 0, yaw_uart = 0; 										// 目标角度
+static volatile float yaw_target = 0, yaw_uart = 0; 							// 目标角度
 static int FL = 0, FR = 0, BL = 0, BR = 0; 										// 四个电机的 PWM 占空比
 static int step = 0;             												// 路径跟踪的当前步数
 static volatile CAMDATA car_data;         										// 摄像头数据结构体
@@ -60,12 +60,26 @@ static int id = -1;          												    // 识别到的 ID
 static uint8_t map_process_flag = 1; // 地图处理标志
 static uint8_t game_count = 0;       // 游戏次数计数
 static uint8_t game_over_flag = 0;   // 游戏结束标志
-static uint8_t game_mode = 0;        // 游戏模式: 0=Start, 1=Normal Run, 2=Look, 3=ID Run  
+static uint8_t game_mode = 1;        // 游戏模式: 0=Start, 1=Normal Run, 2=Look, 3=ID Run  
 static uint8_t look_flag = 0;        // 观察模式标志
 static uint8_t id_flag = 0;          // 识别模式标志
 static uint8_t boom_flag = 0;        // 炸弹破局标志 
-
 static uint8_t grid[MAP_ROWS][MAP_COLS] = {0};
+
+static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,0,0,0,0,0,0,1,0,0,0,0,1,6,1,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1},
+    {1,0,0,0,0,0,1,0,1,0,0,0,1,0,1,1},
+    {1,0,0,0,1,0,0,3,0,0,0,0,1,0,0,1},
+    {1,0,0,0,1,0,1,0,1,0,0,0,0,0,0,1},
+    {1,0,2,0,1,0,0,3,0,0,1,0,1,0,0,1},
+    {1,0,0,0,0,0,1,0,1,0,1,0,1,0,0,1},
+    {1,0,0,0,1,1,0,3,0,0,1,0,1,1,0,1},
+    {1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1},
+    {1,0,0,0,0,6,0,0,0,0,0,0,0,6,0,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+};
 
 extern float x_imu,y_imu,gyro_z;
 int main(void){
@@ -79,10 +93,12 @@ int main(void){
 
     system_delay_ms(2000);
 
+    x_enc = 10,y_enc= 130;
+
 	while(1){ 
 
         // 状态机判断与状态转换处理
-		// state_judgment();
+		state_judgment();
 
         tft180_show_float(0,0,x_enc,3,1);
         tft180_show_float(0,16,y_enc,3,1);
@@ -121,9 +137,8 @@ void PIT_IRQHandler(void){
         // 3. 角度环 PID 计算 
         if (time % 2 == 0){
             pid_target(&pid_yaw,yaw_target);
-            pid_target(&pid_gyro,pid_location(&pid_yaw,yaw)); 
+            vz = pid_location(&pid_yaw,yaw); 
         } 
-        vz = pid_location(&pid_gyro,gyro_z);
         
         // 4. 运动学解算: 将合成速度 (vx, vy, vz) 分解到四个轮子
         motor_solution(vx, vy, yaw, vz);
@@ -334,7 +349,7 @@ static void path_process(void){
         system_delay_ms(500);
         for (uint8_t row = 0; row < 12; row++) {
             for (uint8_t col = 0; col < 16; col++) {
-                uint8_t val = car_data.grid[row][col];
+                uint8_t val = g_map_test[row][col];
                 if (val == 2) has_2 = 1;
                 if (val == 3) has_3 = 1;
                 if (val == 6) has_6 = 1;
@@ -342,7 +357,7 @@ static void path_process(void){
             } 
         } 
         map_has_car = (has_2 && has_3 && has_6) ? 1 : 0;
-        if (map_has_car) memcpy(grid,(const void *)car_data.grid,sizeof(grid));
+        if (map_has_car) memcpy(grid,(const void *)g_map_test,sizeof(grid));
     }
     // 2. 根据当前游戏模式调用相应的路径规划算法
     if ((map_process_flag && map_has_car) || boom_flag == 1 || look_flag == 1 || id_flag == 1) {
