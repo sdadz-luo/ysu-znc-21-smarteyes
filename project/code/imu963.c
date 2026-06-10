@@ -5,16 +5,36 @@
 #include "math.h"
 
 
-// Mahony算法参数
-#define Kp 0.3f    // 比例增益（加速度计/磁力计修正）
-#define Ki 0.002f  // 积分增益（可选，若不需要积分可设为0）
+// ============================================================
+// Mahony 算法参数（麦克纳姆轮高振动场景优化）
+// ============================================================
+#define Kp_NOMINAL  0.5f    // 标称比例增益（静止/匀速时）
+#define Kp_MIN      0.2f    // 最小比例增益（剧烈振动时）
+#define Ki          0.002f  // 积分增益（降低以防止振动偏置累积）
+
+// 自适应 Kp 过渡阈值（加速度模长偏离 9.8 的程度，单位 m/s?）
+#define ACC_DEV_LOW   1.0f  // 低于此值 → 用 Kp_NOMINAL
+#define ACC_DEV_HIGH  3.0f  // 高于此值 → 用 Kp_MIN（中间线性过渡）
+
+// 低通滤波系数（与单位转换解耦，独立可调）
+#define ALPHA_ACC   0.06f   // 加速度计（截止 ~1.9Hz @200Hz，强抗振）
+#define ALPHA_GYRO  0.25f   // 陀螺仪（截止 ~8.8Hz @200Hz）
+
+// 陀螺仪死区（rad/s）—— 抑制振动噪声
+#define GYRO_DEADZONE  0.015f  // ≈0.86°/s
+
+// 物理单位转换常量
+#define GRAVITY      9.8f    // 重力加速度 m/s?
+#define ACC_SCALE    4098    // 加速度计 LSB/g（±8G 量程）
+#define GYRO_SCALE   14.3f   // 陀螺仪 LSB/(°/s)
+#define DEG_TO_RAD   (PI / 180.0f)
 
 float yaw = 0.0;
 // 全局变量扩展：添加四元数、欧拉角、采样时间、积分误差
 float acc_x = 0,acc_y = 0,acc_z = 0;
 float gyro_x = 0,gyro_y = 0,gyro_z = 0;
 static float gyro_x_offset = 0,gyro_y_offset = 0,gyro_z_offset = 0;
-static float acc_x_offset = 0,acc_y_offset = 0;
+static float acc_x_offset = 0,acc_y_offset = 0,acc_z_offset = 0;
 static Quaternion q = {1.0f, 0.0f, 0.0f, 0.0f}; // 全局四元数（初始无旋转）
 static EulerAngle euler = {0.0f, 0.0f, 0.0f};   // 全局欧拉角
 static float integral_fx = 0, integral_fy = 0, integral_fz = 0; // 积分误差
@@ -59,9 +79,22 @@ static void mahony_update(float gx, float gy, float gz, float ax, float ay, floa
     float vx, vy, vz;
     float ex, ey, ez;
 
-    // 1. 归一化加速度计数据（单位向量）
+    // 1. 计算加速度模长并归一化
     norm = sqrt(ax*ax + ay*ay + az*az);
-    if (norm < 0.001f) return; // 避免除零（加速度计无数据）
+    if (norm < 0.001f) return; // 避免除零
+
+    // ---- 自适应 Kp：模长偏离重力越多 → 降低对加速度计的信任 ----
+    float acc_dev = fabs(norm - GRAVITY);
+    float adaptive_Kp;
+    if (acc_dev < ACC_DEV_LOW) {
+        adaptive_Kp = Kp_NOMINAL;
+    } else if (acc_dev < ACC_DEV_HIGH) {
+        adaptive_Kp = Kp_NOMINAL - (Kp_NOMINAL - Kp_MIN)
+                      * (acc_dev - ACC_DEV_LOW) / (ACC_DEV_HIGH - ACC_DEV_LOW);
+    } else {
+        adaptive_Kp = Kp_MIN;
+    }
+
     ax /= norm;
     ay /= norm;
     az /= norm;
@@ -80,16 +113,16 @@ static void mahony_update(float gx, float gy, float gz, float ax, float ay, floa
     integral_fx += ex * Ki * dt;
     integral_fy += ey * Ki * dt;
     integral_fz += ez * Ki * dt;
-		
-		// 限幅到±1.0，避免积分发散
+
+    // 限幅到±1.0，避免积分发散
     integral_fx = fabs(integral_fx) > 1.0f ? (integral_fx>0?1.0f:-1.0f) : integral_fx;
     integral_fy = fabs(integral_fy) > 1.0f ? (integral_fy>0?1.0f:-1.0f) : integral_fy;
     integral_fz = fabs(integral_fz) > 1.0f ? (integral_fz>0?1.0f:-1.0f) : integral_fz;
 
-    // 5. 陀螺仪数据修正（比例+积分）
-    gx += Kp * ex + integral_fx;
-    gy += Kp * ey + integral_fy;
-    gz += Kp * ez + integral_fz;
+    // 5. 陀螺仪数据修正（使用自适应 Kp）
+    gx += adaptive_Kp * ex + integral_fx;
+    gy += adaptive_Kp * ey + integral_fy;
+    gz += adaptive_Kp * ez + integral_fz;
 
     // 6. 四元数微分更新（四元数动力学方程）
     float qw_dot = -0.5f * (q.x*gx + q.y*gy + q.z*gz);
@@ -126,45 +159,59 @@ void imu_init(void){
         gyro_x_offset  += imu963ra_gyro_x;
         gyro_y_offset  += imu963ra_gyro_y;
         gyro_z_offset  += imu963ra_gyro_z;
-		acc_x_offset += imu963ra_acc_x;
-		acc_y_offset += imu963ra_acc_y;
+        acc_x_offset   += imu963ra_acc_x;
+        acc_y_offset   += imu963ra_acc_y;
+        acc_z_offset   += imu963ra_acc_z;
         system_delay_ms(5);
     }
     gyro_x_offset /= 400;
     gyro_y_offset /= 400;
     gyro_z_offset /= 400;
-	acc_x_offset  /= 400;
-	acc_y_offset  /= 400;
+    acc_x_offset  /= 400;
+    acc_y_offset  /= 400;
+    acc_z_offset   = acc_z_offset / 400 + ACC_SCALE;  // Z 轴静止时期望 +1g，扣除后为零偏
 }
 
 void imu_get(void){
 
     float dt = 0.005;
 
-    // 2. 读取IMU原始数据
+    // 1. 读取 IMU 原始数据
     imu963ra_get_acc();
-    imu963ra_get_gyro();  
-	
-    // 3. 加速度计一阶低通滤波+单位转换（m/s2）
-    acc_x = (((float) imu963ra_acc_x - acc_x_offset) * 0.06 * 9.8f) / 4098 + acc_x * (1 - 0.06);
-    acc_y = (((float) imu963ra_acc_y - acc_y_offset) * 0.06 * 9.8f) / 4098 + acc_y * (1 - 0.06);
-    acc_z = -(((float) imu963ra_acc_z) * 0.06 * 9.8f) / 4098 + acc_z * (1 - 0.06);
+    imu963ra_get_gyro();
 
-    // 4. 陀螺仪去偏置+单位转换（deg/s → rad/s）
-    gyro_x = -((float) imu963ra_gyro_x - gyro_x_offset) * 0.25 * PI / 180 / 14.3f + gyro_x * (1 - 0.25);
-    gyro_y = -((float) imu963ra_gyro_y - gyro_y_offset) * 0.25 * PI / 180 / 14.3f + gyro_y * (1 - 0.25);
-    gyro_z = ((float) imu963ra_gyro_z - gyro_z_offset) * 0.25 * PI / 180 / 14.3f + gyro_z * (1 - 0.25);
-		
-	if (fabs(gyro_x) <= 0.005) gyro_x = 0;
-	if (fabs(gyro_y) <= 0.005) gyro_y = 0;
-	if (fabs(gyro_z) <= 0.005) gyro_z = 0;
+    // 2. 加速度计：单位转换（ADC → m/s?，与滤波解耦）
+    float acc_raw_x = ((float)imu963ra_acc_x - acc_x_offset) * GRAVITY / ACC_SCALE;
+    float acc_raw_y = ((float)imu963ra_acc_y - acc_y_offset) * GRAVITY / ACC_SCALE;
+    float acc_raw_z = -((float)imu963ra_acc_z - acc_z_offset) * GRAVITY / ACC_SCALE;
 
-    // 5. 核心：调用Mahony算法更新四元数（接入IMU数据）
+    // 3. 加速度计：一阶低通滤波
+    acc_x = acc_raw_x * ALPHA_ACC + acc_x * (1.0f - ALPHA_ACC);
+    acc_y = acc_raw_y * ALPHA_ACC + acc_y * (1.0f - ALPHA_ACC);
+    acc_z = acc_raw_z * ALPHA_ACC + acc_z * (1.0f - ALPHA_ACC);
+
+    // 4. 陀螺仪：单位转换（ADC → rad/s，与滤波解耦）
+    float gyro_raw_x = -((float)imu963ra_gyro_x - gyro_x_offset) * DEG_TO_RAD / GYRO_SCALE;
+    float gyro_raw_y = -((float)imu963ra_gyro_y - gyro_y_offset) * DEG_TO_RAD / GYRO_SCALE;
+    float gyro_raw_z =  ((float)imu963ra_gyro_z - gyro_z_offset) * DEG_TO_RAD / GYRO_SCALE;
+
+    // 5. 陀螺仪：一阶低通滤波
+    gyro_x = gyro_raw_x * ALPHA_GYRO + gyro_x * (1.0f - ALPHA_GYRO);
+    gyro_y = gyro_raw_y * ALPHA_GYRO + gyro_y * (1.0f - ALPHA_GYRO);
+    gyro_z = gyro_raw_z * ALPHA_GYRO + gyro_z * (1.0f - ALPHA_GYRO);
+
+    // 6. 死区滤波（抑制振动噪声）
+    if (fabs(gyro_x) <= GYRO_DEADZONE) gyro_x = 0;
+    if (fabs(gyro_y) <= GYRO_DEADZONE) gyro_y = 0;
+    if (fabs(gyro_z) <= GYRO_DEADZONE) gyro_z = 0;
+
+    // 7. Mahony 互补滤波更新四元数（内含自适应 Kp）
     mahony_update(gyro_x, gyro_y, gyro_z, acc_x, acc_y, acc_z, dt);
 
-    // 6. 四元数转欧拉角（得到最终的roll/pitch/yaw）
+    // 8. 四元数转欧拉角
     euler = quaternion_to_euler(q);
-		
-	yaw = euler.yaw;
-		
+
+    // 9. 输出 yaw
+    yaw = euler.yaw;
+
 }

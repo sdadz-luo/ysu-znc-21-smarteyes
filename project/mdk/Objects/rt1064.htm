@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\rt1064.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\rt1064.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Wed Jun 10 22:44:58 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Wed Jun 10 23:00:23 2026
 <BR><P>
 <H3>Maximum Stack Usage =      21312 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -2858,8 +2858,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PIT_IRQHandler
 </UL>
 
-<P><STRONG><a name="[14b]"></a>imu_get</STRONG> (Thumb, 1448 bytes, Stack size 96 bytes, imu963.o(.text.imu_get))
-<BR><BR>[Stack]<UL><LI>Max Depth = 664<LI>Call Chain = imu_get &rArr; imu963ra_get_gyro &rArr; spi_read_8bit_registers &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
+<P><STRONG><a name="[14b]"></a>imu_get</STRONG> (Thumb, 1464 bytes, Stack size 104 bytes, imu963.o(.text.imu_get))
+<BR><BR>[Stack]<UL><LI>Max Depth = 672<LI>Call Chain = imu_get &rArr; imu963ra_get_gyro &rArr; spi_read_8bit_registers &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1ae]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;imu963ra_get_gyro
 <LI><a href="#[1ac]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;imu963ra_get_acc
@@ -2871,7 +2871,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PIT_IRQHandler
 </UL>
 
-<P><STRONG><a name="[1b9]"></a>imu_init</STRONG> (Thumb, 400 bytes, Stack size 56 bytes, imu963.o(.text.imu_init))
+<P><STRONG><a name="[1b9]"></a>imu_init</STRONG> (Thumb, 456 bytes, Stack size 56 bytes, imu963.o(.text.imu_init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 696<LI>Call Chain = imu_init &rArr; imu963ra_init &rArr; spi_init &rArr; spi_iomuxc &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1ae]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;imu963ra_get_gyro
