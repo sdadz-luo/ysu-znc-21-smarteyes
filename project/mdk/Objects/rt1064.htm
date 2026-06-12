@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\rt1064.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\rt1064.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Fri Jun 12 20:04:38 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Fri Jun 12 23:26:13 2026
 <BR><P>
 <H3>Maximum Stack Usage =      21312 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1024,7 +1024,6 @@ Global Symbols
 <LI><a href="#[1c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_boom_calculation
 <LI><a href="#[1c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_look_calculation
 <LI><a href="#[1be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_start_calculation
-<LI><a href="#[171]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cam_uart2_read
 <LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 <LI><a href="#[e9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;wifi_spi_send_buffer
 <LI><a href="#[128]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DbgConsole_Vprintf
@@ -1088,7 +1087,7 @@ Global Symbols
 <LI><a href="#[1c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_calculation
 <LI><a href="#[1c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_id_calculation
 <LI><a href="#[1c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_look_calculation
-<LI><a href="#[1c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;reset_planning_system
+<LI><a href="#[1bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;reset_planning_system
 <LI><a href="#[1be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_start_calculation
 <LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 <LI><a href="#[141]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LPUART_GetDefaultConfig
@@ -2373,7 +2372,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[14f]"></a>cam_uart1_read</STRONG> (Thumb, 342 bytes, Stack size 568 bytes, cam_uart.o(.text.cam_uart1_read))
+<P><STRONG><a name="[14f]"></a>cam_uart1_read</STRONG> (Thumb, 344 bytes, Stack size 568 bytes, cam_uart.o(.text.cam_uart1_read))
 <BR><BR>[Stack]<UL><LI>Max Depth = 1088<LI>Call Chain = cam_uart1_read &rArr; fifo_read_buffer &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[166]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;fifo_read_buffer
@@ -2387,14 +2386,13 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[84]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PIT_IRQHandler
 </UL>
 
-<P><STRONG><a name="[171]"></a>cam_uart2_read</STRONG> (Thumb, 390 bytes, Stack size 48 bytes, cam_uart.o(.text.cam_uart2_read))
-<BR><BR>[Stack]<UL><LI>Max Depth = 568<LI>Call Chain = cam_uart2_read &rArr; fifo_read_buffer &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
+<P><STRONG><a name="[171]"></a>cam_uart2_read</STRONG> (Thumb, 336 bytes, Stack size 56 bytes, cam_uart.o(.text.cam_uart2_read))
+<BR><BR>[Stack]<UL><LI>Max Depth = 576<LI>Call Chain = cam_uart2_read &rArr; fifo_read_buffer &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[166]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;fifo_read_buffer
 <LI><a href="#[16d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;fifo_used
 <LI><a href="#[16e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memcmp
 <LI><a href="#[170]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memmove
-<LI><a href="#[12c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memcpy
 </UL>
 <BR>[Called By]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
@@ -2572,7 +2570,7 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[145]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;encoder_get
 </UL>
 
-<P><STRONG><a name="[18e]"></a>encoder_init</STRONG> (Thumb, 46 bytes, Stack size 8 bytes, encoder.o(.text.encoder_init))
+<P><STRONG><a name="[18e]"></a>encoder_init</STRONG> (Thumb, 62 bytes, Stack size 8 bytes, encoder.o(.text.encoder_init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 560<LI>Call Chain = encoder_init &rArr; encoder_quad_init &rArr; qtimer_iomuxc &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[18f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;encoder_quad_init
@@ -2768,7 +2766,7 @@ Global Symbols
 <LI><a href="#[1b8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;my_key_init
 </UL>
 
-<P><STRONG><a name="[1bf]"></a>id_input</STRONG> (Thumb, 86 bytes, Stack size 8 bytes, path_planning.o(.text.id_input))
+<P><STRONG><a name="[1c0]"></a>id_input</STRONG> (Thumb, 86 bytes, Stack size 8 bytes, path_planning.o(.text.id_input))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = id_input
 </UL>
 <BR>[Called By]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
@@ -2806,7 +2804,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[1b5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;imu_init
 </UL>
 
-<P><STRONG><a name="[148]"></a>imu_distance</STRONG> (Thumb, 452 bytes, Stack size 80 bytes, encoder.o(.text.imu_distance))
+<P><STRONG><a name="[148]"></a>imu_distance</STRONG> (Thumb, 460 bytes, Stack size 80 bytes, encoder.o(.text.imu_distance))
 <BR><BR>[Stack]<UL><LI>Max Depth = 80<LI>Call Chain = imu_distance
 </UL>
 <BR>[Calls]<UL><LI><a href="#[18b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fabsf
@@ -2873,19 +2871,19 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[1b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;menu
 </UL>
 
-<P><STRONG><a name="[a9]"></a>main</STRONG> (Thumb, 3892 bytes, Stack size 3008 bytes, main.o(.text.main))
+<P><STRONG><a name="[a9]"></a>main</STRONG> (Thumb, 3540 bytes, Stack size 3008 bytes, main.o(.text.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 21312<LI>Call Chain = main &rArr; path_boom_calculation &rArr; try_execute_step &rArr; solve_single_box_a_star &rArr; hash_lookup_insert &rArr; __aeabi_memcpy
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;map_boom_out
+<LI><a href="#[171]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cam_uart2_read
+<LI><a href="#[172]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cam_uart2_write
 <LI><a href="#[1c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_boom_calculation
 <LI><a href="#[1c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_calculation
 <LI><a href="#[1c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_id_calculation
 <LI><a href="#[1c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_look_calculation
-<LI><a href="#[1c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;reset_planning_system
-<LI><a href="#[1bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;id_input
+<LI><a href="#[1c0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;id_input
+<LI><a href="#[1bf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;reset_planning_system
 <LI><a href="#[1be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_start_calculation
-<LI><a href="#[171]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cam_uart2_read
-<LI><a href="#[172]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cam_uart2_write
 <LI><a href="#[1a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;interrupt_global_enable
 <LI><a href="#[1bd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pit_init
 <LI><a href="#[122]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;CLOCK_GetFreq
@@ -3053,7 +3051,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[14d]"></a>pid_increm</STRONG> (Thumb, 192 bytes, Stack size 24 bytes, pid.o(.text.pid_increm))
+<P><STRONG><a name="[14d]"></a>pid_increm</STRONG> (Thumb, 184 bytes, Stack size 24 bytes, pid.o(.text.pid_increm))
 <BR><BR>[Stack]<UL><LI>Max Depth = 24<LI>Call Chain = pid_increm
 </UL>
 <BR>[Calls]<UL><LI><a href="#[18b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fabsf
@@ -3155,7 +3153,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[18f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;encoder_quad_init
 </UL>
 
-<P><STRONG><a name="[1c0]"></a>reset_planning_system</STRONG> (Thumb, 1694 bytes, Stack size 24 bytes, path_planning.o(.text.reset_planning_system))
+<P><STRONG><a name="[1bf]"></a>reset_planning_system</STRONG> (Thumb, 1694 bytes, Stack size 24 bytes, path_planning.o(.text.reset_planning_system))
 <BR><BR>[Stack]<UL><LI>Max Depth = 32<LI>Call Chain = reset_planning_system &rArr; memset
 </UL>
 <BR>[Calls]<UL><LI><a href="#[ff]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memset
@@ -3417,13 +3415,13 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[f1]"></a>type_default_callback</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, zf_device_type.o(.text.type_default_callback))
-<BR>[Address Reference Count : 7]<UL><LI> zf_device_type.o(.text.set_wireless_type)
+<BR>[Address Reference Count : 7]<UL><LI> zf_device_type.o(.data.wireless_module_uart_handler)
+<LI> zf_device_type.o(.data.wireless_module_spi_handler)
+<LI> zf_device_type.o(.data.tof_module_exti_handler)
+<LI> zf_device_type.o(.text.set_wireless_type)
 <LI> zf_device_type.o(.data.camera_uart_handler)
 <LI> zf_device_type.o(.data.flexio_camera_vsync_handler)
 <LI> zf_device_type.o(.data.flexio_camera_uart_handler)
-<LI> zf_device_type.o(.data.wireless_module_uart_handler)
-<LI> zf_device_type.o(.data.wireless_module_spi_handler)
-<LI> zf_device_type.o(.data.tof_module_exti_handler)
 </UL>
 <P><STRONG><a name="[175]"></a>uart_init</STRONG> (Thumb, 114 bytes, Stack size 40 bytes, zf_driver_uart.o(.text.uart_init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 560<LI>Call Chain = uart_init &rArr; uart_iomuxc &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)

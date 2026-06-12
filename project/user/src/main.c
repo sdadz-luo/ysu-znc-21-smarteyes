@@ -31,7 +31,6 @@ static void Init(void);
 static void state_judgment(void);
 static void path_process(void);
 static void uart_updata(void);
-static void path_process(void);
 static void cam2_process(void);
 
 // ================= Íâ²¿±äÁ¿ÉùÃ÷  =================
@@ -43,13 +42,12 @@ extern pid pid_gyro,pid_yaw,pid_x, pid_y;          							    // ½ÇËÙ¶È»·£¬½Ç¶È»
 
 // ================= È«¾Ö±äÁ¿ =================
 static int time = 0;             												// Ê±¼ä¼ÆÊıÆ÷ (Ã¿ 10ms ¼Ó1)
-static float speed = 0, speed_target = 0, translate_yaw = 0;
 static float vx = 0, vy = 0, vz = 0; 											// µ×ÅÌºÏ³ÉËÙ¶È
 static volatile float x_target = 10, y_target = 130; 							// Ä¿±êÎ»ÖÃ×ø±ê
 static float x_cam = 0, y_cam = 0, x_cam_last = 0, y_cam_last = 0; 				// ÉãÏñÍ·¼ì²âµ½µÄ³µÎ»×ø±ê¼°ÉÏ´ÎÖµ
 static uint8_t has_2 = 0, has_3 = 0, has_6 = 0;
 static uint8_t map_has_car = 0;
-static volatile float yaw_target = 0, yaw_uart = 0; 							// Ä¿±ê½Ç¶È
+static volatile float yaw_target = 0; 						                	// Ä¿±ê½Ç¶È
 static int FL = 0, FR = 0, BL = 0, BR = 0; 										// ËÄ¸öµç»úµÄ PWM Õ¼¿Õ±È
 static int step = 0;             												// Â·¾¶¸ú×ÙµÄµ±Ç°²½Êı
 static volatile CAMDATA car_data;         										// ÉãÏñÍ·Êı¾İ½á¹¹Ìå
@@ -185,6 +183,23 @@ static void Init(void){
 	tft180_clear();
 }
 
+/**
+ * @brief ÔÚÉãÏñÍ·Õ¤¸ñÊı¾İÖĞ²éÕÒÖ¸¶¨ÊıÖµ
+ * @return 1 ÕÒµ½, 0 Î´ÕÒµ½
+ */
+static uint8_t find_in_grid(const volatile CAMDATA *data, uint8_t val1, uint8_t val2)
+{
+    for (uint8_t row = 0; row < 12; row++) {
+        for (uint8_t col = 0; col < 16; col++) {
+            uint8_t v = data->grid[row][col];
+            if (v == val1 || v == val2) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 //×´Ì¬»úÅĞ¶ÏÓë×ª»»
 static void state_judgment(void){
     switch (car_state){
@@ -207,7 +222,6 @@ static void state_judgment(void){
             y_target = (origin_y_enc + 0.5) * y_enc_uint;
             car_state = Run;
             return;
-            break;
         }
         
         case Look:{
@@ -238,18 +252,7 @@ static void state_judgment(void){
                 if (fabsf(x_enc - x_target) <= 2 && fabsf(y_enc - y_target) <= 2){
                     vx = 0;vy = 0;
                     system_delay_ms(1000);
-                    uint8_t found = 0;
-                    for (uint8_t row = 0; row < 12; row++) {
-                        for (uint8_t col = 0; col < 16; col++) {
-                            uint8_t val = car_data.grid[row][col];
-                            if (val == 3 || val == 6){
-                                found = 1;
-                                break;
-                            }
-                        }
-                        if (found) break;
-                    }
-                    if (found) system_delay_ms(3000);
+                    if (find_in_grid(&car_data, 3, 6)) system_delay_ms(3000);
                     game_over_flag = 0;
                 }
             }else{
@@ -324,6 +327,31 @@ static void uart_updata(void){
     //     }
 }
  
+/**
+ * @brief Ä£Ê½1ºÍÄ£Ê½3µÄ¹«¹²Â·¾¶¸ú×ÙÂß¼­
+ * @param path  Â·¾¶Êı¾İÖ¸Õë
+ * @param end_x ÖÕµãÕ¤¸ñX×ø±ê
+ * @param end_y ÖÕµãÕ¤¸ñY×ø±ê
+ */
+static void process_normal_path(const Path *path, uint8_t end_x, uint8_t end_y)
+{
+    if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {
+        step++;
+        if (step > path->len) {
+            x_target = (float)end_x * x_enc_uint;
+            y_target = (float)end_y * y_enc_uint;
+            game_over_flag = 1;
+            car_state = GameOver;
+            return;
+        }
+    }
+    if (step <= path->len) {
+        x_target = (path->x[step] + 0.5f) * x_enc_uint;
+        y_target = (path->y[step] + 0.5f) * y_enc_uint;
+        car_state = Run;
+    }
+}
+
 //Â·¾¶¹æ»®Óë¸ú×Ù´¦Àí
 static void path_process(void){
     // 1. É¨ÃèµØÍ¼Êı¾İ (¼ì²âÊÇ·ñÓĞ³µÎ»2, ÕÏ°­3, ³µÁ¾6)
@@ -338,7 +366,7 @@ static void path_process(void){
                 if (val == 7) game_mode = 4; // ÌØÊâ±êÖ¾Î»7±íÊ¾Õ¨µ¯ÆÆ¾ÖÄ£Ê½
             } 
         } 
-        map_has_car = (has_2 && has_3 && has_6) ? 1 : 0;
+        map_has_car = has_2 && has_3 && has_6;
         if (map_has_car) memcpy(grid,(const void *)car_data.grid,sizeof(grid));
     }
     // 2. ¸ù¾İµ±Ç°ÓÎÏ·Ä£Ê½µ÷ÓÃÏàÓ¦µÄÂ·¾¶¹æ»®Ëã·¨
@@ -356,28 +384,8 @@ static void path_process(void){
 
     // 3. Â·¾¶¸ú×ÙÖ´ĞĞ (¸ù¾İ²»Í¬Ä£Ê½)
     if (game_mode == 1 && !map_process_flag && path_car.len > 0){
-        // ÅĞ¶ÏÊÇ·ñµ½´ïµ±Ç°Â·¾¶µã (Îó²îãĞÖµ 0.5 µ¥Î»)
-        if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
-            step++;
-            // ¼ì²éÊÇ·ñ×ßÍêÕû¸öÂ·¾¶
-            if (step > path_car.len) {
-                // ÉèÖÃÓÎÏ·½áÊøÄ¿±êµã
-                x_target = 1 * x_enc_uint;
-                y_target = 6 * y_enc_uint;
-                game_over_flag = 1;
-                car_state = GameOver;
-                return;
-            }
-        }
-
-        // ¸üĞÂÏÂÒ»¸öÄ¿±êµã
-        if(step <= path_car.len){
-            // Â·¾¶µã×ø±ê×ª»»ÎªÊµ¼Ê×ø±ê (+0.5 ÊÇÎªÁË¶¨Î»µ½¸ñ×ÓÖĞĞÄ)
-            x_target = (path_car.x[step] + 0.5f) * x_enc_uint;
-            y_target = (path_car.y[step] + 0.5f) * y_enc_uint;
-            car_state = Run;
-            return;
-        }
+        process_normal_path(&path_car, 1, 6);
+        return;
     }else if (game_mode == 0 && !map_process_flag && path_start_car.len > 0){
         if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
             step++;
@@ -433,27 +441,8 @@ static void path_process(void){
             return;
         }
     }else if (game_mode == 3 && !map_process_flag && path_car.len > 0){
-        if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
-            step++;
-            // ¼ì²éÊÇ·ñ×ßÍêÕû¸öÂ·¾¶
-            if (step > path_car.len) {
-                // ÉèÖÃÓÎÏ·½áÊøÄ¿±êµã
-                x_target = 1 * x_enc_uint;
-                y_target = 6 * y_enc_uint;
-                game_over_flag = 1;
-                car_state = GameOver;
-                return;
-            }
-        }
-
-        // ¸üĞÂÏÂÒ»¸öÄ¿±êµã
-        if(step <= path_car.len){
-            // Â·¾¶µã×ø±ê×ª»»ÎªÊµ¼Ê×ø±ê (+0.5 ÊÇÎªÁË¶¨Î»µ½¸ñ×ÓÖĞĞÄ)
-            x_target = (path_car.x[step] + 0.5f) * x_enc_uint;
-            y_target = (path_car.y[step] + 0.5f) * y_enc_uint;
-            car_state = Run;
-            return;
-        }
+        process_normal_path(&path_car, 1, 6);
+        return;
     }else if (game_mode == 4 && !map_process_flag && path_boom_car.len > 0){
 
         if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
@@ -481,63 +470,48 @@ static void path_process(void){
     }
 }
 
-static void cam2_process(void){
+static void cam2_process(void)
+{
+    if (fabsf(yaw - yaw_target) > 1) return;
 
-    if (game_mode == 0){
-        if (fabsf(yaw - yaw_target) <= 1){
-			if (id == -1){
-                system_delay_ms(300);
-                cam1_uart_send(yaw_target); // ·¢ËÍÄ¿±ê½Ç¶È
-                cam_uart2_write(type); // ·¢ËÍ³µÎ»ÀàĞÍ
-                while (id == -1) id = cam_uart2_read(); // µÈ´ı¶ÁÈ¡ID
-			}else{
-                if (id == 10){
-                    yaw_target = 0;
-                    if (yaw_target == 0 && fabsf(yaw) <= 1){
-                        cam1_uart_send(yaw_target); // ·¢ËÍÄ¿±ê½Ç¶È
-                        game_mode = 1;      // ÇĞ»»µ½Õı³£ĞĞÊ»Ä£Ê½
-                        step = 0;
-                        id = -1;
-                        car_state = Waiting;
-                        return;
-                    }
-                }else{
-                    yaw_target = 0;
-                    if (yaw_target == 0 && fabsf(yaw) <= 1){
-                        cam1_uart_send(yaw_target); // ·¢ËÍÄ¿±ê½Ç¶È
-                        game_mode = 2;      // ÇĞ»»µ½IDÊ¶±ğÄ£Ê½
-                        step = 0;
-                        car_state = Waiting;
-                        return;
-                    }
-                }
+    if (game_mode == 0) {
+        if (id == -1) {
+            system_delay_ms(300);
+            cam1_uart_send(yaw_target);
+            cam_uart2_write(type);
+            while (id == -1) id = cam_uart2_read();
+        } else {
+            yaw_target = 0;
+            if (fabsf(yaw) <= 1) {
+                cam1_uart_send(yaw_target);
+                game_mode = (id == 10) ? 1 : 2;
+                step = 0;
+                id = -1;
+                car_state = Waiting;
             }
         }
-    }else if (game_mode == 2){
-        if (fabsf(yaw - yaw_target) <= 1){
-            if (id == -1){
-                system_delay_ms(300);
-				cam1_uart_send(yaw_target); // ·¢ËÍÄ¿±ê½Ç¶È
-                cam_uart2_write(type); // ·¢ËÍ³µÎ»ÀàĞÍ
-                while(id == -1) id = cam_uart2_read(); // µÈ´ı¶ÁÈ¡ID
-                yaw_flag = 1;
-            }else{
-                yaw_target = 0;
-                if (yaw_target == 0 && fabsf(yaw) <= 1){
-                    cam1_uart_send(yaw_target); // ·¢ËÍÄ¿±ê½Ç¶È
-                    id_input(id);
-                    id = -1;
-                    if (step < path_look_car.len){
-                        step++;
-                        if (step == path_look_car.len){
-                            car_state = Waiting;
-                            return;
-                        }
-                        x_target = (path_look_car.x[step] + 0.5f) * x_enc_uint;
-                        y_target = (path_look_car.y[step] + 0.5f) * y_enc_uint;
-                        car_state = Run;
+    } else if (game_mode == 2) {
+        if (id == -1) {
+            system_delay_ms(300);
+            cam1_uart_send(yaw_target);
+            cam_uart2_write(type);
+            while (id == -1) id = cam_uart2_read();
+            yaw_flag = 1;
+        } else {
+            yaw_target = 0;
+            if (fabsf(yaw) <= 1) {
+                cam1_uart_send(yaw_target);
+                id_input(id);
+                id = -1;
+                if (step < path_look_car.len) {
+                    step++;
+                    if (step == path_look_car.len) {
+                        car_state = Waiting;
                         return;
                     }
+                    x_target = (path_look_car.x[step] + 0.5f) * x_enc_uint;
+                    y_target = (path_look_car.y[step] + 0.5f) * y_enc_uint;
+                    car_state = Run;
                 }
             }
         }
