@@ -21,7 +21,7 @@
 #define ALPHA_GYRO  0.25f   // 陀螺仪（截止 ~8.8Hz @200Hz）
 
 // 陀螺仪死区（rad/s）—— 抑制振动噪声
-#define GYRO_DEADZONE  0.015f  // ≈0.86°/s
+#define GYRO_DEADZONE  0.005f
 
 // 物理单位转换常量
 #define GRAVITY      9.8f    // 重力加速度 m/s?
@@ -60,9 +60,7 @@ static EulerAngle quaternion_to_euler(Quaternion q) {
     float yaw_rad = atan2(2 * (q.x*q.y - q.w*q.z), 1 - 2 * (q.y*q.y + q.z*q.z));
     angle.yaw = yaw_rad * RAD_TO_DEG;
 
-    // 4. 修正角度范围到 0~360°（也可保留-180~180°，根据需求调整）
-    if (angle.roll > 180) angle.roll -= 360;
-    if (angle.pitch > 180) angle.pitch -= 360;
+    // 4. 修正角度范围到 -180°~180°
     if (angle.yaw > 180) angle.yaw -= 360;
 
     return angle;
@@ -204,6 +202,7 @@ void imu_get(void){
     if (fabs(gyro_x) <= GYRO_DEADZONE) gyro_x = 0;
     if (fabs(gyro_y) <= GYRO_DEADZONE) gyro_y = 0;
     if (fabs(gyro_z) <= GYRO_DEADZONE) gyro_z = 0;
+    else gyro_z += corr_yaw;
 
     // 7. Mahony 互补滤波更新四元数（内含自适应 Kp）
     mahony_update(gyro_x, gyro_y, gyro_z, acc_x, acc_y, acc_z, dt);

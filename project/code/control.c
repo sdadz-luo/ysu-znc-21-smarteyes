@@ -20,16 +20,25 @@ static inline float asymmetric_filter(float current, float target, float a_slow,
     return target * a + current * (1.0f - a);
 }
 
-void motor_solution(float vx_body, float vy_body, float current_yaw, float wz)
+void motor_solution(float vx_field, float vy_field, float current_yaw, float wz)
 {
+    // ========== 1. 场地系 → 车体系速度（偏航逆旋转）==========
+    float rad = current_yaw * PI / 180.0f;
+    float cos_yaw = cosf(rad);
+    float sin_yaw = sinf(rad);
+    float vx_body =  vx_field * cos_yaw + vy_field * sin_yaw;
+    float vy_body = -vx_field * sin_yaw + vy_field * cos_yaw;
+
+    // ========== 2. 非对称低通滤波 ==========
     vx = asymmetric_filter(vx, vx_body, x_acc, x_dec);
     vy = asymmetric_filter(vy, vy_body, y_acc, y_dec);
 
-     float FL = vx - vy - 0.75f * wz;
-     float FR = vx + vy + 0.75f * wz;
-     float BL = vx + vy - 0.75f * wz;
-     float BR = vx - vy + 0.75f * wz;
+    // ========== 3. 麦克纳姆轮运动学分解（车体系）==========
+    float FL = vx - vy - 0.64f * wz;
+    float FR = vx + vy + 0.64f * wz;
+    float BL = vx + vy - 0.64f * wz;
+    float BR = vx - vy + 0.64f * wz;
 
-     pid_wheel_target(FL, FR, BL, BR);
+    pid_wheel_target(FL, FR, BL, BR);
 }
 

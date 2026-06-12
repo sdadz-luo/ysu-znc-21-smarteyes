@@ -19,8 +19,8 @@ typedef enum {
     End         // 完全结束
 } Car_State;
 
-static volatile Car_State car_state = GameMap; // 初始状态
-// ================= 路径结构体 (占用 SDRAM 或较大 RAM) =================
+static volatile Car_State car_state = NoGame; // 初始状态
+// ================= 路径结构体 =================
 Path path_car = {0};          		// 正常行驶路径
 Path_Look path_look_car = {0}; 		// 观察路径
 Path_Start path_start_car = {0}; 	// 起始路径
@@ -60,28 +60,13 @@ static int id = -1;          												    // 识别到的 ID
 static uint8_t map_process_flag = 1; // 地图处理标志
 static uint8_t game_count = 0;       // 游戏次数计数
 static uint8_t game_over_flag = 0;   // 游戏结束标志
-static uint8_t game_mode = 1;        // 游戏模式: 0=Start, 1=Normal Run, 2=Look, 3=ID Run  
+static uint8_t game_mode = 0;        // 游戏模式: 0=Start, 1=Normal Run, 2=Look, 3=ID Run  
 static uint8_t look_flag = 0;        // 观察模式标志
 static uint8_t id_flag = 0;          // 识别模式标志
 static uint8_t boom_flag = 0;        // 炸弹破局标志 
+static uint8_t yaw_flag = 0;         // 角度调整标志
 static uint8_t grid[MAP_ROWS][MAP_COLS] = {0};
 
-static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,0,0,0,0,0,0,1,0,0,0,0,1,6,1,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,1},
-    {1,0,0,0,0,0,1,0,1,0,0,0,1,0,1,1},
-    {1,0,0,0,1,0,0,3,0,0,0,0,1,0,0,1},
-    {1,0,0,0,1,0,1,0,1,0,0,0,0,0,0,1},
-    {1,0,2,0,1,0,0,3,0,0,1,0,1,0,0,1},
-    {1,0,0,0,0,0,1,0,1,0,1,0,1,0,0,1},
-    {1,0,0,0,1,1,0,3,0,0,1,0,1,1,0,1},
-    {1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,1},
-    {1,0,0,0,0,6,0,0,0,0,0,0,0,6,0,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
-};
-
-extern float x_imu,y_imu,gyro_z;
 int main(void){
     clock_init(SYSTEM_CLOCK_600M);  // 初始化系统时钟为 600MHz
     debug_init();                   // 初始化调试串口
@@ -93,18 +78,19 @@ int main(void){
 
     system_delay_ms(2000);
 
-    x_enc = 10,y_enc= 130;
-
 	while(1){ 
 
         // 状态机判断与状态转换处理
 		state_judgment();
 
-        tft180_show_float(0,0,x_enc,3,1);
-        tft180_show_float(0,16,y_enc,3,1);
-        tft180_show_float(64,0,x_imu,3,1);
-        tft180_show_float(64,16,y_imu,3,1);
-        tft180_show_float(0,32,gyro_z,3,3);
+        // my_uart_write(0,x_cam);
+        // my_uart_write(1,y_cam);
+        // my_uart_write(2,x_enc);
+        // my_uart_write(3,y_enc);
+        // my_uart_write(4,x_imu);
+        // my_uart_write(5,y_imu);
+        // my_uart_write(6,yaw);
+        // my_uart_send(7);
 
 	}
 }
@@ -123,7 +109,7 @@ void PIT_IRQHandler(void){
         // 1. 获取传感器数据
         encoder_get(); // 读取编码器数据
         imu_get();     // 读取 IMU 数据
-        if (car_state != Look) distance(); // 航迹推算
+        distance(yaw); // 航迹推算
         imu_distance();
 
         // 2. 位置环 PID 计算
@@ -136,12 +122,16 @@ void PIT_IRQHandler(void){
 
         // 3. 角度环 PID 计算 
         if (time % 2 == 0){
-            pid_target(&pid_yaw,yaw_target);
-            vz = pid_location(&pid_yaw,yaw); 
+            float yaw_error = yaw_target - yaw;
+            if (yaw_error > 180.0f)       yaw_error -= 360.0f;
+            else if (yaw_error < -180.0f) yaw_error += 360.0f;
+            pid_target(&pid_yaw, yaw + yaw_error);
+            vz = pid_location(&pid_yaw, yaw); 
         } 
         
         // 4. 运动学解算: 将合成速度 (vx, vy, vz) 分解到四个轮子
         motor_solution(vx, vy, yaw, vz);
+
         // 5. 速度环/增量式 PID 计算得到最终 PWM
         FL = pid_increm(&pid_FL, encoder_data_FL);
         FR = pid_increm(&pid_FR, encoder_data_FR);
@@ -180,7 +170,7 @@ static void Init(void){
     my_key_init();
     flash_init();
     menu();                                 // 进入菜单界面选择模式
-    system_delay_ms(2000);
+    system_delay_ms(1000);
     tft180_show_string(0, 0, "Init... ");
     encoder_init(); 						// 编码器初始化
     imu_init();     						// IMU 初始化
@@ -261,36 +251,28 @@ static void state_judgment(void){
                     }
                     if (found) system_delay_ms(3000);
                     game_over_flag = 0;
-                    // 设置下一个目标点 (根据实际场地调整)
-                    x_target = 1 * x_enc_uint;
-                    y_target = 6 * y_enc_uint;
                 }
             }else{
-                // 游戏结束: 返回起点/复位
-                if (fabsf(x_enc - x_target) <= 1.5 && fabsf(y_enc - y_target) <= 1.5){
-                    vx = 0;vy = 0;
-                    game_count++;
-                    if (game_count >= 3) {
-                        car_state = End; // 3次后完全结束
-                        return;
-                    } else {
-                        vx = 0;vy = 0;
-                        // 重置系统
-                        reset_planning_system();
-                        game_over_flag = 1;
-                        game_mode = 0;
-                        boom_flag = 0;
-                        map_process_flag = 1;
-                        step = 0;
-						memset(&path_start_car, 0, sizeof(path_start_car));
-						memset(&path_look_car, 0, sizeof(path_look_car));
-                        memset(&path_car, 0, sizeof(path_car));
-                        memset(&path_boom_car, 0, sizeof(path_boom_car));
-                        system_delay_ms(300);
-                        car_state = NoGame; // 回到初始状态
-                        return;
-                    } 
-                }
+                vx = 0;vy = 0;
+                game_count++;
+                if (game_count >= 3) {
+                    car_state = End; // 3次后完全结束
+                    return;
+                } else {
+                    // 重置系统
+                    reset_planning_system();
+                    game_over_flag = 1;
+                    game_mode = 0;
+                    map_process_flag = 1;
+                    step = 0;
+					memset(&path_start_car, 0, sizeof(path_start_car));
+					memset(&path_look_car, 0, sizeof(path_look_car));
+                    memset(&path_car, 0, sizeof(path_car));
+                    memset(&path_boom_car, 0, sizeof(path_boom_car));
+                    system_delay_ms(300);
+                    car_state = NoGame; // 回到初始状态
+                    return;
+                } 
             }
             break;
         }
@@ -302,8 +284,8 @@ static void state_judgment(void){
     }
 }
 
-static uint8 data_len;
-static uint8 data_buffer[64];
+// static uint8 data_len;
+// static uint8 data_buffer[64];
 //串口数据更新处理
 static void uart_updata(void){
     // 获取摄像头检测到的车位中心坐标
@@ -317,39 +299,39 @@ static void uart_updata(void){
     x_cam_last = x_cam;
     y_cam_last = y_cam;
 	
-	data_len = wireless_uart_read_buffer(data_buffer, 64);                    // 读取无线串口数据 注意缓冲区大小 WIRELESS_UART_BUFFER_SIZE 至少 64 字节
-    if(data_len != 0){
-            data_buffer[data_len] = '\0';  // 添加字符串结束符'\0'
+	// data_len = wireless_uart_read_buffer(data_buffer, 64);                    // 读取无线串口数据 注意缓冲区大小 WIRELESS_UART_BUFFER_SIZE 至少 64 字节
+    // if(data_len != 0){
+    //         data_buffer[data_len] = '\0';  // 添加字符串结束符'\0'
                 
-            //解析无线串口发送的x/y坐标指令
-    char *token = NULL;
-    // 提取第一个参数x坐标
-    token = strtok((char *)data_buffer, ",");
-    if(token != NULL){
-                x_target = (atoi(token) + 0.5) * x_enc_uint;  // 转换为实际坐标并乘以比例系数
-        // 提取第二个参数y坐标
-        token = strtok(NULL, ",");
-        if(token != NULL){
-                    y_target = (atoi(token) + 0.5) * y_enc_uint;
-                }
-            token = strtok(NULL, ",");
-            if(token != NULL){
-                yaw_target = atoi(token);
-            }
-                car_state = Run;
-            }
-            memset(data_buffer, 0, 64);	
-        }
+    //         //解析无线串口发送的x/y坐标指令
+    // char *token = NULL;
+    // // 提取第一个参数x坐标
+    // token = strtok((char *)data_buffer, ",");
+    // if(token != NULL){
+    //             x_target = (atoi(token) + 0.5) * x_enc_uint;  // 转换为实际坐标并乘以比例系数
+    //     // 提取第二个参数y坐标
+    //     token = strtok(NULL, ",");
+    //     if(token != NULL){
+    //                 y_target = (atoi(token) + 0.5) * y_enc_uint;
+    //             }
+    //         token = strtok(NULL, ",");
+    //         if(token != NULL){
+    //             yaw_target = atoi(token);
+    //         }
+    //             car_state = Run;
+    //         }
+    //         memset(data_buffer, 0, 64);	
+    //     }
 }
  
 //路径规划与跟踪处理
 static void path_process(void){
     // 1. 扫描地图数据 (检测是否有车位2, 障碍3, 车辆6)
     if (map_process_flag == 1) {
-        system_delay_ms(500);
+        system_delay_ms(300);
         for (uint8_t row = 0; row < 12; row++) {
             for (uint8_t col = 0; col < 16; col++) {
-                uint8_t val = g_map_test[row][col];
+                uint8_t val = car_data.grid[row][col];
                 if (val == 2) has_2 = 1;
                 if (val == 3) has_3 = 1;
                 if (val == 6) has_6 = 1;
@@ -357,7 +339,7 @@ static void path_process(void){
             } 
         } 
         map_has_car = (has_2 && has_3 && has_6) ? 1 : 0;
-        if (map_has_car) memcpy(grid,(const void *)g_map_test,sizeof(grid));
+        if (map_has_car) memcpy(grid,(const void *)car_data.grid,sizeof(grid));
     }
     // 2. 根据当前游戏模式调用相应的路径规划算法
     if ((map_process_flag && map_has_car) || boom_flag == 1 || look_flag == 1 || id_flag == 1) {
@@ -425,7 +407,8 @@ static void path_process(void){
             x_target = (path_look_car.x[step] + 0.5f) * x_enc_uint;
             y_target = (path_look_car.y[step] + 0.5f) * y_enc_uint;
         }
-        if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
+        if ((fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) || yaw_flag == 1) { 
+            yaw_flag = 0;           
             if (path_look_car.is_look[step] == 1 && step < path_look_car.len){
                 vx = 0;vy = 0;
                 yaw_target = path_look_car.angle[step]; // 设置观察角度
@@ -507,8 +490,7 @@ static void cam2_process(void){
                 cam1_uart_send(yaw_target); // 发送目标角度
                 cam_uart2_write(type); // 发送车位类型
                 while (id == -1) id = cam_uart2_read(); // 等待读取ID
-			}
-            if (id != -1){
+			}else{
                 if (id == 10){
                     yaw_target = 0;
                     if (yaw_target == 0 && fabsf(yaw) <= 1){
@@ -522,6 +504,7 @@ static void cam2_process(void){
                 }else{
                     yaw_target = 0;
                     if (yaw_target == 0 && fabsf(yaw) <= 1){
+                        cam1_uart_send(yaw_target); // 发送目标角度
                         game_mode = 2;      // 切换到ID识别模式
                         step = 0;
                         car_state = Waiting;
@@ -537,8 +520,8 @@ static void cam2_process(void){
 				cam1_uart_send(yaw_target); // 发送目标角度
                 cam_uart2_write(type); // 发送车位类型
                 while(id == -1) id = cam_uart2_read(); // 等待读取ID
-            }
-            if (id != -1){
+                yaw_flag = 1;
+            }else{
                 yaw_target = 0;
                 if (yaw_target == 0 && fabsf(yaw) <= 1){
                     cam1_uart_send(yaw_target); // 发送目标角度

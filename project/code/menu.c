@@ -78,7 +78,7 @@ static int8_t       edit_mode    = 0;           /* 0=µ¼º½, 1=±à¼­Ä£Ê½  */
 #define STEP_PID_D       0.1f
 #define STEP_PID_SPEED   1
 #define STEP_ORIGIN_ENC  1
-#define STEP_CORR_YAW  0.00001f
+#define STEP_CORR_YAW  0.000001f
 #define STEP_CORR_ENC    0.01f
 #define STEP_CORR_CAM    1
 #define STEP_CONTROL     0.01f

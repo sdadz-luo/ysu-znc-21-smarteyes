@@ -109,7 +109,7 @@ void encoder_get(void){
 }
 
 // ================= 纯编码器里程计解算 =================
-void distance(){
+void distance(float yaw){
     
     // ========== 1. 车体系位移增量（脉冲/10ms）==========
     // 标准麦克纳姆轮正向运动学
@@ -118,13 +118,23 @@ void distance(){
     
     // dx, dy 是车体 x/y 方向的脉冲增量（相对于车体坐标系）
     
-    // ========== 2. 脉冲 → 厘米（每10ms周期的位移）==========
-    float shift_x = dx * dc;    // 车体x方向位移 (cm)
-    float shift_y = dy * dc;    // 车体y方向位移 (cm)
+    // ========== 2. 脉冲 → 厘米（校正后车体位移）==========
+    float shift_x = dx * dc;   // 车体x方向位移 (cm, 已校正)
+    float shift_y = dy * dc;   // 车体y方向位移 (cm, 已校正)
     
-    // ========== 3. 累加到全局位置 ==========
-    x_enc += shift_x * corr_x_enc;
-    y_enc += shift_y * corr_y_enc;
+    // ========== 3. 车体系 → 场地坐标系（偏航旋转）==========
+    // 使用 R(-yaw): 航向角逆时针为正，+90°=朝左(场地-Y)
+    float rad = yaw * PI / 180.0f;
+    float cos_yaw = cosf(rad);
+    float sin_yaw = sinf(rad);
+    if (fabsf(yaw) <= 3 || fabsf(yaw - 180) <= 3){
+        x_enc += (shift_x * cos_yaw + shift_y * sin_yaw) * corr_x_enc;
+        y_enc += (-shift_x * sin_yaw + shift_y * cos_yaw) * corr_y_enc;
+    }else{
+        x_enc += (shift_x * cos_yaw + shift_y * sin_yaw) * corr_y_enc;
+        y_enc += (-shift_x * sin_yaw + shift_y * cos_yaw) * corr_x_enc;
+    }
+
 }
 
 // ================= IMU 加速度二次积分里程计 =================
@@ -170,13 +180,13 @@ void imu_distance(void) {
                     + encoder_data_BL_enc + encoder_data_BR_enc;
     float vel_enc_y = encoder_data_FL_enc - encoder_data_FR_enc 
                     - encoder_data_BL_enc + encoder_data_BR_enc;
-    vel_enc_x = vel_enc_x / 4.0f * dc / dt * corr_x_enc;  // 编码器 X 速度 (cm/s)
-    vel_enc_y = vel_enc_y / 4.0f * dc / dt * corr_y_enc;  // 编码器 Y 速度 (cm/s)
+    vel_enc_x = vel_enc_x / 4.0f * dc / dt;  // 编码器 X 速度 (cm/s)
+    vel_enc_y = vel_enc_y / 4.0f * dc / dt;  // 编码器 Y 速度 (cm/s)
 
-    vel_x_imu = vel_x_imu * 0.95f + vel_enc_x * 0.05f;
-    vel_y_imu = vel_y_imu * 0.95f + vel_enc_y * 0.05f;
+    vel_x_imu = vel_x_imu * 0.5f + vel_enc_x * 0.5f;
+    vel_y_imu = vel_y_imu * 0.5f + vel_enc_y * 0.5f;
 
     // ========== 6. 位置积分 ==========
-    x_imu += vel_x_imu * dt;
-    y_imu += vel_y_imu * dt;
+    x_imu += vel_x_imu * dt * corr_x_enc;
+    y_imu += vel_y_imu * dt * corr_y_enc;
 }
