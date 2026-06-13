@@ -263,6 +263,7 @@ static void state_judgment(void){
                 } else {
                     // ÷ÿ÷√œµÕ≥
                     reset_planning_system();
+                    pid_reset();
                     game_over_flag = 1;
                     game_mode = 0;
                     map_process_flag = 1;

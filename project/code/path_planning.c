@@ -84,6 +84,7 @@ static uint16_t g_fullpath_len;                      /* 完整路径长度 */
 __attribute__((section(".bss.SDRAM_CACHE"))) Point g_fullpath[MAX_PATH_LEN];               /* 完整路径 */
 static uint8_t g_solve_order[MAX_BOXES];             /* 解决顺序 */
 static uint8_t g_order_idx;                          /* 顺序索引 */
+static uint16_t g_non_paired_targets[MAP_ROWS];      /* 非配对目标点位图（推箱时视为墙） */
 
 /* ---------- 4.7 全局输出路径 ---------- */
 __attribute__((section(".bss.SDRAM_CACHE"))) Path g_path_out = {0};                        /* 模式1输出 */
@@ -103,7 +104,6 @@ __attribute__((section(".bss.SDRAM_CACHE"))) SolutionSequence id_based_sol;     
 /* ---------- 4.9 模式3最终地图 ---------- */
 static uint16_t g_boom_final_walls[MAP_ROWS];        /* 引爆后最终墙位图 */
 static uint8_t  g_boom_used_mask;                    /* 已使用炸弹位掩码 */
-
 
 /* ===================================================================
  * 第5部分：工具函数
@@ -306,6 +306,8 @@ static void get_successors(const State *cur, State *res, uint8_t *cnt) {
         if (pos_equal(np, cur->box)) {
             Point bp = {np.x + DIRS[d][0], np.y + DIRS[d][1]};
             if (is_wall_bit(cur->wall_bitmap, bp)) continue;
+            /* 推箱时：非配对目标视为墙，防止箱子被"抢夺" */
+            if (is_wall_bit(g_non_paired_targets, bp)) continue;
             if (!pos_equal(bp, cur->target) && is_corner_deadlock(bp, cur->wall_bitmap)) continue;
             State ns = *cur; ns.player = np; ns.box = bp; ns.last_dir = d;
             res[(*cnt)++] = ns;
@@ -911,6 +913,16 @@ static bool backtrack_validate(SolutionSequence* sol) {
                 Point obs = sol->pairs[g_remaining[m]].box_pos;
                 g_current_walls[obs.x] |= (1 << obs.y);
             }
+
+        /* 构建非配对目标点位图：推箱时拦截，纯走路时放行 */
+        memset(g_non_paired_targets, 0, sizeof(g_non_paired_targets));
+        for (uint8_t t = 0; t < sol->count; t++) {
+            if (t != try_idx) {
+                Point tp = sol->pairs[t].target_pos;
+                g_non_paired_targets[tp.x] |= (1 << tp.y);
+            }
+        }
+
         if (!pos_equal(cur_box, cur_target) && is_corner_deadlock(cur_box, g_current_walls))
             continue;
 

@@ -27,5 +27,6 @@ void pid_position_target(float x, float y);
 void pid_change(pid *pid_struct, float kp, float ki, float kd);
 float pid_increm(pid *pid_struct, float now_value);
 float pid_location(pid *pid_struct, float now_value);
+void pid_reset(void);
 
 #endif
