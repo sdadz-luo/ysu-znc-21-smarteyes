@@ -76,10 +76,12 @@ int main(void){
 
     system_delay_ms(2000);
 
+    x_enc = 10,y_enc = 130;
+
 	while(1){ 
 
         // 状态机判断与状态转换处理
-		state_judgment();
+		// state_judgment();
 
         // my_uart_write(0,x_cam);
         // my_uart_write(1,y_cam);
@@ -187,8 +189,7 @@ static void Init(void){
  * @brief 在摄像头栅格数据中查找指定数值
  * @return 1 找到, 0 未找到
  */
-static uint8_t find_in_grid(const volatile CAMDATA *data, uint8_t val1, uint8_t val2)
-{
+static uint8_t find_in_grid(const volatile CAMDATA *data, uint8_t val1, uint8_t val2){
     for (uint8_t row = 0; row < 12; row++) {
         for (uint8_t col = 0; col < 16; col++) {
             uint8_t v = data->grid[row][col];
@@ -287,8 +288,8 @@ static void state_judgment(void){
     }
 }
 
-// static uint8 data_len;
-// static uint8 data_buffer[64];
+static uint8 data_len;
+static uint8 data_buffer[64];
 //串口数据更新处理
 static void uart_updata(void){
     // 获取摄像头检测到的车位中心坐标
@@ -302,29 +303,29 @@ static void uart_updata(void){
     x_cam_last = x_cam;
     y_cam_last = y_cam;
 	
-	// data_len = wireless_uart_read_buffer(data_buffer, 64);                    // 读取无线串口数据 注意缓冲区大小 WIRELESS_UART_BUFFER_SIZE 至少 64 字节
-    // if(data_len != 0){
-    //         data_buffer[data_len] = '\0';  // 添加字符串结束符'\0'
+	data_len = wireless_uart_read_buffer(data_buffer, 64);                    // 读取无线串口数据 注意缓冲区大小 WIRELESS_UART_BUFFER_SIZE 至少 64 字节
+    if(data_len != 0){
+            data_buffer[data_len] = '\0';  // 添加字符串结束符'\0'
                 
-    //         //解析无线串口发送的x/y坐标指令
-    // char *token = NULL;
-    // // 提取第一个参数x坐标
-    // token = strtok((char *)data_buffer, ",");
-    // if(token != NULL){
-    //             x_target = (atoi(token) + 0.5) * x_enc_uint;  // 转换为实际坐标并乘以比例系数
-    //     // 提取第二个参数y坐标
-    //     token = strtok(NULL, ",");
-    //     if(token != NULL){
-    //                 y_target = (atoi(token) + 0.5) * y_enc_uint;
-    //             }
-    //         token = strtok(NULL, ",");
-    //         if(token != NULL){
-    //             yaw_target = atoi(token);
-    //         }
-    //             car_state = Run;
-    //         }
-    //         memset(data_buffer, 0, 64);	
-    //     }
+            //解析无线串口发送的x/y坐标指令
+    char *token = NULL;
+    // 提取第一个参数x坐标
+    token = strtok((char *)data_buffer, ",");
+    if(token != NULL){
+                x_target = (atoi(token) + 0.5) * x_enc_uint;  // 转换为实际坐标并乘以比例系数
+        // 提取第二个参数y坐标
+        token = strtok(NULL, ",");
+        if(token != NULL){
+                    y_target = (atoi(token) + 0.5) * y_enc_uint;
+                }
+            token = strtok(NULL, ",");
+            if(token != NULL){
+                yaw_target = atoi(token);
+            }
+                car_state = Run;
+            }
+            memset(data_buffer, 0, 64);	
+        }
 }
  
 /**
@@ -333,8 +334,7 @@ static void uart_updata(void){
  * @param end_x 终点栅格X坐标
  * @param end_y 终点栅格Y坐标
  */
-static void process_normal_path(const Path *path, uint8_t end_x, uint8_t end_y)
-{
+static void process_normal_path(const Path *path, uint8_t end_x, uint8_t end_y){
     if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {
         step++;
         if (step > path->len) {
@@ -470,10 +470,12 @@ static void path_process(void){
     }
 }
 
-static void cam2_process(void)
-{
-    if (fabsf(yaw - yaw_target) > 1) return;
-
+static void cam2_process(void){
+    // 角度差归一化到 [-180, 180]，处理角度环绕。
+    float yaw_diff = yaw_target - yaw;
+    if (yaw_diff > 180.0f)       yaw_diff -= 360.0f;
+    else if (yaw_diff < -180.0f) yaw_diff += 360.0f;
+    if (fabsf(yaw_diff) > 1) return;
     if (game_mode == 0) {
         if (id == -1) {
             system_delay_ms(300);
@@ -482,12 +484,19 @@ static void cam2_process(void)
             while (id == -1) id = cam_uart2_read();
         } else {
             yaw_target = 0;
-            if (fabsf(yaw) <= 1) {
-                cam1_uart_send(yaw_target);
-                game_mode = (id == 10) ? 1 : 2;
+            if (yaw_target == 0 && fabsf(yaw) <= 1){
+                cam1_uart_send(yaw_target); // 发送目标角度
                 step = 0;
-                id = -1;
-                car_state = Waiting;
+                if (id == 10){ 
+                    game_mode = 1;      // 切换到正常行驶模式
+                    id = -1;
+                    car_state = Waiting;
+                    return;
+                }else{
+                    game_mode = 2;      // 切换到ID识别模式
+                    car_state = Waiting;
+                    return;
+                }
             }
         }
     } else if (game_mode == 2) {
