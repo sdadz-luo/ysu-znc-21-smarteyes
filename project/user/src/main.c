@@ -76,12 +76,10 @@ int main(void){
 
     system_delay_ms(2000);
 
-    x_enc = 10,y_enc = 130;
-
 	while(1){ 
 
         // 状态机判断与状态转换处理
-		// state_judgment();
+		state_judgment();
 
         // my_uart_write(0,x_cam);
         // my_uart_write(1,y_cam);
@@ -288,8 +286,8 @@ static void state_judgment(void){
     }
 }
 
-static uint8 data_len;
-static uint8 data_buffer[64];
+// static uint8 data_len;
+// static uint8 data_buffer[64];
 //串口数据更新处理
 static void uart_updata(void){
     // 获取摄像头检测到的车位中心坐标
@@ -303,29 +301,29 @@ static void uart_updata(void){
     x_cam_last = x_cam;
     y_cam_last = y_cam;
 	
-	data_len = wireless_uart_read_buffer(data_buffer, 64);                    // 读取无线串口数据 注意缓冲区大小 WIRELESS_UART_BUFFER_SIZE 至少 64 字节
-    if(data_len != 0){
-            data_buffer[data_len] = '\0';  // 添加字符串结束符'\0'
+	// data_len = wireless_uart_read_buffer(data_buffer, 64);                    // 读取无线串口数据 注意缓冲区大小 WIRELESS_UART_BUFFER_SIZE 至少 64 字节
+    // if(data_len != 0){
+    //         data_buffer[data_len] = '\0';  // 添加字符串结束符'\0'
                 
-            //解析无线串口发送的x/y坐标指令
-    char *token = NULL;
-    // 提取第一个参数x坐标
-    token = strtok((char *)data_buffer, ",");
-    if(token != NULL){
-                x_target = (atoi(token) + 0.5) * x_enc_uint;  // 转换为实际坐标并乘以比例系数
-        // 提取第二个参数y坐标
-        token = strtok(NULL, ",");
-        if(token != NULL){
-                    y_target = (atoi(token) + 0.5) * y_enc_uint;
-                }
-            token = strtok(NULL, ",");
-            if(token != NULL){
-                yaw_target = atoi(token);
-            }
-                car_state = Run;
-            }
-            memset(data_buffer, 0, 64);	
-        }
+    //         //解析无线串口发送的x/y坐标指令
+    // char *token = NULL;
+    // // 提取第一个参数x坐标
+    // token = strtok((char *)data_buffer, ",");
+    // if(token != NULL){
+    //             x_target = (atoi(token) + 0.5) * x_enc_uint;  // 转换为实际坐标并乘以比例系数
+    //     // 提取第二个参数y坐标
+    //     token = strtok(NULL, ",");
+    //     if(token != NULL){
+    //                 y_target = (atoi(token) + 0.5) * y_enc_uint;
+    //             }
+    //         token = strtok(NULL, ",");
+    //         if(token != NULL){
+    //             yaw_target = atoi(token);
+    //         }
+    //             car_state = Run;
+    //         }
+    //         memset(data_buffer, 0, 64);	
+    //     }
 }
  
 /**

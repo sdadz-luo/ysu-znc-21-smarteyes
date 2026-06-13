@@ -10,8 +10,7 @@ void PID_init(pid *pid_struct,
               float maxIntegral,
               float maxOutput,
               float target,
-              float dead)
-{
+              float dead){
     pid_struct->kp          = kp;
     pid_struct->ki          = ki;
     pid_struct->kd          = kd;
@@ -27,8 +26,7 @@ void PID_init(pid *pid_struct,
     pid_struct->dead        = dead;
 }
 
-float pid_increm(pid *pid_struct, float now_value)
-{
+float pid_increm(pid *pid_struct, float now_value){
     // 微分先行
     pid_struct->error_last2  = pid_struct->error_last;           // 保存上上次误差
     pid_struct->error_last   = pid_struct->error;                // 保存上一次误差
@@ -57,8 +55,7 @@ float pid_increm(pid *pid_struct, float now_value)
     return pid_struct->output;
 }
 
-float pid_location(pid *pid_struct, float now_value)
-{
+float pid_location(pid *pid_struct, float now_value){
     // 微分先行
     pid_struct->error_last2  = pid_struct->error_last;           // 保存上上次误差
     pid_struct->error_last   = pid_struct->error;                // 保存上一次误差
@@ -97,39 +94,52 @@ float pid_location(pid *pid_struct, float now_value)
     return pid_struct->output;
 }
 
-void pid_init(void)
-{
+void pid_init(void){
     PID_init(&pid_FL, 60, 10, 100,   1000, 9000, 0, 1);
     PID_init(&pid_FR, 60, 10, 100,   1000, 9000, 0, 1);
     PID_init(&pid_BL, 60, 10, 100,   1000, 9000, 0, 1);
     PID_init(&pid_BR, 50, 10, 90,    1000, 9000, 0, 1);
     PID_init(&pid_yaw, 4, 0.001f, 20, 1000, 60, 0, 0.1f);
-    PID_init(&pid_x, pid_x_p, pid_x_i, pid_x_d, 1000, pid_x_speed, 0, 1);
-    PID_init(&pid_y, pid_y_p, pid_y_i, pid_y_d, 1000, pid_y_speed, 0, 1);
+    PID_init(&pid_x, pid_x_p, pid_x_i, pid_x_d, 500, pid_x_speed, 0, 1);
+    PID_init(&pid_y, pid_y_p, pid_y_i, pid_y_d, 500, pid_y_speed, 0, 1);
 }
 
-void pid_target(pid *pid_struct, float target)
-{
+void pid_target(pid *pid_struct, float target){
     pid_struct->target = target;
 }
 
-void pid_wheel_target(float FL, float FR, float BL, float BR)
-{
+void pid_wheel_target(float FL, float FR, float BL, float BR){
     pid_target(&pid_FL, FL);
     pid_target(&pid_FR, FR);
     pid_target(&pid_BL, BL);
     pid_target(&pid_BR, BR);
 }
 
-void pid_position_target(float x, float y)
-{
+void pid_position_target(float x, float y){
     pid_target(&pid_x, x);
     pid_target(&pid_y, y);
 }
 
-void pid_change(pid *pid_struct, float kp, float ki, float kd)
-{
+void pid_change(pid *pid_struct, float kp, float ki, float kd){
     pid_struct->kp = kp;
     pid_struct->ki = ki;
     pid_struct->kd = kd;
+}
+
+static void PID_reset(pid *pid_struct){
+    pid_struct->error       = 0;
+    pid_struct->error_last  = 0;
+    pid_struct->error_last2 = 0;
+    pid_struct->integral    = 0;
+    pid_struct->output      = 0;
+    pid_struct->output_1    = 0;
+}
+
+void pid_reset(void){
+    PID_reset(&pid_FL);
+    PID_reset(&pid_FR);
+    PID_reset(&pid_BL);
+    PID_reset(&pid_BR);
+    PID_reset(&pid_x);
+    PID_reset(&pid_y);
 }
