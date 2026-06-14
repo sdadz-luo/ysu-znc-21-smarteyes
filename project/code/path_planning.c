@@ -85,6 +85,7 @@ __attribute__((section(".bss.SDRAM_CACHE"))) Point g_fullpath[MAX_PATH_LEN];    
 static uint8_t g_solve_order[MAX_BOXES];             /* 解决顺序 */
 static uint8_t g_order_idx;                          /* 顺序索引 */
 static uint16_t g_non_paired_targets[MAP_ROWS];      /* 非配对目标点位图（推箱时视为墙） */
+static bool g_id_mode_active = false;                /* 模式二标志：true时目标点始终为空地 */
 
 /* ---------- 4.7 全局输出路径 ---------- */
 __attribute__((section(".bss.SDRAM_CACHE"))) Path g_path_out = {0};                        /* 模式1输出 */
@@ -914,12 +915,14 @@ static bool backtrack_validate(SolutionSequence* sol) {
                 g_current_walls[obs.x] |= (1 << obs.y);
             }
 
-        /* 构建非配对目标点位图：推箱时拦截，纯走路时放行 */
-        memset(g_non_paired_targets, 0, sizeof(g_non_paired_targets));
-        for (uint8_t t = 0; t < sol->count; t++) {
-            if (t != try_idx) {
-                Point tp = sol->pairs[t].target_pos;
-                g_non_paired_targets[tp.x] |= (1 << tp.y);
+        /* 构建非配对目标点位图（仅模式一：推箱时拦截，模式二：始终放行） */
+        if (!g_id_mode_active) {
+            memset(g_non_paired_targets, 0, sizeof(g_non_paired_targets));
+            for (uint8_t t = 0; t < sol->count; t++) {
+                if (t != try_idx) {
+                    Point tp = sol->pairs[t].target_pos;
+                    g_non_paired_targets[tp.x] |= (1 << tp.y);
+                }
             }
         }
 
@@ -1253,7 +1256,9 @@ static SolutionSequence* build_solution_from_id_pairing(void) {
 static Path path_id_calculate(SolutionSequence* sol) {
     Path rp = {0};
     if (sol == NULL || sol->count == 0) return rp;
+    g_id_mode_active = true;                  /* 模式二：目标点始终为空地 */
     validate_solution(sol);
+    g_id_mode_active = false;
     if (!sol->is_valid) return rp;
     uint16_t len = (sol->full_path_len > MAX_PATH_LEN) ? MAX_PATH_LEN : sol->full_path_len;
     rp.len = (uint8_t)len;
@@ -2894,4 +2899,5 @@ void reset_planning_system(void) {
     memset(g_vcache_mask, 0, sizeof(g_vcache_mask)); g_vcache_epoch = 0;
     memset(g_boom_final_walls, 0, sizeof(g_boom_final_walls));
     g_boom_used_mask = 0;
+    g_id_mode_active = false;
 }
