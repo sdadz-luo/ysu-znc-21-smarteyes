@@ -391,7 +391,7 @@ static void path_process(void){
             if (step >= path_start_car.len) {
                 yaw_target = path_start_car.angle; // 设置目标角度
                 type = path_start_car.type;
-                grid[6][2] = 0;
+                grid[origin_y_enc][origin_x_enc] = 0;
                 grid[path_start_car.y[path_start_car.len - 1]][path_start_car.x[path_start_car.len - 1]] = 2;
                 look_flag = 1;
                 // 起始路径走完，转入 Look 状态识别ID
@@ -449,7 +449,7 @@ static void path_process(void){
             // 检查是否走完整个路径
             if (step > path_boom_car.len) {
                 map_boom_out(grid); 
-                grid[6][2] = 0;
+                grid[origin_y_enc][origin_x_enc] = 0;
                 grid[path_boom_car.y[path_boom_car.len]][path_boom_car.x[path_boom_car.len]] = 2;
                 boom_flag = 1;
                 game_mode = 0;

@@ -13154,345 +13154,345 @@ Image Symbol Table
     __arm_cp.0_18                            0x8000ebbc   Number         4  main.o(.text.main)
     __arm_cp.0_19                            0x8000ebc0   Number         4  main.o(.text.main)
     __arm_cp.0_20                            0x8000ebc4   Number         4  main.o(.text.main)
-    [Anonymous Symbol]                       0x8000f738   Section        0  path_planning.o(.text.map_boom_out)
-    [Anonymous Symbol]                       0x8000f838   Section        0  menu.o(.text.menu)
-    [Anonymous Symbol]                       0x80010120   Section        0  motor.o(.text.motor_duty)
-    [Anonymous Symbol]                       0x800101b0   Section        0  motor.o(.text.motor_init)
-    [Anonymous Symbol]                       0x80010218   Section        0  control.o(.text.motor_solution)
-    [Anonymous Symbol]                       0x80010360   Section        0  key.o(.text.my_key_init)
-    [Anonymous Symbol]                       0x800103a0   Section        0  wireless_uart.o(.text.my_uart_init)
-    parse_map_input                          0x800103b1   Thumb Code   364  path_planning.o(.text.parse_map_input)
-    [Anonymous Symbol]                       0x800103b0   Section        0  path_planning.o(.text.parse_map_input)
-    [Anonymous Symbol]                       0x80010520   Section        0  path_planning.o(.text.path_boom_calculation)
-    [Anonymous Symbol]                       0x80016950   Section        0  path_planning.o(.text.path_calculation)
-    [Anonymous Symbol]                       0x80016f30   Section        0  path_planning.o(.text.path_id_calculation)
-    [Anonymous Symbol]                       0x800184b0   Section        0  path_planning.o(.text.path_look_calculation)
-    [Anonymous Symbol]                       0x80019168   Section        0  path_planning.o(.text.path_start_calculation)
-    [Anonymous Symbol]                       0x800196e8   Section        0  pid.o(.text.pid_increm)
-    [Anonymous Symbol]                       0x800197a8   Section        0  pid.o(.text.pid_init)
-    [Anonymous Symbol]                       0x80019958   Section        0  pid.o(.text.pid_location)
-    [Anonymous Symbol]                       0x80019a30   Section        0  pid.o(.text.pid_position_target)
-    [Anonymous Symbol]                       0x80019a50   Section        0  pid.o(.text.pid_reset)
-    [Anonymous Symbol]                       0x80019ad0   Section        0  pid.o(.text.pid_target)
-    [Anonymous Symbol]                       0x80019ad8   Section        0  pid.o(.text.pid_wheel_target)
-    [Anonymous Symbol]                       0x80019b10   Section        0  zf_driver_pit.o(.text.pit_init)
-    [Anonymous Symbol]                       0x80019be0   Section        0  cam_uart.o(.text.push_cam_data)
-    [Anonymous Symbol]                       0x80019c98   Section        0  zf_driver_pwm.o(.text.pwm_init)
-    [Anonymous Symbol]                       0x80019eb8   Section        0  zf_driver_pwm.o(.text.pwm_iomuxc)
-    [Anonymous Symbol]                       0x8001a2d8   Section        0  zf_driver_pwm.o(.text.pwm_set_duty)
-    [Anonymous Symbol]                       0x8001a380   Section        0  zf_driver_encoder.o(.text.qtimer_iomuxc)
-    [Anonymous Symbol]                       0x8001a690   Section        0  path_planning.o(.text.reset_planning_system)
-    [Anonymous Symbol]                       0x8001ad30   Section        0  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_erase)
-    [Anonymous Symbol]                       0x8001ad48   Section        0  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_page_program)
-    [Anonymous Symbol]                       0x8001ad60   Section        0  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_read)
-    [Anonymous Symbol]                       0x8001ad88   Section        0  zf_driver_romapi.o(.text.rom_api_flexspi_nor_get_config)
-    [Anonymous Symbol]                       0x8001ad98   Section        0  zf_driver_romapi.o(.text.rom_api_init)
-    [Anonymous Symbol]                       0x8001adb0   Section        0  seekfree_assistant_interface.o(.text.seekfree_assistant_interface_init)
-    [Anonymous Symbol]                       0x8001ae08   Section        0  seekfree_assistant_interface.o(.text.seekfree_assistant_receive)
-    [Anonymous Symbol]                       0x8001ae10   Section        0  seekfree_assistant_interface.o(.text.seekfree_assistant_transfer)
-    [Anonymous Symbol]                       0x8001ae18   Section        0  zf_device_type.o(.text.set_wireless_type)
-    simple_astar                             0x8001ae51   Thumb Code  1422  path_planning.o(.text.simple_astar)
-    [Anonymous Symbol]                       0x8001ae50   Section        0  path_planning.o(.text.simple_astar)
-    simulate_box_deadlock                    0x8001b3e1   Thumb Code  1748  path_planning.o(.text.simulate_box_deadlock)
-    [Anonymous Symbol]                       0x8001b3e0   Section        0  path_planning.o(.text.simulate_box_deadlock)
-    simulate_box_to_target                   0x8001bab9   Thumb Code  1632  path_planning.o(.text.simulate_box_to_target)
-    [Anonymous Symbol]                       0x8001bab8   Section        0  path_planning.o(.text.simulate_box_to_target)
-    solve_single_box_a_star                  0x8001c119   Thumb Code  1498  path_planning.o(.text.solve_single_box_a_star)
-    [Anonymous Symbol]                       0x8001c118   Section        0  path_planning.o(.text.solve_single_box_a_star)
-    [Anonymous Symbol]                       0x8001c6f8   Section        0  zf_driver_spi.o(.text.spi_init)
-    [Anonymous Symbol]                       0x8001c890   Section        0  zf_driver_spi.o(.text.spi_iomuxc)
-    [Anonymous Symbol]                       0x8001cc08   Section        0  zf_driver_spi.o(.text.spi_read_8bit_register)
-    [Anonymous Symbol]                       0x8001ccd0   Section        0  zf_driver_spi.o(.text.spi_read_8bit_registers)
-    [Anonymous Symbol]                       0x8001cda8   Section        0  zf_driver_spi.o(.text.spi_transfer_8bit)
-    [Anonymous Symbol]                       0x8001ce30   Section        0  zf_driver_spi.o(.text.spi_write_16bit_array)
-    [Anonymous Symbol]                       0x8001ceb8   Section        0  zf_driver_spi.o(.text.spi_write_8bit)
-    [Anonymous Symbol]                       0x8001cf28   Section        0  zf_driver_spi.o(.text.spi_write_8bit_array)
-    [Anonymous Symbol]                       0x8001cf98   Section        0  zf_driver_spi.o(.text.spi_write_8bit_register)
-    [Anonymous Symbol]                       0x8001d050   Section        0  zf_driver_delay.o(.text.system_delay_init)
-    [Anonymous Symbol]                       0x8001d088   Section        0  zf_driver_delay.o(.text.system_delay_ms)
-    [Anonymous Symbol]                       0x8001d0e0   Section        0  zf_driver_delay.o(.text.system_delay_us)
-    [Anonymous Symbol]                       0x8001d138   Section        0  zf_device_tft180.o(.text.tft180_clear)
-    [Anonymous Symbol]                       0x8001d208   Section        0  zf_device_tft180.o(.text.tft180_init)
-    [Anonymous Symbol]                       0x8001d6f8   Section        0  zf_device_tft180.o(.text.tft180_set_color)
-    [Anonymous Symbol]                       0x8001d710   Section        0  zf_device_tft180.o(.text.tft180_set_dir)
-    [Anonymous Symbol]                       0x8001d748   Section        0  zf_device_tft180.o(.text.tft180_set_font)
-    tft180_set_region                        0x8001d759   Thumb Code   374  zf_device_tft180.o(.text.tft180_set_region)
-    [Anonymous Symbol]                       0x8001d758   Section        0  zf_device_tft180.o(.text.tft180_set_region)
-    [Anonymous Symbol]                       0x8001d8d0   Section        0  zf_device_tft180.o(.text.tft180_show_char)
-    [Anonymous Symbol]                       0x8001dbe8   Section        0  zf_device_tft180.o(.text.tft180_show_float)
-    [Anonymous Symbol]                       0x8001dd70   Section        0  zf_device_tft180.o(.text.tft180_show_int)
-    [Anonymous Symbol]                       0x8001de90   Section        0  zf_device_tft180.o(.text.tft180_show_string)
-    [Anonymous Symbol]                       0x8001df38   Section        0  tft180.o(.text.tft_init)
-    try_execute_step                         0x8001df69   Thumb Code  1246  path_planning.o(.text.try_execute_step)
-    [Anonymous Symbol]                       0x8001df68   Section        0  path_planning.o(.text.try_execute_step)
-    [Anonymous Symbol]                       0x8001e448   Section        0  zf_device_type.o(.text.type_default_callback)
-    [Anonymous Symbol]                       0x8001e450   Section        0  zf_driver_uart.o(.text.uart_init)
-    [Anonymous Symbol]                       0x8001e4c8   Section        0  zf_driver_uart.o(.text.uart_iomuxc)
-    [Anonymous Symbol]                       0x8001e7f0   Section        0  zf_driver_uart.o(.text.uart_query_byte)
-    [Anonymous Symbol]                       0x8001e828   Section        0  zf_driver_uart.o(.text.uart_rx_interrupt)
-    [Anonymous Symbol]                       0x8001e858   Section        0  zf_driver_uart.o(.text.uart_write_buffer)
-    [Anonymous Symbol]                       0x8001e888   Section        0  zf_driver_uart.o(.text.uart_write_byte)
-    [Anonymous Symbol]                       0x8001e8b8   Section        0  zf_driver_uart.o(.text.uart_write_string)
-    verify_bomb_push_feasibility             0x8001e8f9   Thumb Code   686  path_planning.o(.text.verify_bomb_push_feasibility)
-    [Anonymous Symbol]                       0x8001e8f8   Section        0  path_planning.o(.text.verify_bomb_push_feasibility)
-    [Anonymous Symbol]                       0x8001eba8   Section        0  zf_device_wifi_spi.o(.text.wifi_spi_read_buffer)
-    [Anonymous Symbol]                       0x8001ecc8   Section        0  zf_device_wifi_spi.o(.text.wifi_spi_send_buffer)
-    [Anonymous Symbol]                       0x8001ee70   Section        0  zf_device_wifi_uart.o(.text.wifi_uart_read_buffer)
-    [Anonymous Symbol]                       0x8001eea8   Section        0  zf_device_wifi_uart.o(.text.wifi_uart_send_buffer)
-    wifi_uart_wait_ack                       0x8001efd1   Thumb Code   140  zf_device_wifi_uart.o(.text.wifi_uart_wait_ack)
-    [Anonymous Symbol]                       0x8001efd0   Section        0  zf_device_wifi_uart.o(.text.wifi_uart_wait_ack)
-    [Anonymous Symbol]                       0x8001f070   Section        0  zf_device_wireless_uart.o(.text.wireless_uart_callback)
-    [Anonymous Symbol]                       0x8001f098   Section        0  zf_device_wireless_uart.o(.text.wireless_uart_init)
-    [Anonymous Symbol]                       0x8001f0e8   Section        0  zf_device_wireless_uart.o(.text.wireless_uart_read_buffer)
-    [Anonymous Symbol]                       0x8001f120   Section        0  zf_device_wireless_uart.o(.text.wireless_uart_send_buffer)
-    i.__0snprintf                            0x8001f180   Section        0  printfa.o(i.__0snprintf)
-    i.__0sprintf                             0x8001f1b4   Section        0  printfa.o(i.__0sprintf)
-    i.__ARM_fpclassify                       0x8001f1dc   Section        0  fpclassify.o(i.__ARM_fpclassify)
-    i.__ARM_fpclassifyf                      0x8001f20c   Section        0  fpclassifyf.o(i.__ARM_fpclassifyf)
-    i.__hardfp_asin                          0x8001f238   Section        0  asin.o(i.__hardfp_asin)
-    i.__hardfp_atan                          0x8001f428   Section        0  atan.o(i.__hardfp_atan)
-    i.__hardfp_atan2                         0x8001f600   Section        0  atan2.o(i.__hardfp_atan2)
-    i.__hardfp_cosf                          0x8001f7c8   Section        0  cosf.o(i.__hardfp_cosf)
-    i.__hardfp_fabs                          0x8001f918   Section        0  fabs.o(i.__hardfp_fabs)
-    i.__hardfp_fabsf                         0x8001f92c   Section        0  fabsfc99.o(i.__hardfp_fabsf)
-    i.__hardfp_modf                          0x8001f93c   Section        0  modf.o(i.__hardfp_modf)
-    i.__hardfp_pow                           0x8001fa00   Section        0  pow.o(i.__hardfp_pow)
-    i.__hardfp_sinf                          0x800202c4   Section        0  sinf.o(i.__hardfp_sinf)
-    i.__hardfp_sqrt                          0x80020454   Section        0  sqrt.o(i.__hardfp_sqrt)
-    i.__kernel_poly                          0x800204ba   Section        0  poly.o(i.__kernel_poly)
-    i.__mathlib_dbl_divzero                  0x80020530   Section        0  dunder.o(i.__mathlib_dbl_divzero)
-    i.__mathlib_dbl_infnan                   0x80020548   Section        0  dunder.o(i.__mathlib_dbl_infnan)
-    i.__mathlib_dbl_infnan2                  0x8002054e   Section        0  dunder.o(i.__mathlib_dbl_infnan2)
-    i.__mathlib_dbl_invalid                  0x80020558   Section        0  dunder.o(i.__mathlib_dbl_invalid)
-    i.__mathlib_dbl_overflow                 0x80020570   Section        0  dunder.o(i.__mathlib_dbl_overflow)
-    i.__mathlib_dbl_underflow                0x80020588   Section        0  dunder.o(i.__mathlib_dbl_underflow)
-    i.__mathlib_flt_infnan                   0x800205a0   Section        0  funder.o(i.__mathlib_flt_infnan)
-    i.__mathlib_flt_invalid                  0x800205a8   Section        0  funder.o(i.__mathlib_flt_invalid)
-    i.__mathlib_flt_underflow                0x800205b8   Section        0  funder.o(i.__mathlib_flt_underflow)
-    i.__mathlib_rredf2                       0x800205c8   Section        0  rredf.o(i.__mathlib_rredf2)
-    i.__set_errno                            0x8002071c   Section        0  errno.o(i.__set_errno)
-    _fp_digits                               0x80020729   Thumb Code   366  printfa.o(i._fp_digits)
-    i._fp_digits                             0x80020728   Section        0  printfa.o(i._fp_digits)
-    i._is_digit                              0x800208ac   Section        0  scanf_fp.o(i._is_digit)
-    _printf_core                             0x800208bd   Thumb Code  1744  printfa.o(i._printf_core)
-    i._printf_core                           0x800208bc   Section        0  printfa.o(i._printf_core)
-    _printf_post_padding                     0x80020f99   Thumb Code    36  printfa.o(i._printf_post_padding)
-    i._printf_post_padding                   0x80020f98   Section        0  printfa.o(i._printf_post_padding)
-    _printf_pre_padding                      0x80020fbd   Thumb Code    46  printfa.o(i._printf_pre_padding)
-    i._printf_pre_padding                    0x80020fbc   Section        0  printfa.o(i._printf_pre_padding)
-    _snputc                                  0x80020feb   Thumb Code    22  printfa.o(i._snputc)
-    i._snputc                                0x80020fea   Section        0  printfa.o(i._snputc)
-    _sputc                                   0x80021001   Thumb Code    10  printfa.o(i._sputc)
-    i._sputc                                 0x80021000   Section        0  printfa.o(i._sputc)
-    i.atan                                   0x8002100a   Section        0  atan.o(i.atan)
-    i.fabs                                   0x8002101a   Section        0  fabs.o(i.fabs)
-    i.sqrt                                   0x80021032   Section        0  sqrt.o(i.sqrt)
-    pS                                       0x800210a0   Data          48  asin.o(.constdata)
-    .constdata                               0x800210a0   Section       80  asin.o(.constdata)
-    qS                                       0x800210d0   Data          32  asin.o(.constdata)
-    bp                                       0x800210f0   Data          16  pow.o(.constdata)
-    .constdata                               0x800210f0   Section      136  pow.o(.constdata)
-    dp_h                                     0x80021100   Data          16  pow.o(.constdata)
-    dp_l                                     0x80021110   Data          16  pow.o(.constdata)
-    L                                        0x80021120   Data          48  pow.o(.constdata)
-    P                                        0x80021150   Data          40  pow.o(.constdata)
-    atanhi                                   0x80021178   Data          32  atan.o(.constdata)
-    .constdata                               0x80021178   Section      152  atan.o(.constdata)
-    atanlo                                   0x80021198   Data          32  atan.o(.constdata)
-    aTodd                                    0x800211b8   Data          40  atan.o(.constdata)
-    aTeven                                   0x800211e0   Data          48  atan.o(.constdata)
-    .constdata                               0x80021210   Section        8  qnan.o(.constdata)
-    twooverpi                                0x80021218   Data          32  rredf.o(.constdata)
-    .constdata                               0x80021218   Section       32  rredf.o(.constdata)
-    .constdata                               0x80021238   Section       64  ctype_c.o(.constdata)
-    PWMPTR                                   0x80021278   Data          20  zf_driver_pwm.o(.rodata.PWMPTR)
-    [Anonymous Symbol]                       0x80021278   Section        0  zf_driver_pwm.o(.rodata.PWMPTR)
-    CLOCK_GetPllFreq.enetRefClkFreq          0x80021aac   Data          16  fsl_clock.o(.rodata.cst16)
-    [Anonymous Symbol]                       0x80021aac   Section        0  fsl_clock.o(.rodata.cst16)
-    DIRS                                     0x80021abc   Data           8  path_planning.o(.rodata.cst8)
-    [Anonymous Symbol]                       0x80021abc   Section        0  path_planning.o(.rodata.cst8)
-    s_baudratePrescaler                      0x80021ac4   Data           8  fsl_lpspi.o(.rodata.cst8)
-    [Anonymous Symbol]                       0x80021ac4   Section        0  fsl_lpspi.o(.rodata.cst8)
-    s_gptClocks                              0x80021acc   Data           6  fsl_gpt.o(.rodata.s_gptClocks)
-    [Anonymous Symbol]                       0x80021acc   Section        0  fsl_gpt.o(.rodata.s_gptClocks)
-    s_lpspiClocks                            0x80021ad2   Data          10  fsl_lpspi.o(.rodata.s_lpspiClocks)
-    [Anonymous Symbol]                       0x80021ad2   Section        0  fsl_lpspi.o(.rodata.s_lpspiClocks)
-    s_lpuartClock                            0x80021adc   Data          18  fsl_lpuart.o(.rodata.s_lpuartClock)
-    [Anonymous Symbol]                       0x80021adc   Section        0  fsl_lpuart.o(.rodata.s_lpuartClock)
-    s_pwmClocks                              0x80021aee   Data          40  fsl_pwm.o(.rodata.s_pwmClocks)
-    [Anonymous Symbol]                       0x80021aee   Section        0  fsl_pwm.o(.rodata.s_pwmClocks)
-    s_qtmrClocks                             0x80021b16   Data          10  fsl_qtmr.o(.rodata.s_qtmrClocks)
-    [Anonymous Symbol]                       0x80021b16   Section        0  fsl_qtmr.o(.rodata.s_qtmrClocks)
-    spi_index                                0x80021b20   Data          20  zf_driver_spi.o(.rodata.spi_index)
-    [Anonymous Symbol]                       0x80021b20   Section        0  zf_driver_spi.o(.rodata.spi_index)
-    .L.str.31                                0x80021b34   Data          10  menu.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021b34   Section        0  menu.o(.rodata.str1.1)
-    .L.str.1                                 0x80021b3e   Data           3  menu.o(.rodata.str1.1)
-    .L.str                                   0x80021b41   Data           3  menu.o(.rodata.str1.1)
-    .L.str.17                                0x80021b44   Data           5  menu.o(.rodata.str1.1)
-    .L.str.19                                0x80021b49   Data           6  menu.o(.rodata.str1.1)
-    .L.str.20                                0x80021b4f   Data           6  menu.o(.rodata.str1.1)
-    .L.str.3                                 0x80021b55   Data          18  path_planning.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021b55   Section        0  path_planning.o(.rodata.str1.1)
-    .L.str.3                                 0x80021b67   Data          15  cam_uart.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021b67   Section        0  cam_uart.o(.rodata.str1.1)
-    .L.str.1                                 0x80021b73   Data           3  cam_uart.o(.rodata.str1.1)
-    .L.str.2                                 0x80021b76   Data           9  zf_common_debug.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021b76   Section        0  zf_common_debug.o(.rodata.str1.1)
-    .L.str                                   0x80021b7f   Data          43  zf_common_fifo.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021b7f   Section        0  zf_common_fifo.o(.rodata.str1.1)
-    .L.str                                   0x80021baa   Data          47  zf_common_function.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021baa   Section        0  zf_common_function.o(.rodata.str1.1)
-    .L.str                                   0x80021bd9   Data          46  zf_driver_encoder.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021bd9   Section        0  zf_driver_encoder.o(.rodata.str1.1)
-    .L.str                                   0x80021c07   Data          42  zf_driver_pwm.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021c07   Section        0  zf_driver_pwm.o(.rodata.str1.1)
-    .L.str                                   0x80021c31   Data          42  zf_driver_spi.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021c31   Section        0  zf_driver_spi.o(.rodata.str1.1)
-    .L.str                                   0x80021c5b   Data          43  zf_driver_uart.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021c5b   Section        0  zf_driver_uart.o(.rodata.str1.1)
-    .L.str                                   0x80021c86   Data          55  zf_device_bluetooth_ch9141.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021c86   Section        0  zf_device_bluetooth_ch9141.o(.rodata.str1.1)
-    .L.str.1                                 0x80021cbd   Data          47  zf_device_imu963ra.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021cbd   Section        0  zf_device_imu963ra.o(.rodata.str1.1)
-    .L.str                                   0x80021cec   Data          45  zf_device_tft180.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021cec   Section        0  zf_device_tft180.o(.rodata.str1.1)
-    .L.str                                   0x80021d19   Data           4  zf_device_wifi_uart.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021d19   Section        0  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.3                                 0x80021d20   Data           6  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.11                                0x80021d29   Data          13  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.27                                0x80021d46   Data          12  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.26                                0x80021d5e   Data          13  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.13                                0x80021d66   Data           2  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.15                                0x80021d68   Data           3  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.16                                0x80021d6b   Data           2  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.17                                0x80021d6d   Data          15  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.5                                 0x80021d76   Data           3  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.12                                0x80021d79   Data          48  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.18                                0x80021d7c   Data           8  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.20                                0x80021d84   Data           2  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.36                                0x80021d9f   Data          30  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.39                                0x80021dbd   Data          11  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str.40                                0x80021dc8   Data          12  zf_device_wifi_uart.o(.rodata.str1.1)
-    .L.str                                   0x80021dcd   Data          52  zf_device_wireless_uart.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021dcd   Section        0  zf_device_wireless_uart.o(.rodata.str1.1)
-    .L.str                                   0x80021e01   Data          46  zf_device_ble6a20.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021e01   Section        0  zf_device_ble6a20.o(.rodata.str1.1)
-    .L.str.1                                 0x80021e2f   Data          39  fsl_clock.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021e2f   Section        0  fsl_clock.o(.rodata.str1.1)
-    .L.str.2                                 0x80021e56   Data           6  fsl_clock.o(.rodata.str1.1)
-    .L.str.3                                 0x80021e56   Data           6  fsl_clock.o(.rodata.str1.1)
-    .L.str.5                                 0x80021e56   Data           6  fsl_clock.o(.rodata.str1.1)
-    .L.str                                   0x80021e5c   Data          52  fsl_edma.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80021e5c   Section        0  fsl_edma.o(.rodata.str1.1)
-    .L.str.2                                 0x80021eb6   Data          12  fsl_edma.o(.rodata.str1.1)
-    .L.str.3                                 0x80021ec2   Data          30  fsl_edma.o(.rodata.str1.1)
-    .L.str.4                                 0x80021ee0   Data          15  fsl_edma.o(.rodata.str1.1)
-    .L.str.5                                 0x80021eef   Data          34  fsl_edma.o(.rodata.str1.1)
-    .L.str.6                                 0x80021f11   Data          58  fsl_edma.o(.rodata.str1.1)
-    .L.str.7                                 0x80021f4b   Data          69  fsl_edma.o(.rodata.str1.1)
-    .L.str.8                                 0x80021f90   Data          71  fsl_edma.o(.rodata.str1.1)
-    .L.str.4                                 0x80021f99   Data          15  fsl_edma.o(.rodata.str1.1)
-    .L.str.6                                 0x80021f99   Data          15  fsl_edma.o(.rodata.str1.1)
-    .L.str.7                                 0x80021f99   Data          15  fsl_edma.o(.rodata.str1.1)
-    .L.str.9                                 0x80021f99   Data          15  fsl_edma.o(.rodata.str1.1)
-    .L.str.13                                0x80021fe6   Data          78  fsl_edma.o(.rodata.str1.1)
-    .L.str.14                                0x80022034   Data          82  fsl_edma.o(.rodata.str1.1)
-    .L.str.17                                0x80022086   Data          53  fsl_edma.o(.rodata.str1.1)
-    .L.str.1                                 0x800220b8   Data          38  fsl_edma.o(.rodata.str1.1)
-    .L.str.18                                0x800220bb   Data           6  fsl_edma.o(.rodata.str1.1)
-    .L.str.21                                0x800220c1   Data          35  fsl_edma.o(.rodata.str1.1)
-    .L.str                                   0x800220de   Data          38  fsl_flexcan.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x800220de   Section        0  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.2                                 0x8002212d   Data          16  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.3                                 0x8002213d   Data         117  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.4                                 0x800221b2   Data          22  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.5                                 0x800221c8   Data          27  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.7                                 0x800221e3   Data         105  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.9                                 0x8002224c   Data          42  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.10                                0x80022276   Data          35  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.11                                0x80022299   Data          27  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.11                                0x800222ac   Data          13  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.12                                0x800222ac   Data          13  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.17                                0x800222ac   Data          13  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.3                                 0x800222ac   Data          13  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.4                                 0x800222ac   Data          13  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.15                                0x800222b4   Data          45  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.20                                0x800222e1   Data          17  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.1                                 0x800222ea   Data          41  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.22                                0x800222f2   Data          17  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.23                                0x80022303   Data          15  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.24                                0x80022312   Data          16  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.25                                0x80022322   Data          51  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.12                                0x80022354   Data          39  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.13                                0x80022354   Data          39  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.18                                0x80022354   Data          39  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.4                                 0x80022354   Data          39  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.5                                 0x80022354   Data          39  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.26                                0x80022355   Data          44  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.31                                0x80022381   Data          13  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.32                                0x8002238e   Data          39  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.36                                0x800223b5   Data          57  fsl_flexcan.o(.rodata.str1.1)
-    .L.str.39                                0x800223ee   Data          44  fsl_flexcan.o(.rodata.str1.1)
-    .L.str                                   0x800223f0   Data          10  fsl_gpio.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x800223f0   Section        0  fsl_gpio.o(.rodata.str1.1)
-    .L.str.1                                 0x800223fa   Data          38  fsl_gpio.o(.rodata.str1.1)
-    .L.str.5                                 0x80022420   Data          34  fsl_gpt.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80022420   Section        0  fsl_gpt.o(.rodata.str1.1)
-    .L.str.1                                 0x80022442   Data          37  fsl_gpt.o(.rodata.str1.1)
-    .L.str                                   0x80022467   Data          36  fsl_lpspi.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80022467   Section        0  fsl_lpspi.o(.rodata.str1.1)
-    .L.str.2                                 0x8002249f   Data          21  fsl_lpspi.o(.rodata.str1.1)
-    .L.str.7                                 0x800224b4   Data          17  fsl_lpspi.o(.rodata.str1.1)
-    .L.str.1                                 0x800224c5   Data          39  fsl_lpspi.o(.rodata.str1.1)
-    .L.str.3                                 0x800224c7   Data          20  fsl_lpspi.o(.rodata.str1.1)
-    .L.str                                   0x800224ec   Data          37  fsl_lpuart.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x800224ec   Section        0  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.9                                 0x8002251e   Data          13  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.1                                 0x8002252b   Data          40  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.2                                 0x80022539   Data          15  fsl_lpuart.o(.rodata.str1.1)
-    .L.str                                   0x80022568   Data          15  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.3                                 0x80022568   Data          15  fsl_lpuart.o(.rodata.str1.1)
-    .L.str                                   0x80022570   Data           7  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.6                                 0x80022577   Data          71  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.5                                 0x800225be   Data          71  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.8                                 0x800225e5   Data          13  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.11                                0x800225ff   Data          13  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.13                                0x8002260c   Data          21  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.4                                 0x80022620   Data          34  fsl_pit.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80022620   Section        0  fsl_pit.o(.rodata.str1.1)
-    .L.str.14                                0x80022621   Data          14  fsl_lpuart.o(.rodata.str1.1)
-    .L.str.1                                 0x80022642   Data          37  fsl_pit.o(.rodata.str1.1)
-    .L.str.13                                0x80022667   Data          34  fsl_pwm.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80022667   Section        0  fsl_pwm.o(.rodata.str1.1)
-    .L.str.8                                 0x80022689   Data          25  fsl_pwm.o(.rodata.str1.1)
-    .L.str.1                                 0x800226a2   Data          37  fsl_pwm.o(.rodata.str1.1)
-    .L.str.6                                 0x800226c7   Data          35  fsl_qtmr.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x800226c7   Section        0  fsl_qtmr.o(.rodata.str1.1)
-    .L.str.1                                 0x800226ea   Data          38  fsl_qtmr.o(.rodata.str1.1)
-    .L.str                                   0x80022710   Data          30  fsl_sai.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80022710   Section        0  fsl_sai.o(.rodata.str1.1)
-    .L.str.2                                 0x80022753   Data          15  fsl_sai.o(.rodata.str1.1)
-    .L.str.3                                 0x80022762   Data          67  fsl_sai.o(.rodata.str1.1)
-    .L.str.4                                 0x800227a5   Data          78  fsl_sai.o(.rodata.str1.1)
-    .L.str.5                                 0x800227f3   Data          78  fsl_sai.o(.rodata.str1.1)
-    .L.str.6                                 0x80022841   Data          43  fsl_sai.o(.rodata.str1.1)
-    .L.str.8                                 0x8002287b   Data          70  fsl_sai.o(.rodata.str1.1)
-    .L.str.9                                 0x800228c1   Data          15  fsl_sai.o(.rodata.str1.1)
-    .L.str.10                                0x800228d0   Data          21  fsl_sai.o(.rodata.str1.1)
-    .L.str.1                                 0x800228dd   Data          37  fsl_sai.o(.rodata.str1.1)
-    .L.str.11                                0x800228e5   Data           6  fsl_sai.o(.rodata.str1.1)
-    .L.str.13                                0x800228eb   Data          70  fsl_sai.o(.rodata.str1.1)
-    .L.str                                   0x80022920   Data          36  fsl_spdif.o(.rodata.str1.1)
-    [Anonymous Symbol]                       0x80022920   Section        0  fsl_spdif.o(.rodata.str1.1)
-    .L.str.16                                0x80022931   Data          13  fsl_sai.o(.rodata.str1.1)
-    .L.str.17                                0x8002293e   Data          39  fsl_sai.o(.rodata.str1.1)
-    .L.str.1                                 0x80022965   Data          39  fsl_spdif.o(.rodata.str1.1)
-    .L.str.18                                0x80022965   Data          34  fsl_sai.o(.rodata.str1.1)
-    .L.str.2                                 0x8002296b   Data          15  fsl_spdif.o(.rodata.str1.1)
-    .L.str.3                                 0x8002297a   Data          18  fsl_spdif.o(.rodata.str1.1)
-    uart_index                               0x8002298c   Data          36  zf_driver_uart.o(.rodata.uart_index)
-    [Anonymous Symbol]                       0x8002298c   Section        0  zf_driver_uart.o(.rodata.uart_index)
+    [Anonymous Symbol]                       0x8000f770   Section        0  path_planning.o(.text.map_boom_out)
+    [Anonymous Symbol]                       0x8000f870   Section        0  menu.o(.text.menu)
+    [Anonymous Symbol]                       0x80010158   Section        0  motor.o(.text.motor_duty)
+    [Anonymous Symbol]                       0x800101e8   Section        0  motor.o(.text.motor_init)
+    [Anonymous Symbol]                       0x80010250   Section        0  control.o(.text.motor_solution)
+    [Anonymous Symbol]                       0x80010398   Section        0  key.o(.text.my_key_init)
+    [Anonymous Symbol]                       0x800103d8   Section        0  wireless_uart.o(.text.my_uart_init)
+    parse_map_input                          0x800103e9   Thumb Code   364  path_planning.o(.text.parse_map_input)
+    [Anonymous Symbol]                       0x800103e8   Section        0  path_planning.o(.text.parse_map_input)
+    [Anonymous Symbol]                       0x80010558   Section        0  path_planning.o(.text.path_boom_calculation)
+    [Anonymous Symbol]                       0x80016988   Section        0  path_planning.o(.text.path_calculation)
+    [Anonymous Symbol]                       0x80016f68   Section        0  path_planning.o(.text.path_id_calculation)
+    [Anonymous Symbol]                       0x800184e8   Section        0  path_planning.o(.text.path_look_calculation)
+    [Anonymous Symbol]                       0x800191a0   Section        0  path_planning.o(.text.path_start_calculation)
+    [Anonymous Symbol]                       0x80019720   Section        0  pid.o(.text.pid_increm)
+    [Anonymous Symbol]                       0x800197e0   Section        0  pid.o(.text.pid_init)
+    [Anonymous Symbol]                       0x80019990   Section        0  pid.o(.text.pid_location)
+    [Anonymous Symbol]                       0x80019a68   Section        0  pid.o(.text.pid_position_target)
+    [Anonymous Symbol]                       0x80019a88   Section        0  pid.o(.text.pid_reset)
+    [Anonymous Symbol]                       0x80019b08   Section        0  pid.o(.text.pid_target)
+    [Anonymous Symbol]                       0x80019b10   Section        0  pid.o(.text.pid_wheel_target)
+    [Anonymous Symbol]                       0x80019b48   Section        0  zf_driver_pit.o(.text.pit_init)
+    [Anonymous Symbol]                       0x80019c18   Section        0  cam_uart.o(.text.push_cam_data)
+    [Anonymous Symbol]                       0x80019cd0   Section        0  zf_driver_pwm.o(.text.pwm_init)
+    [Anonymous Symbol]                       0x80019ef0   Section        0  zf_driver_pwm.o(.text.pwm_iomuxc)
+    [Anonymous Symbol]                       0x8001a310   Section        0  zf_driver_pwm.o(.text.pwm_set_duty)
+    [Anonymous Symbol]                       0x8001a3b8   Section        0  zf_driver_encoder.o(.text.qtimer_iomuxc)
+    [Anonymous Symbol]                       0x8001a6c8   Section        0  path_planning.o(.text.reset_planning_system)
+    [Anonymous Symbol]                       0x8001ad68   Section        0  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_erase)
+    [Anonymous Symbol]                       0x8001ad80   Section        0  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_page_program)
+    [Anonymous Symbol]                       0x8001ad98   Section        0  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_read)
+    [Anonymous Symbol]                       0x8001adc0   Section        0  zf_driver_romapi.o(.text.rom_api_flexspi_nor_get_config)
+    [Anonymous Symbol]                       0x8001add0   Section        0  zf_driver_romapi.o(.text.rom_api_init)
+    [Anonymous Symbol]                       0x8001ade8   Section        0  seekfree_assistant_interface.o(.text.seekfree_assistant_interface_init)
+    [Anonymous Symbol]                       0x8001ae40   Section        0  seekfree_assistant_interface.o(.text.seekfree_assistant_receive)
+    [Anonymous Symbol]                       0x8001ae48   Section        0  seekfree_assistant_interface.o(.text.seekfree_assistant_transfer)
+    [Anonymous Symbol]                       0x8001ae50   Section        0  zf_device_type.o(.text.set_wireless_type)
+    simple_astar                             0x8001ae89   Thumb Code  1422  path_planning.o(.text.simple_astar)
+    [Anonymous Symbol]                       0x8001ae88   Section        0  path_planning.o(.text.simple_astar)
+    simulate_box_deadlock                    0x8001b419   Thumb Code  1748  path_planning.o(.text.simulate_box_deadlock)
+    [Anonymous Symbol]                       0x8001b418   Section        0  path_planning.o(.text.simulate_box_deadlock)
+    simulate_box_to_target                   0x8001baf1   Thumb Code  1632  path_planning.o(.text.simulate_box_to_target)
+    [Anonymous Symbol]                       0x8001baf0   Section        0  path_planning.o(.text.simulate_box_to_target)
+    solve_single_box_a_star                  0x8001c151   Thumb Code  1498  path_planning.o(.text.solve_single_box_a_star)
+    [Anonymous Symbol]                       0x8001c150   Section        0  path_planning.o(.text.solve_single_box_a_star)
+    [Anonymous Symbol]                       0x8001c730   Section        0  zf_driver_spi.o(.text.spi_init)
+    [Anonymous Symbol]                       0x8001c8c8   Section        0  zf_driver_spi.o(.text.spi_iomuxc)
+    [Anonymous Symbol]                       0x8001cc40   Section        0  zf_driver_spi.o(.text.spi_read_8bit_register)
+    [Anonymous Symbol]                       0x8001cd08   Section        0  zf_driver_spi.o(.text.spi_read_8bit_registers)
+    [Anonymous Symbol]                       0x8001cde0   Section        0  zf_driver_spi.o(.text.spi_transfer_8bit)
+    [Anonymous Symbol]                       0x8001ce68   Section        0  zf_driver_spi.o(.text.spi_write_16bit_array)
+    [Anonymous Symbol]                       0x8001cef0   Section        0  zf_driver_spi.o(.text.spi_write_8bit)
+    [Anonymous Symbol]                       0x8001cf60   Section        0  zf_driver_spi.o(.text.spi_write_8bit_array)
+    [Anonymous Symbol]                       0x8001cfd0   Section        0  zf_driver_spi.o(.text.spi_write_8bit_register)
+    [Anonymous Symbol]                       0x8001d088   Section        0  zf_driver_delay.o(.text.system_delay_init)
+    [Anonymous Symbol]                       0x8001d0c0   Section        0  zf_driver_delay.o(.text.system_delay_ms)
+    [Anonymous Symbol]                       0x8001d118   Section        0  zf_driver_delay.o(.text.system_delay_us)
+    [Anonymous Symbol]                       0x8001d170   Section        0  zf_device_tft180.o(.text.tft180_clear)
+    [Anonymous Symbol]                       0x8001d240   Section        0  zf_device_tft180.o(.text.tft180_init)
+    [Anonymous Symbol]                       0x8001d730   Section        0  zf_device_tft180.o(.text.tft180_set_color)
+    [Anonymous Symbol]                       0x8001d748   Section        0  zf_device_tft180.o(.text.tft180_set_dir)
+    [Anonymous Symbol]                       0x8001d780   Section        0  zf_device_tft180.o(.text.tft180_set_font)
+    tft180_set_region                        0x8001d791   Thumb Code   374  zf_device_tft180.o(.text.tft180_set_region)
+    [Anonymous Symbol]                       0x8001d790   Section        0  zf_device_tft180.o(.text.tft180_set_region)
+    [Anonymous Symbol]                       0x8001d908   Section        0  zf_device_tft180.o(.text.tft180_show_char)
+    [Anonymous Symbol]                       0x8001dc20   Section        0  zf_device_tft180.o(.text.tft180_show_float)
+    [Anonymous Symbol]                       0x8001dda8   Section        0  zf_device_tft180.o(.text.tft180_show_int)
+    [Anonymous Symbol]                       0x8001dec8   Section        0  zf_device_tft180.o(.text.tft180_show_string)
+    [Anonymous Symbol]                       0x8001df70   Section        0  tft180.o(.text.tft_init)
+    try_execute_step                         0x8001dfa1   Thumb Code  1246  path_planning.o(.text.try_execute_step)
+    [Anonymous Symbol]                       0x8001dfa0   Section        0  path_planning.o(.text.try_execute_step)
+    [Anonymous Symbol]                       0x8001e480   Section        0  zf_device_type.o(.text.type_default_callback)
+    [Anonymous Symbol]                       0x8001e488   Section        0  zf_driver_uart.o(.text.uart_init)
+    [Anonymous Symbol]                       0x8001e500   Section        0  zf_driver_uart.o(.text.uart_iomuxc)
+    [Anonymous Symbol]                       0x8001e828   Section        0  zf_driver_uart.o(.text.uart_query_byte)
+    [Anonymous Symbol]                       0x8001e860   Section        0  zf_driver_uart.o(.text.uart_rx_interrupt)
+    [Anonymous Symbol]                       0x8001e890   Section        0  zf_driver_uart.o(.text.uart_write_buffer)
+    [Anonymous Symbol]                       0x8001e8c0   Section        0  zf_driver_uart.o(.text.uart_write_byte)
+    [Anonymous Symbol]                       0x8001e8f0   Section        0  zf_driver_uart.o(.text.uart_write_string)
+    verify_bomb_push_feasibility             0x8001e931   Thumb Code   686  path_planning.o(.text.verify_bomb_push_feasibility)
+    [Anonymous Symbol]                       0x8001e930   Section        0  path_planning.o(.text.verify_bomb_push_feasibility)
+    [Anonymous Symbol]                       0x8001ebe0   Section        0  zf_device_wifi_spi.o(.text.wifi_spi_read_buffer)
+    [Anonymous Symbol]                       0x8001ed00   Section        0  zf_device_wifi_spi.o(.text.wifi_spi_send_buffer)
+    [Anonymous Symbol]                       0x8001eea8   Section        0  zf_device_wifi_uart.o(.text.wifi_uart_read_buffer)
+    [Anonymous Symbol]                       0x8001eee0   Section        0  zf_device_wifi_uart.o(.text.wifi_uart_send_buffer)
+    wifi_uart_wait_ack                       0x8001f009   Thumb Code   140  zf_device_wifi_uart.o(.text.wifi_uart_wait_ack)
+    [Anonymous Symbol]                       0x8001f008   Section        0  zf_device_wifi_uart.o(.text.wifi_uart_wait_ack)
+    [Anonymous Symbol]                       0x8001f0a8   Section        0  zf_device_wireless_uart.o(.text.wireless_uart_callback)
+    [Anonymous Symbol]                       0x8001f0d0   Section        0  zf_device_wireless_uart.o(.text.wireless_uart_init)
+    [Anonymous Symbol]                       0x8001f120   Section        0  zf_device_wireless_uart.o(.text.wireless_uart_read_buffer)
+    [Anonymous Symbol]                       0x8001f158   Section        0  zf_device_wireless_uart.o(.text.wireless_uart_send_buffer)
+    i.__0snprintf                            0x8001f1b8   Section        0  printfa.o(i.__0snprintf)
+    i.__0sprintf                             0x8001f1ec   Section        0  printfa.o(i.__0sprintf)
+    i.__ARM_fpclassify                       0x8001f214   Section        0  fpclassify.o(i.__ARM_fpclassify)
+    i.__ARM_fpclassifyf                      0x8001f244   Section        0  fpclassifyf.o(i.__ARM_fpclassifyf)
+    i.__hardfp_asin                          0x8001f270   Section        0  asin.o(i.__hardfp_asin)
+    i.__hardfp_atan                          0x8001f460   Section        0  atan.o(i.__hardfp_atan)
+    i.__hardfp_atan2                         0x8001f638   Section        0  atan2.o(i.__hardfp_atan2)
+    i.__hardfp_cosf                          0x8001f800   Section        0  cosf.o(i.__hardfp_cosf)
+    i.__hardfp_fabs                          0x8001f950   Section        0  fabs.o(i.__hardfp_fabs)
+    i.__hardfp_fabsf                         0x8001f964   Section        0  fabsfc99.o(i.__hardfp_fabsf)
+    i.__hardfp_modf                          0x8001f974   Section        0  modf.o(i.__hardfp_modf)
+    i.__hardfp_pow                           0x8001fa38   Section        0  pow.o(i.__hardfp_pow)
+    i.__hardfp_sinf                          0x800202fc   Section        0  sinf.o(i.__hardfp_sinf)
+    i.__hardfp_sqrt                          0x8002048c   Section        0  sqrt.o(i.__hardfp_sqrt)
+    i.__kernel_poly                          0x800204f2   Section        0  poly.o(i.__kernel_poly)
+    i.__mathlib_dbl_divzero                  0x80020568   Section        0  dunder.o(i.__mathlib_dbl_divzero)
+    i.__mathlib_dbl_infnan                   0x80020580   Section        0  dunder.o(i.__mathlib_dbl_infnan)
+    i.__mathlib_dbl_infnan2                  0x80020586   Section        0  dunder.o(i.__mathlib_dbl_infnan2)
+    i.__mathlib_dbl_invalid                  0x80020590   Section        0  dunder.o(i.__mathlib_dbl_invalid)
+    i.__mathlib_dbl_overflow                 0x800205a8   Section        0  dunder.o(i.__mathlib_dbl_overflow)
+    i.__mathlib_dbl_underflow                0x800205c0   Section        0  dunder.o(i.__mathlib_dbl_underflow)
+    i.__mathlib_flt_infnan                   0x800205d8   Section        0  funder.o(i.__mathlib_flt_infnan)
+    i.__mathlib_flt_invalid                  0x800205e0   Section        0  funder.o(i.__mathlib_flt_invalid)
+    i.__mathlib_flt_underflow                0x800205f0   Section        0  funder.o(i.__mathlib_flt_underflow)
+    i.__mathlib_rredf2                       0x80020600   Section        0  rredf.o(i.__mathlib_rredf2)
+    i.__set_errno                            0x80020754   Section        0  errno.o(i.__set_errno)
+    _fp_digits                               0x80020761   Thumb Code   366  printfa.o(i._fp_digits)
+    i._fp_digits                             0x80020760   Section        0  printfa.o(i._fp_digits)
+    i._is_digit                              0x800208e4   Section        0  scanf_fp.o(i._is_digit)
+    _printf_core                             0x800208f5   Thumb Code  1744  printfa.o(i._printf_core)
+    i._printf_core                           0x800208f4   Section        0  printfa.o(i._printf_core)
+    _printf_post_padding                     0x80020fd1   Thumb Code    36  printfa.o(i._printf_post_padding)
+    i._printf_post_padding                   0x80020fd0   Section        0  printfa.o(i._printf_post_padding)
+    _printf_pre_padding                      0x80020ff5   Thumb Code    46  printfa.o(i._printf_pre_padding)
+    i._printf_pre_padding                    0x80020ff4   Section        0  printfa.o(i._printf_pre_padding)
+    _snputc                                  0x80021023   Thumb Code    22  printfa.o(i._snputc)
+    i._snputc                                0x80021022   Section        0  printfa.o(i._snputc)
+    _sputc                                   0x80021039   Thumb Code    10  printfa.o(i._sputc)
+    i._sputc                                 0x80021038   Section        0  printfa.o(i._sputc)
+    i.atan                                   0x80021042   Section        0  atan.o(i.atan)
+    i.fabs                                   0x80021052   Section        0  fabs.o(i.fabs)
+    i.sqrt                                   0x8002106a   Section        0  sqrt.o(i.sqrt)
+    pS                                       0x800210d8   Data          48  asin.o(.constdata)
+    .constdata                               0x800210d8   Section       80  asin.o(.constdata)
+    qS                                       0x80021108   Data          32  asin.o(.constdata)
+    bp                                       0x80021128   Data          16  pow.o(.constdata)
+    .constdata                               0x80021128   Section      136  pow.o(.constdata)
+    dp_h                                     0x80021138   Data          16  pow.o(.constdata)
+    dp_l                                     0x80021148   Data          16  pow.o(.constdata)
+    L                                        0x80021158   Data          48  pow.o(.constdata)
+    P                                        0x80021188   Data          40  pow.o(.constdata)
+    atanhi                                   0x800211b0   Data          32  atan.o(.constdata)
+    .constdata                               0x800211b0   Section      152  atan.o(.constdata)
+    atanlo                                   0x800211d0   Data          32  atan.o(.constdata)
+    aTodd                                    0x800211f0   Data          40  atan.o(.constdata)
+    aTeven                                   0x80021218   Data          48  atan.o(.constdata)
+    .constdata                               0x80021248   Section        8  qnan.o(.constdata)
+    twooverpi                                0x80021250   Data          32  rredf.o(.constdata)
+    .constdata                               0x80021250   Section       32  rredf.o(.constdata)
+    .constdata                               0x80021270   Section       64  ctype_c.o(.constdata)
+    PWMPTR                                   0x800212b0   Data          20  zf_driver_pwm.o(.rodata.PWMPTR)
+    [Anonymous Symbol]                       0x800212b0   Section        0  zf_driver_pwm.o(.rodata.PWMPTR)
+    CLOCK_GetPllFreq.enetRefClkFreq          0x80021ae4   Data          16  fsl_clock.o(.rodata.cst16)
+    [Anonymous Symbol]                       0x80021ae4   Section        0  fsl_clock.o(.rodata.cst16)
+    DIRS                                     0x80021af4   Data           8  path_planning.o(.rodata.cst8)
+    [Anonymous Symbol]                       0x80021af4   Section        0  path_planning.o(.rodata.cst8)
+    s_baudratePrescaler                      0x80021afc   Data           8  fsl_lpspi.o(.rodata.cst8)
+    [Anonymous Symbol]                       0x80021afc   Section        0  fsl_lpspi.o(.rodata.cst8)
+    s_gptClocks                              0x80021b04   Data           6  fsl_gpt.o(.rodata.s_gptClocks)
+    [Anonymous Symbol]                       0x80021b04   Section        0  fsl_gpt.o(.rodata.s_gptClocks)
+    s_lpspiClocks                            0x80021b0a   Data          10  fsl_lpspi.o(.rodata.s_lpspiClocks)
+    [Anonymous Symbol]                       0x80021b0a   Section        0  fsl_lpspi.o(.rodata.s_lpspiClocks)
+    s_lpuartClock                            0x80021b14   Data          18  fsl_lpuart.o(.rodata.s_lpuartClock)
+    [Anonymous Symbol]                       0x80021b14   Section        0  fsl_lpuart.o(.rodata.s_lpuartClock)
+    s_pwmClocks                              0x80021b26   Data          40  fsl_pwm.o(.rodata.s_pwmClocks)
+    [Anonymous Symbol]                       0x80021b26   Section        0  fsl_pwm.o(.rodata.s_pwmClocks)
+    s_qtmrClocks                             0x80021b4e   Data          10  fsl_qtmr.o(.rodata.s_qtmrClocks)
+    [Anonymous Symbol]                       0x80021b4e   Section        0  fsl_qtmr.o(.rodata.s_qtmrClocks)
+    spi_index                                0x80021b58   Data          20  zf_driver_spi.o(.rodata.spi_index)
+    [Anonymous Symbol]                       0x80021b58   Section        0  zf_driver_spi.o(.rodata.spi_index)
+    .L.str.31                                0x80021b6c   Data          10  menu.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021b6c   Section        0  menu.o(.rodata.str1.1)
+    .L.str.1                                 0x80021b76   Data           3  menu.o(.rodata.str1.1)
+    .L.str                                   0x80021b79   Data           3  menu.o(.rodata.str1.1)
+    .L.str.17                                0x80021b7c   Data           5  menu.o(.rodata.str1.1)
+    .L.str.19                                0x80021b81   Data           6  menu.o(.rodata.str1.1)
+    .L.str.20                                0x80021b87   Data           6  menu.o(.rodata.str1.1)
+    .L.str.3                                 0x80021b8d   Data          18  path_planning.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021b8d   Section        0  path_planning.o(.rodata.str1.1)
+    .L.str.3                                 0x80021b9f   Data          15  cam_uart.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021b9f   Section        0  cam_uart.o(.rodata.str1.1)
+    .L.str.1                                 0x80021bab   Data           3  cam_uart.o(.rodata.str1.1)
+    .L.str.2                                 0x80021bae   Data           9  zf_common_debug.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021bae   Section        0  zf_common_debug.o(.rodata.str1.1)
+    .L.str                                   0x80021bb7   Data          43  zf_common_fifo.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021bb7   Section        0  zf_common_fifo.o(.rodata.str1.1)
+    .L.str                                   0x80021be2   Data          47  zf_common_function.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021be2   Section        0  zf_common_function.o(.rodata.str1.1)
+    .L.str                                   0x80021c11   Data          46  zf_driver_encoder.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021c11   Section        0  zf_driver_encoder.o(.rodata.str1.1)
+    .L.str                                   0x80021c3f   Data          42  zf_driver_pwm.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021c3f   Section        0  zf_driver_pwm.o(.rodata.str1.1)
+    .L.str                                   0x80021c69   Data          42  zf_driver_spi.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021c69   Section        0  zf_driver_spi.o(.rodata.str1.1)
+    .L.str                                   0x80021c93   Data          43  zf_driver_uart.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021c93   Section        0  zf_driver_uart.o(.rodata.str1.1)
+    .L.str                                   0x80021cbe   Data          55  zf_device_bluetooth_ch9141.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021cbe   Section        0  zf_device_bluetooth_ch9141.o(.rodata.str1.1)
+    .L.str.1                                 0x80021cf5   Data          47  zf_device_imu963ra.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021cf5   Section        0  zf_device_imu963ra.o(.rodata.str1.1)
+    .L.str                                   0x80021d24   Data          45  zf_device_tft180.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021d24   Section        0  zf_device_tft180.o(.rodata.str1.1)
+    .L.str                                   0x80021d51   Data           4  zf_device_wifi_uart.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021d51   Section        0  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.3                                 0x80021d58   Data           6  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.11                                0x80021d61   Data          13  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.27                                0x80021d7e   Data          12  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.26                                0x80021d96   Data          13  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.13                                0x80021d9e   Data           2  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.15                                0x80021da0   Data           3  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.16                                0x80021da3   Data           2  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.17                                0x80021da5   Data          15  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.5                                 0x80021dae   Data           3  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.12                                0x80021db1   Data          48  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.18                                0x80021db4   Data           8  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.20                                0x80021dbc   Data           2  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.36                                0x80021dd7   Data          30  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.39                                0x80021df5   Data          11  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str.40                                0x80021e00   Data          12  zf_device_wifi_uart.o(.rodata.str1.1)
+    .L.str                                   0x80021e05   Data          52  zf_device_wireless_uart.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021e05   Section        0  zf_device_wireless_uart.o(.rodata.str1.1)
+    .L.str                                   0x80021e39   Data          46  zf_device_ble6a20.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021e39   Section        0  zf_device_ble6a20.o(.rodata.str1.1)
+    .L.str.1                                 0x80021e67   Data          39  fsl_clock.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021e67   Section        0  fsl_clock.o(.rodata.str1.1)
+    .L.str.2                                 0x80021e8e   Data           6  fsl_clock.o(.rodata.str1.1)
+    .L.str.3                                 0x80021e8e   Data           6  fsl_clock.o(.rodata.str1.1)
+    .L.str.5                                 0x80021e8e   Data           6  fsl_clock.o(.rodata.str1.1)
+    .L.str                                   0x80021e94   Data          52  fsl_edma.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80021e94   Section        0  fsl_edma.o(.rodata.str1.1)
+    .L.str.2                                 0x80021eee   Data          12  fsl_edma.o(.rodata.str1.1)
+    .L.str.3                                 0x80021efa   Data          30  fsl_edma.o(.rodata.str1.1)
+    .L.str.4                                 0x80021f18   Data          15  fsl_edma.o(.rodata.str1.1)
+    .L.str.5                                 0x80021f27   Data          34  fsl_edma.o(.rodata.str1.1)
+    .L.str.6                                 0x80021f49   Data          58  fsl_edma.o(.rodata.str1.1)
+    .L.str.7                                 0x80021f83   Data          69  fsl_edma.o(.rodata.str1.1)
+    .L.str.8                                 0x80021fc8   Data          71  fsl_edma.o(.rodata.str1.1)
+    .L.str.4                                 0x80021fd1   Data          15  fsl_edma.o(.rodata.str1.1)
+    .L.str.6                                 0x80021fd1   Data          15  fsl_edma.o(.rodata.str1.1)
+    .L.str.7                                 0x80021fd1   Data          15  fsl_edma.o(.rodata.str1.1)
+    .L.str.9                                 0x80021fd1   Data          15  fsl_edma.o(.rodata.str1.1)
+    .L.str.13                                0x8002201e   Data          78  fsl_edma.o(.rodata.str1.1)
+    .L.str.14                                0x8002206c   Data          82  fsl_edma.o(.rodata.str1.1)
+    .L.str.17                                0x800220be   Data          53  fsl_edma.o(.rodata.str1.1)
+    .L.str.1                                 0x800220f0   Data          38  fsl_edma.o(.rodata.str1.1)
+    .L.str.18                                0x800220f3   Data           6  fsl_edma.o(.rodata.str1.1)
+    .L.str.21                                0x800220f9   Data          35  fsl_edma.o(.rodata.str1.1)
+    .L.str                                   0x80022116   Data          38  fsl_flexcan.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80022116   Section        0  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.2                                 0x80022165   Data          16  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.3                                 0x80022175   Data         117  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.4                                 0x800221ea   Data          22  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.5                                 0x80022200   Data          27  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.7                                 0x8002221b   Data         105  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.9                                 0x80022284   Data          42  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.10                                0x800222ae   Data          35  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.11                                0x800222d1   Data          27  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.11                                0x800222e4   Data          13  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.12                                0x800222e4   Data          13  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.17                                0x800222e4   Data          13  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.3                                 0x800222e4   Data          13  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.4                                 0x800222e4   Data          13  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.15                                0x800222ec   Data          45  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.20                                0x80022319   Data          17  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.1                                 0x80022322   Data          41  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.22                                0x8002232a   Data          17  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.23                                0x8002233b   Data          15  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.24                                0x8002234a   Data          16  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.25                                0x8002235a   Data          51  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.12                                0x8002238c   Data          39  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.13                                0x8002238c   Data          39  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.18                                0x8002238c   Data          39  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.4                                 0x8002238c   Data          39  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.5                                 0x8002238c   Data          39  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.26                                0x8002238d   Data          44  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.31                                0x800223b9   Data          13  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.32                                0x800223c6   Data          39  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.36                                0x800223ed   Data          57  fsl_flexcan.o(.rodata.str1.1)
+    .L.str.39                                0x80022426   Data          44  fsl_flexcan.o(.rodata.str1.1)
+    .L.str                                   0x80022428   Data          10  fsl_gpio.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80022428   Section        0  fsl_gpio.o(.rodata.str1.1)
+    .L.str.1                                 0x80022432   Data          38  fsl_gpio.o(.rodata.str1.1)
+    .L.str.5                                 0x80022458   Data          34  fsl_gpt.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80022458   Section        0  fsl_gpt.o(.rodata.str1.1)
+    .L.str.1                                 0x8002247a   Data          37  fsl_gpt.o(.rodata.str1.1)
+    .L.str                                   0x8002249f   Data          36  fsl_lpspi.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x8002249f   Section        0  fsl_lpspi.o(.rodata.str1.1)
+    .L.str.2                                 0x800224d7   Data          21  fsl_lpspi.o(.rodata.str1.1)
+    .L.str.7                                 0x800224ec   Data          17  fsl_lpspi.o(.rodata.str1.1)
+    .L.str.1                                 0x800224fd   Data          39  fsl_lpspi.o(.rodata.str1.1)
+    .L.str.3                                 0x800224ff   Data          20  fsl_lpspi.o(.rodata.str1.1)
+    .L.str                                   0x80022524   Data          37  fsl_lpuart.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80022524   Section        0  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.9                                 0x80022556   Data          13  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.1                                 0x80022563   Data          40  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.2                                 0x80022571   Data          15  fsl_lpuart.o(.rodata.str1.1)
+    .L.str                                   0x800225a0   Data          15  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.3                                 0x800225a0   Data          15  fsl_lpuart.o(.rodata.str1.1)
+    .L.str                                   0x800225a8   Data           7  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.6                                 0x800225af   Data          71  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.5                                 0x800225f6   Data          71  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.8                                 0x8002261d   Data          13  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.11                                0x80022637   Data          13  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.13                                0x80022644   Data          21  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.4                                 0x80022658   Data          34  fsl_pit.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80022658   Section        0  fsl_pit.o(.rodata.str1.1)
+    .L.str.14                                0x80022659   Data          14  fsl_lpuart.o(.rodata.str1.1)
+    .L.str.1                                 0x8002267a   Data          37  fsl_pit.o(.rodata.str1.1)
+    .L.str.13                                0x8002269f   Data          34  fsl_pwm.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x8002269f   Section        0  fsl_pwm.o(.rodata.str1.1)
+    .L.str.8                                 0x800226c1   Data          25  fsl_pwm.o(.rodata.str1.1)
+    .L.str.1                                 0x800226da   Data          37  fsl_pwm.o(.rodata.str1.1)
+    .L.str.6                                 0x800226ff   Data          35  fsl_qtmr.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x800226ff   Section        0  fsl_qtmr.o(.rodata.str1.1)
+    .L.str.1                                 0x80022722   Data          38  fsl_qtmr.o(.rodata.str1.1)
+    .L.str                                   0x80022748   Data          30  fsl_sai.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80022748   Section        0  fsl_sai.o(.rodata.str1.1)
+    .L.str.2                                 0x8002278b   Data          15  fsl_sai.o(.rodata.str1.1)
+    .L.str.3                                 0x8002279a   Data          67  fsl_sai.o(.rodata.str1.1)
+    .L.str.4                                 0x800227dd   Data          78  fsl_sai.o(.rodata.str1.1)
+    .L.str.5                                 0x8002282b   Data          78  fsl_sai.o(.rodata.str1.1)
+    .L.str.6                                 0x80022879   Data          43  fsl_sai.o(.rodata.str1.1)
+    .L.str.8                                 0x800228b3   Data          70  fsl_sai.o(.rodata.str1.1)
+    .L.str.9                                 0x800228f9   Data          15  fsl_sai.o(.rodata.str1.1)
+    .L.str.10                                0x80022908   Data          21  fsl_sai.o(.rodata.str1.1)
+    .L.str.1                                 0x80022915   Data          37  fsl_sai.o(.rodata.str1.1)
+    .L.str.11                                0x8002291d   Data           6  fsl_sai.o(.rodata.str1.1)
+    .L.str.13                                0x80022923   Data          70  fsl_sai.o(.rodata.str1.1)
+    .L.str                                   0x80022958   Data          36  fsl_spdif.o(.rodata.str1.1)
+    [Anonymous Symbol]                       0x80022958   Section        0  fsl_spdif.o(.rodata.str1.1)
+    .L.str.16                                0x80022969   Data          13  fsl_sai.o(.rodata.str1.1)
+    .L.str.17                                0x80022976   Data          39  fsl_sai.o(.rodata.str1.1)
+    .L.str.1                                 0x8002299d   Data          39  fsl_spdif.o(.rodata.str1.1)
+    .L.str.18                                0x8002299d   Data          34  fsl_sai.o(.rodata.str1.1)
+    .L.str.2                                 0x800229a3   Data          15  fsl_spdif.o(.rodata.str1.1)
+    .L.str.3                                 0x800229b2   Data          18  fsl_spdif.o(.rodata.str1.1)
+    uart_index                               0x800229c4   Data          36  zf_driver_uart.o(.rodata.uart_index)
+    [Anonymous Symbol]                       0x800229c4   Section        0  zf_driver_uart.o(.rodata.uart_index)
     _flexram_bank_cfg                        0xaaaaaaaf   Number         0  startup_mimxrt1064.o ABSOLUTE
     VTOR                                     0xe000ed08   Number         0  startup_mimxrt1064.o ABSOLUTE
 
@@ -14047,149 +14047,149 @@ Image Symbol Table
     interrupt_init                           0x8000e5f9   Thumb Code    30  zf_common_interrupt.o(.text.interrupt_init)
     interrupt_set_priority                   0x8000e619   Thumb Code    34  zf_common_interrupt.o(.text.interrupt_set_priority)
     key_read                                 0x8000e7e9   Thumb Code   262  key.o(.text.key_read)
-    main                                     0x8000e8f1   Thumb Code  3644  main.o(.text.main)
-    map_boom_out                             0x8000f739   Thumb Code   256  path_planning.o(.text.map_boom_out)
-    menu                                     0x8000f839   Thumb Code  2040  menu.o(.text.menu)
-    motor_duty                               0x80010121   Thumb Code   140  motor.o(.text.motor_duty)
-    motor_init                               0x800101b1   Thumb Code   102  motor.o(.text.motor_init)
-    motor_solution                           0x80010219   Thumb Code   304  control.o(.text.motor_solution)
-    my_key_init                              0x80010361   Thumb Code    62  key.o(.text.my_key_init)
-    my_uart_init                             0x800103a1   Thumb Code    16  wireless_uart.o(.text.my_uart_init)
-    path_boom_calculation                    0x80010521   Thumb Code 25646  path_planning.o(.text.path_boom_calculation)
-    path_calculation                         0x80016951   Thumb Code  1502  path_planning.o(.text.path_calculation)
-    path_id_calculation                      0x80016f31   Thumb Code  5498  path_planning.o(.text.path_id_calculation)
-    path_look_calculation                    0x800184b1   Thumb Code  3254  path_planning.o(.text.path_look_calculation)
-    path_start_calculation                   0x80019169   Thumb Code  1404  path_planning.o(.text.path_start_calculation)
-    pid_increm                               0x800196e9   Thumb Code   184  pid.o(.text.pid_increm)
-    pid_init                                 0x800197a9   Thumb Code   432  pid.o(.text.pid_init)
-    pid_location                             0x80019959   Thumb Code   212  pid.o(.text.pid_location)
-    pid_position_target                      0x80019a31   Thumb Code    26  pid.o(.text.pid_position_target)
-    pid_reset                                0x80019a51   Thumb Code   124  pid.o(.text.pid_reset)
-    pid_target                               0x80019ad1   Thumb Code     6  pid.o(.text.pid_target)
-    pid_wheel_target                         0x80019ad9   Thumb Code    50  pid.o(.text.pid_wheel_target)
-    pit_init                                 0x80019b11   Thumb Code   152  zf_driver_pit.o(.text.pit_init)
-    push_cam_data                            0x80019be1   Thumb Code   156  cam_uart.o(.text.push_cam_data)
-    pwm_init                                 0x80019c99   Thumb Code   542  zf_driver_pwm.o(.text.pwm_init)
-    pwm_iomuxc                               0x80019eb9   Thumb Code  1056  zf_driver_pwm.o(.text.pwm_iomuxc)
-    pwm_set_duty                             0x8001a2d9   Thumb Code   162  zf_driver_pwm.o(.text.pwm_set_duty)
-    qtimer_iomuxc                            0x8001a381   Thumb Code   778  zf_driver_encoder.o(.text.qtimer_iomuxc)
-    reset_planning_system                    0x8001a691   Thumb Code  1694  path_planning.o(.text.reset_planning_system)
-    rom_api_flexspi_nor_flash_erase          0x8001ad31   Thumb Code    22  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_erase)
-    rom_api_flexspi_nor_flash_page_program   0x8001ad49   Thumb Code    22  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_page_program)
-    rom_api_flexspi_nor_flash_read           0x8001ad61   Thumb Code    36  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_read)
-    rom_api_flexspi_nor_get_config           0x8001ad89   Thumb Code    16  zf_driver_romapi.o(.text.rom_api_flexspi_nor_get_config)
-    rom_api_init                             0x8001ad99   Thumb Code    20  zf_driver_romapi.o(.text.rom_api_init)
-    seekfree_assistant_interface_init        0x8001adb1   Thumb Code    40  seekfree_assistant_interface.o(.text.seekfree_assistant_interface_init)
-    seekfree_assistant_receive               0x8001ae09   Thumb Code     4  seekfree_assistant_interface.o(.text.seekfree_assistant_receive)
-    seekfree_assistant_transfer              0x8001ae11   Thumb Code     4  seekfree_assistant_interface.o(.text.seekfree_assistant_transfer)
-    set_wireless_type                        0x8001ae19   Thumb Code    50  zf_device_type.o(.text.set_wireless_type)
-    spi_init                                 0x8001c6f9   Thumb Code   408  zf_driver_spi.o(.text.spi_init)
-    spi_iomuxc                               0x8001c891   Thumb Code   884  zf_driver_spi.o(.text.spi_iomuxc)
-    spi_read_8bit_register                   0x8001cc09   Thumb Code   196  zf_driver_spi.o(.text.spi_read_8bit_register)
-    spi_read_8bit_registers                  0x8001ccd1   Thumb Code   216  zf_driver_spi.o(.text.spi_read_8bit_registers)
-    spi_transfer_8bit                        0x8001cda9   Thumb Code   132  zf_driver_spi.o(.text.spi_transfer_8bit)
-    spi_write_16bit_array                    0x8001ce31   Thumb Code   132  zf_driver_spi.o(.text.spi_write_16bit_array)
-    spi_write_8bit                           0x8001ceb9   Thumb Code   106  zf_driver_spi.o(.text.spi_write_8bit)
-    spi_write_8bit_array                     0x8001cf29   Thumb Code   110  zf_driver_spi.o(.text.spi_write_8bit_array)
-    spi_write_8bit_register                  0x8001cf99   Thumb Code   178  zf_driver_spi.o(.text.spi_write_8bit_register)
-    system_delay_init                        0x8001d051   Thumb Code    54  zf_driver_delay.o(.text.system_delay_init)
-    system_delay_ms                          0x8001d089   Thumb Code    84  zf_driver_delay.o(.text.system_delay_ms)
-    system_delay_us                          0x8001d0e1   Thumb Code    84  zf_driver_delay.o(.text.system_delay_us)
-    tft180_clear                             0x8001d139   Thumb Code   202  zf_device_tft180.o(.text.tft180_clear)
-    tft180_init                              0x8001d209   Thumb Code  1264  zf_device_tft180.o(.text.tft180_init)
-    tft180_set_color                         0x8001d6f9   Thumb Code    22  zf_device_tft180.o(.text.tft180_set_color)
-    tft180_set_dir                           0x8001d711   Thumb Code    52  zf_device_tft180.o(.text.tft180_set_dir)
-    tft180_set_font                          0x8001d749   Thumb Code    12  zf_device_tft180.o(.text.tft180_set_font)
-    tft180_show_char                         0x8001d8d1   Thumb Code   788  zf_device_tft180.o(.text.tft180_show_char)
-    tft180_show_float                        0x8001dbe9   Thumb Code   376  zf_device_tft180.o(.text.tft180_show_float)
-    tft180_show_int                          0x8001dd71   Thumb Code   284  zf_device_tft180.o(.text.tft180_show_int)
-    tft180_show_string                       0x8001de91   Thumb Code   162  zf_device_tft180.o(.text.tft180_show_string)
-    tft_init                                 0x8001df39   Thumb Code    42  tft180.o(.text.tft_init)
-    type_default_callback                    0x8001e449   Thumb Code     2  zf_device_type.o(.text.type_default_callback)
-    uart_init                                0x8001e451   Thumb Code   114  zf_driver_uart.o(.text.uart_init)
-    uart_iomuxc                              0x8001e4c9   Thumb Code   802  zf_driver_uart.o(.text.uart_iomuxc)
-    uart_query_byte                          0x8001e7f1   Thumb Code    56  zf_driver_uart.o(.text.uart_query_byte)
-    uart_rx_interrupt                        0x8001e829   Thumb Code    48  zf_driver_uart.o(.text.uart_rx_interrupt)
-    uart_write_buffer                        0x8001e859   Thumb Code    42  zf_driver_uart.o(.text.uart_write_buffer)
-    uart_write_byte                          0x8001e889   Thumb Code    42  zf_driver_uart.o(.text.uart_write_byte)
-    uart_write_string                        0x8001e8b9   Thumb Code    62  zf_driver_uart.o(.text.uart_write_string)
-    wifi_spi_read_buffer                     0x8001eba9   Thumb Code   240  zf_device_wifi_spi.o(.text.wifi_spi_read_buffer)
-    wifi_spi_send_buffer                     0x8001ecc9   Thumb Code   422  zf_device_wifi_spi.o(.text.wifi_spi_send_buffer)
-    wifi_uart_read_buffer                    0x8001ee71   Thumb Code    56  zf_device_wifi_uart.o(.text.wifi_uart_read_buffer)
-    wifi_uart_send_buffer                    0x8001eea9   Thumb Code   292  zf_device_wifi_uart.o(.text.wifi_uart_send_buffer)
-    wireless_uart_callback                   0x8001f071   Thumb Code    38  zf_device_wireless_uart.o(.text.wireless_uart_callback)
-    wireless_uart_init                       0x8001f099   Thumb Code    80  zf_device_wireless_uart.o(.text.wireless_uart_init)
-    wireless_uart_read_buffer                0x8001f0e9   Thumb Code    54  zf_device_wireless_uart.o(.text.wireless_uart_read_buffer)
-    wireless_uart_send_buffer                0x8001f121   Thumb Code    96  zf_device_wireless_uart.o(.text.wireless_uart_send_buffer)
-    __0snprintf                              0x8001f181   Thumb Code    48  printfa.o(i.__0snprintf)
-    __1snprintf                              0x8001f181   Thumb Code     0  printfa.o(i.__0snprintf)
-    __2snprintf                              0x8001f181   Thumb Code     0  printfa.o(i.__0snprintf)
-    __c89snprintf                            0x8001f181   Thumb Code     0  printfa.o(i.__0snprintf)
-    snprintf                                 0x8001f181   Thumb Code     0  printfa.o(i.__0snprintf)
-    __0sprintf                               0x8001f1b5   Thumb Code    34  printfa.o(i.__0sprintf)
-    __1sprintf                               0x8001f1b5   Thumb Code     0  printfa.o(i.__0sprintf)
-    __2sprintf                               0x8001f1b5   Thumb Code     0  printfa.o(i.__0sprintf)
-    __c89sprintf                             0x8001f1b5   Thumb Code     0  printfa.o(i.__0sprintf)
-    sprintf                                  0x8001f1b5   Thumb Code     0  printfa.o(i.__0sprintf)
-    __ARM_fpclassify                         0x8001f1dd   Thumb Code    48  fpclassify.o(i.__ARM_fpclassify)
-    __ARM_fpclassifyf                        0x8001f20d   Thumb Code    38  fpclassifyf.o(i.__ARM_fpclassifyf)
-    __hardfp_asin                            0x8001f239   Thumb Code   432  asin.o(i.__hardfp_asin)
-    __hardfp_atan                            0x8001f429   Thumb Code   402  atan.o(i.__hardfp_atan)
-    __hardfp_atan2                           0x8001f601   Thumb Code   392  atan2.o(i.__hardfp_atan2)
-    __hardfp_cosf                            0x8001f7c9   Thumb Code   280  cosf.o(i.__hardfp_cosf)
-    __hardfp_fabs                            0x8001f919   Thumb Code    20  fabs.o(i.__hardfp_fabs)
-    __hardfp_fabsf                           0x8001f92d   Thumb Code    14  fabsfc99.o(i.__hardfp_fabsf)
-    __hardfp_modf                            0x8001f93d   Thumb Code   186  modf.o(i.__hardfp_modf)
-    __hardfp_pow                             0x8001fa01   Thumb Code  2108  pow.o(i.__hardfp_pow)
-    __hardfp_sinf                            0x800202c5   Thumb Code   344  sinf.o(i.__hardfp_sinf)
-    __hardfp_sqrt                            0x80020455   Thumb Code   102  sqrt.o(i.__hardfp_sqrt)
-    __kernel_poly                            0x800204bb   Thumb Code   112  poly.o(i.__kernel_poly)
-    __mathlib_dbl_divzero                    0x80020531   Thumb Code    14  dunder.o(i.__mathlib_dbl_divzero)
-    __mathlib_dbl_infnan                     0x80020549   Thumb Code     6  dunder.o(i.__mathlib_dbl_infnan)
-    __mathlib_dbl_infnan2                    0x8002054f   Thumb Code     6  dunder.o(i.__mathlib_dbl_infnan2)
-    __mathlib_dbl_invalid                    0x80020559   Thumb Code    10  dunder.o(i.__mathlib_dbl_invalid)
-    __mathlib_dbl_overflow                   0x80020571   Thumb Code    10  dunder.o(i.__mathlib_dbl_overflow)
-    __mathlib_dbl_underflow                  0x80020589   Thumb Code    10  dunder.o(i.__mathlib_dbl_underflow)
-    __mathlib_flt_infnan                     0x800205a1   Thumb Code     6  funder.o(i.__mathlib_flt_infnan)
-    __mathlib_flt_invalid                    0x800205a9   Thumb Code    10  funder.o(i.__mathlib_flt_invalid)
-    __mathlib_flt_underflow                  0x800205b9   Thumb Code    10  funder.o(i.__mathlib_flt_underflow)
-    __mathlib_rredf2                         0x800205c9   Thumb Code   316  rredf.o(i.__mathlib_rredf2)
-    __set_errno                              0x8002071d   Thumb Code     6  errno.o(i.__set_errno)
-    _is_digit                                0x800208ad   Thumb Code    14  scanf_fp.o(i._is_digit)
-    atan                                     0x8002100b   Thumb Code    16  atan.o(i.atan)
-    fabs                                     0x8002101b   Thumb Code    24  fabs.o(i.fabs)
-    sqrt                                     0x80021033   Thumb Code   106  sqrt.o(i.sqrt)
-    __mathlib_zero                           0x80021210   Data           8  qnan.o(.constdata)
-    __ctype_categories                       0x80021238   Data          64  ctype_c.o(.constdata)
-    armPllConfig_BOARD_BootClockRUN          0x8002128c   Data           8  clock_config.o(.rodata.armPllConfig_BOARD_BootClockRUN)
-    ascii_font_6x8                           0x80021294   Data         552  zf_common_font.o(.rodata.ascii_font_6x8)
-    ascii_font_8x16                          0x800214bc   Data        1520  zf_common_font.o(.rodata.ascii_font_8x16)
-    g_path_out                               0x800229b0   Data        1501  path_planning.o(.bss.SDRAM_CACHE)
-    g_path_start_out                         0x80022f8e   Data        1006  path_planning.o(.bss.SDRAM_CACHE)
-    g_path_look_out                          0x8002337c   Data        3002  path_planning.o(.bss.SDRAM_CACHE)
-    g_visit_plan                             0x80023f36   Data       10120  path_planning.o(.bss.SDRAM_CACHE)
-    g_original_map                           0x800266be   Data         192  path_planning.o(.bss.SDRAM_CACHE)
-    hash_table                               0x80026780   Data       2200000  path_planning.o(.bss.SDRAM_CACHE)
-    pq                                       0x8023f940   Data       80000  path_planning.o(.bss.SDRAM_CACHE)
-    g_succ_buf                               0x802531c0   Data         256  path_planning.o(.bss.SDRAM_CACHE)
-    path_nodes                               0x802532c0   Data       19200  path_planning.o(.bss.SDRAM_CACHE)
-    s_heap                                   0x80257dc0   Data        3840  path_planning.o(.bss.SDRAM_CACHE)
-    g_bfs_queue                              0x80258cc0   Data         384  path_planning.o(.bss.SDRAM_CACHE)
-    g_fullpath                               0x80258e40   Data        1000  path_planning.o(.bss.SDRAM_CACHE)
-    id_based_sol                             0x80259228   Data        1040  path_planning.o(.bss.SDRAM_CACHE)
-    g_sim_queue                              0x80259638   Data       32768  path_planning.o(.bss.SDRAM_CACHE)
-    g_dist_epoch_tag                         0x80261638   Data         192  path_planning.o(.bss.SDRAM_CACHE)
-    g_vis1                                   0x802616f8   Data         192  path_planning.o(.bss.SDRAM_CACHE)
-    g_vis2                                   0x802617b8   Data         192  path_planning.o(.bss.SDRAM_CACHE)
-    g_region_masks                           0x80261878   Data         240  path_planning.o(.bss.SDRAM_CACHE)
-    g_enclosed_regions                       0x80261968   Data         130  path_planning.o(.bss.SDRAM_CACHE)
-    g_player_region                          0x802619ea   Data         192  path_planning.o(.bss.SDRAM_CACHE)
-    g_problem_points                         0x80261aaa   Data        1020  path_planning.o(.bss.SDRAM_CACHE)
-    g_saved_problem_points                   0x80261ea6   Data        1020  path_planning.o(.bss.SDRAM_CACHE)
-    g_bomb_reach_map                         0x802622a2   Data          96  path_planning.o(.bss.SDRAM_CACHE)
-    g_saved_player_region                    0x80262302   Data         192  path_planning.o(.bss.SDRAM_CACHE)
-    g_vcache_hash                            0x802623c4   Data        8192  path_planning.o(.bss.SDRAM_CACHE)
-    g_vcache_mask                            0x802643c4   Data        2048  path_planning.o(.bss.SDRAM_CACHE)
+    main                                     0x8000e8f1   Thumb Code  3700  main.o(.text.main)
+    map_boom_out                             0x8000f771   Thumb Code   256  path_planning.o(.text.map_boom_out)
+    menu                                     0x8000f871   Thumb Code  2040  menu.o(.text.menu)
+    motor_duty                               0x80010159   Thumb Code   140  motor.o(.text.motor_duty)
+    motor_init                               0x800101e9   Thumb Code   102  motor.o(.text.motor_init)
+    motor_solution                           0x80010251   Thumb Code   304  control.o(.text.motor_solution)
+    my_key_init                              0x80010399   Thumb Code    62  key.o(.text.my_key_init)
+    my_uart_init                             0x800103d9   Thumb Code    16  wireless_uart.o(.text.my_uart_init)
+    path_boom_calculation                    0x80010559   Thumb Code 25646  path_planning.o(.text.path_boom_calculation)
+    path_calculation                         0x80016989   Thumb Code  1502  path_planning.o(.text.path_calculation)
+    path_id_calculation                      0x80016f69   Thumb Code  5498  path_planning.o(.text.path_id_calculation)
+    path_look_calculation                    0x800184e9   Thumb Code  3254  path_planning.o(.text.path_look_calculation)
+    path_start_calculation                   0x800191a1   Thumb Code  1404  path_planning.o(.text.path_start_calculation)
+    pid_increm                               0x80019721   Thumb Code   184  pid.o(.text.pid_increm)
+    pid_init                                 0x800197e1   Thumb Code   432  pid.o(.text.pid_init)
+    pid_location                             0x80019991   Thumb Code   212  pid.o(.text.pid_location)
+    pid_position_target                      0x80019a69   Thumb Code    26  pid.o(.text.pid_position_target)
+    pid_reset                                0x80019a89   Thumb Code   124  pid.o(.text.pid_reset)
+    pid_target                               0x80019b09   Thumb Code     6  pid.o(.text.pid_target)
+    pid_wheel_target                         0x80019b11   Thumb Code    50  pid.o(.text.pid_wheel_target)
+    pit_init                                 0x80019b49   Thumb Code   152  zf_driver_pit.o(.text.pit_init)
+    push_cam_data                            0x80019c19   Thumb Code   156  cam_uart.o(.text.push_cam_data)
+    pwm_init                                 0x80019cd1   Thumb Code   542  zf_driver_pwm.o(.text.pwm_init)
+    pwm_iomuxc                               0x80019ef1   Thumb Code  1056  zf_driver_pwm.o(.text.pwm_iomuxc)
+    pwm_set_duty                             0x8001a311   Thumb Code   162  zf_driver_pwm.o(.text.pwm_set_duty)
+    qtimer_iomuxc                            0x8001a3b9   Thumb Code   778  zf_driver_encoder.o(.text.qtimer_iomuxc)
+    reset_planning_system                    0x8001a6c9   Thumb Code  1694  path_planning.o(.text.reset_planning_system)
+    rom_api_flexspi_nor_flash_erase          0x8001ad69   Thumb Code    22  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_erase)
+    rom_api_flexspi_nor_flash_page_program   0x8001ad81   Thumb Code    22  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_page_program)
+    rom_api_flexspi_nor_flash_read           0x8001ad99   Thumb Code    36  zf_driver_romapi.o(.text.rom_api_flexspi_nor_flash_read)
+    rom_api_flexspi_nor_get_config           0x8001adc1   Thumb Code    16  zf_driver_romapi.o(.text.rom_api_flexspi_nor_get_config)
+    rom_api_init                             0x8001add1   Thumb Code    20  zf_driver_romapi.o(.text.rom_api_init)
+    seekfree_assistant_interface_init        0x8001ade9   Thumb Code    40  seekfree_assistant_interface.o(.text.seekfree_assistant_interface_init)
+    seekfree_assistant_receive               0x8001ae41   Thumb Code     4  seekfree_assistant_interface.o(.text.seekfree_assistant_receive)
+    seekfree_assistant_transfer              0x8001ae49   Thumb Code     4  seekfree_assistant_interface.o(.text.seekfree_assistant_transfer)
+    set_wireless_type                        0x8001ae51   Thumb Code    50  zf_device_type.o(.text.set_wireless_type)
+    spi_init                                 0x8001c731   Thumb Code   408  zf_driver_spi.o(.text.spi_init)
+    spi_iomuxc                               0x8001c8c9   Thumb Code   884  zf_driver_spi.o(.text.spi_iomuxc)
+    spi_read_8bit_register                   0x8001cc41   Thumb Code   196  zf_driver_spi.o(.text.spi_read_8bit_register)
+    spi_read_8bit_registers                  0x8001cd09   Thumb Code   216  zf_driver_spi.o(.text.spi_read_8bit_registers)
+    spi_transfer_8bit                        0x8001cde1   Thumb Code   132  zf_driver_spi.o(.text.spi_transfer_8bit)
+    spi_write_16bit_array                    0x8001ce69   Thumb Code   132  zf_driver_spi.o(.text.spi_write_16bit_array)
+    spi_write_8bit                           0x8001cef1   Thumb Code   106  zf_driver_spi.o(.text.spi_write_8bit)
+    spi_write_8bit_array                     0x8001cf61   Thumb Code   110  zf_driver_spi.o(.text.spi_write_8bit_array)
+    spi_write_8bit_register                  0x8001cfd1   Thumb Code   178  zf_driver_spi.o(.text.spi_write_8bit_register)
+    system_delay_init                        0x8001d089   Thumb Code    54  zf_driver_delay.o(.text.system_delay_init)
+    system_delay_ms                          0x8001d0c1   Thumb Code    84  zf_driver_delay.o(.text.system_delay_ms)
+    system_delay_us                          0x8001d119   Thumb Code    84  zf_driver_delay.o(.text.system_delay_us)
+    tft180_clear                             0x8001d171   Thumb Code   202  zf_device_tft180.o(.text.tft180_clear)
+    tft180_init                              0x8001d241   Thumb Code  1264  zf_device_tft180.o(.text.tft180_init)
+    tft180_set_color                         0x8001d731   Thumb Code    22  zf_device_tft180.o(.text.tft180_set_color)
+    tft180_set_dir                           0x8001d749   Thumb Code    52  zf_device_tft180.o(.text.tft180_set_dir)
+    tft180_set_font                          0x8001d781   Thumb Code    12  zf_device_tft180.o(.text.tft180_set_font)
+    tft180_show_char                         0x8001d909   Thumb Code   788  zf_device_tft180.o(.text.tft180_show_char)
+    tft180_show_float                        0x8001dc21   Thumb Code   376  zf_device_tft180.o(.text.tft180_show_float)
+    tft180_show_int                          0x8001dda9   Thumb Code   284  zf_device_tft180.o(.text.tft180_show_int)
+    tft180_show_string                       0x8001dec9   Thumb Code   162  zf_device_tft180.o(.text.tft180_show_string)
+    tft_init                                 0x8001df71   Thumb Code    42  tft180.o(.text.tft_init)
+    type_default_callback                    0x8001e481   Thumb Code     2  zf_device_type.o(.text.type_default_callback)
+    uart_init                                0x8001e489   Thumb Code   114  zf_driver_uart.o(.text.uart_init)
+    uart_iomuxc                              0x8001e501   Thumb Code   802  zf_driver_uart.o(.text.uart_iomuxc)
+    uart_query_byte                          0x8001e829   Thumb Code    56  zf_driver_uart.o(.text.uart_query_byte)
+    uart_rx_interrupt                        0x8001e861   Thumb Code    48  zf_driver_uart.o(.text.uart_rx_interrupt)
+    uart_write_buffer                        0x8001e891   Thumb Code    42  zf_driver_uart.o(.text.uart_write_buffer)
+    uart_write_byte                          0x8001e8c1   Thumb Code    42  zf_driver_uart.o(.text.uart_write_byte)
+    uart_write_string                        0x8001e8f1   Thumb Code    62  zf_driver_uart.o(.text.uart_write_string)
+    wifi_spi_read_buffer                     0x8001ebe1   Thumb Code   240  zf_device_wifi_spi.o(.text.wifi_spi_read_buffer)
+    wifi_spi_send_buffer                     0x8001ed01   Thumb Code   422  zf_device_wifi_spi.o(.text.wifi_spi_send_buffer)
+    wifi_uart_read_buffer                    0x8001eea9   Thumb Code    56  zf_device_wifi_uart.o(.text.wifi_uart_read_buffer)
+    wifi_uart_send_buffer                    0x8001eee1   Thumb Code   292  zf_device_wifi_uart.o(.text.wifi_uart_send_buffer)
+    wireless_uart_callback                   0x8001f0a9   Thumb Code    38  zf_device_wireless_uart.o(.text.wireless_uart_callback)
+    wireless_uart_init                       0x8001f0d1   Thumb Code    80  zf_device_wireless_uart.o(.text.wireless_uart_init)
+    wireless_uart_read_buffer                0x8001f121   Thumb Code    54  zf_device_wireless_uart.o(.text.wireless_uart_read_buffer)
+    wireless_uart_send_buffer                0x8001f159   Thumb Code    96  zf_device_wireless_uart.o(.text.wireless_uart_send_buffer)
+    __0snprintf                              0x8001f1b9   Thumb Code    48  printfa.o(i.__0snprintf)
+    __1snprintf                              0x8001f1b9   Thumb Code     0  printfa.o(i.__0snprintf)
+    __2snprintf                              0x8001f1b9   Thumb Code     0  printfa.o(i.__0snprintf)
+    __c89snprintf                            0x8001f1b9   Thumb Code     0  printfa.o(i.__0snprintf)
+    snprintf                                 0x8001f1b9   Thumb Code     0  printfa.o(i.__0snprintf)
+    __0sprintf                               0x8001f1ed   Thumb Code    34  printfa.o(i.__0sprintf)
+    __1sprintf                               0x8001f1ed   Thumb Code     0  printfa.o(i.__0sprintf)
+    __2sprintf                               0x8001f1ed   Thumb Code     0  printfa.o(i.__0sprintf)
+    __c89sprintf                             0x8001f1ed   Thumb Code     0  printfa.o(i.__0sprintf)
+    sprintf                                  0x8001f1ed   Thumb Code     0  printfa.o(i.__0sprintf)
+    __ARM_fpclassify                         0x8001f215   Thumb Code    48  fpclassify.o(i.__ARM_fpclassify)
+    __ARM_fpclassifyf                        0x8001f245   Thumb Code    38  fpclassifyf.o(i.__ARM_fpclassifyf)
+    __hardfp_asin                            0x8001f271   Thumb Code   432  asin.o(i.__hardfp_asin)
+    __hardfp_atan                            0x8001f461   Thumb Code   402  atan.o(i.__hardfp_atan)
+    __hardfp_atan2                           0x8001f639   Thumb Code   392  atan2.o(i.__hardfp_atan2)
+    __hardfp_cosf                            0x8001f801   Thumb Code   280  cosf.o(i.__hardfp_cosf)
+    __hardfp_fabs                            0x8001f951   Thumb Code    20  fabs.o(i.__hardfp_fabs)
+    __hardfp_fabsf                           0x8001f965   Thumb Code    14  fabsfc99.o(i.__hardfp_fabsf)
+    __hardfp_modf                            0x8001f975   Thumb Code   186  modf.o(i.__hardfp_modf)
+    __hardfp_pow                             0x8001fa39   Thumb Code  2108  pow.o(i.__hardfp_pow)
+    __hardfp_sinf                            0x800202fd   Thumb Code   344  sinf.o(i.__hardfp_sinf)
+    __hardfp_sqrt                            0x8002048d   Thumb Code   102  sqrt.o(i.__hardfp_sqrt)
+    __kernel_poly                            0x800204f3   Thumb Code   112  poly.o(i.__kernel_poly)
+    __mathlib_dbl_divzero                    0x80020569   Thumb Code    14  dunder.o(i.__mathlib_dbl_divzero)
+    __mathlib_dbl_infnan                     0x80020581   Thumb Code     6  dunder.o(i.__mathlib_dbl_infnan)
+    __mathlib_dbl_infnan2                    0x80020587   Thumb Code     6  dunder.o(i.__mathlib_dbl_infnan2)
+    __mathlib_dbl_invalid                    0x80020591   Thumb Code    10  dunder.o(i.__mathlib_dbl_invalid)
+    __mathlib_dbl_overflow                   0x800205a9   Thumb Code    10  dunder.o(i.__mathlib_dbl_overflow)
+    __mathlib_dbl_underflow                  0x800205c1   Thumb Code    10  dunder.o(i.__mathlib_dbl_underflow)
+    __mathlib_flt_infnan                     0x800205d9   Thumb Code     6  funder.o(i.__mathlib_flt_infnan)
+    __mathlib_flt_invalid                    0x800205e1   Thumb Code    10  funder.o(i.__mathlib_flt_invalid)
+    __mathlib_flt_underflow                  0x800205f1   Thumb Code    10  funder.o(i.__mathlib_flt_underflow)
+    __mathlib_rredf2                         0x80020601   Thumb Code   316  rredf.o(i.__mathlib_rredf2)
+    __set_errno                              0x80020755   Thumb Code     6  errno.o(i.__set_errno)
+    _is_digit                                0x800208e5   Thumb Code    14  scanf_fp.o(i._is_digit)
+    atan                                     0x80021043   Thumb Code    16  atan.o(i.atan)
+    fabs                                     0x80021053   Thumb Code    24  fabs.o(i.fabs)
+    sqrt                                     0x8002106b   Thumb Code   106  sqrt.o(i.sqrt)
+    __mathlib_zero                           0x80021248   Data           8  qnan.o(.constdata)
+    __ctype_categories                       0x80021270   Data          64  ctype_c.o(.constdata)
+    armPllConfig_BOARD_BootClockRUN          0x800212c4   Data           8  clock_config.o(.rodata.armPllConfig_BOARD_BootClockRUN)
+    ascii_font_6x8                           0x800212cc   Data         552  zf_common_font.o(.rodata.ascii_font_6x8)
+    ascii_font_8x16                          0x800214f4   Data        1520  zf_common_font.o(.rodata.ascii_font_8x16)
+    g_path_out                               0x800229e8   Data        1501  path_planning.o(.bss.SDRAM_CACHE)
+    g_path_start_out                         0x80022fc6   Data        1006  path_planning.o(.bss.SDRAM_CACHE)
+    g_path_look_out                          0x800233b4   Data        3002  path_planning.o(.bss.SDRAM_CACHE)
+    g_visit_plan                             0x80023f6e   Data       10120  path_planning.o(.bss.SDRAM_CACHE)
+    g_original_map                           0x800266f6   Data         192  path_planning.o(.bss.SDRAM_CACHE)
+    hash_table                               0x800267b8   Data       2200000  path_planning.o(.bss.SDRAM_CACHE)
+    pq                                       0x8023f978   Data       80000  path_planning.o(.bss.SDRAM_CACHE)
+    g_succ_buf                               0x802531f8   Data         256  path_planning.o(.bss.SDRAM_CACHE)
+    path_nodes                               0x802532f8   Data       19200  path_planning.o(.bss.SDRAM_CACHE)
+    s_heap                                   0x80257df8   Data        3840  path_planning.o(.bss.SDRAM_CACHE)
+    g_bfs_queue                              0x80258cf8   Data         384  path_planning.o(.bss.SDRAM_CACHE)
+    g_fullpath                               0x80258e78   Data        1000  path_planning.o(.bss.SDRAM_CACHE)
+    id_based_sol                             0x80259260   Data        1040  path_planning.o(.bss.SDRAM_CACHE)
+    g_sim_queue                              0x80259670   Data       32768  path_planning.o(.bss.SDRAM_CACHE)
+    g_dist_epoch_tag                         0x80261670   Data         192  path_planning.o(.bss.SDRAM_CACHE)
+    g_vis1                                   0x80261730   Data         192  path_planning.o(.bss.SDRAM_CACHE)
+    g_vis2                                   0x802617f0   Data         192  path_planning.o(.bss.SDRAM_CACHE)
+    g_region_masks                           0x802618b0   Data         240  path_planning.o(.bss.SDRAM_CACHE)
+    g_enclosed_regions                       0x802619a0   Data         130  path_planning.o(.bss.SDRAM_CACHE)
+    g_player_region                          0x80261a22   Data         192  path_planning.o(.bss.SDRAM_CACHE)
+    g_problem_points                         0x80261ae2   Data        1020  path_planning.o(.bss.SDRAM_CACHE)
+    g_saved_problem_points                   0x80261ede   Data        1020  path_planning.o(.bss.SDRAM_CACHE)
+    g_bomb_reach_map                         0x802622da   Data          96  path_planning.o(.bss.SDRAM_CACHE)
+    g_saved_player_region                    0x8026233a   Data         192  path_planning.o(.bss.SDRAM_CACHE)
+    g_vcache_hash                            0x802623fc   Data        8192  path_planning.o(.bss.SDRAM_CACHE)
+    g_vcache_mask                            0x802643fc   Data        2048  path_planning.o(.bss.SDRAM_CACHE)
 
 
 
@@ -14199,70 +14199,70 @@ Memory Map of the image
 
   Image Entry point : 0x70002415
 
-  Load Region LR_m_text (Base: 0x70000000, Size: 0x00024f74, Max: 0x00400000, ABSOLUTE)
+  Load Region LR_m_text (Base: 0x70000000, Size: 0x00024fac, Max: 0x00400000, ABSOLUTE)
 
-    Execution Region ITCM_ncache (Exec base: 0x00000000, Load base: 0x70024f74, Size: 0x00000000, Max: 0x00010000, ABSOLUTE)
+    Execution Region ITCM_ncache (Exec base: 0x00000000, Load base: 0x70024fac, Size: 0x00000000, Max: 0x00010000, ABSOLUTE)
 
     **** No section assigned to this execution region ****
 
 
-    Execution Region RW_m_data (Exec base: 0x20000000, Load base: 0x70024e88, Size: 0x0000e0f0, Max: 0x0006dc00, ABSOLUTE)
+    Execution Region RW_m_data (Exec base: 0x20000000, Load base: 0x70024ec0, Size: 0x0000e0f0, Max: 0x0006dc00, ABSOLUTE)
 
     Exec Addr    Load Addr    Size         Type   Attr      Idx    E Section Name        Object
 
-    0x20000000   0x70024e88   0x00000004   Data   RW         6159    .data               mc_w.l(errno.o)
-    0x20000004   0x70024e8c   0x0000002c   Data   RW          776    .data.PORTPTR       zf_driver_gpio.o
-    0x20000030   0x70024eb8   0x00000004   Data   RW         4915    .data.SystemCoreClock  system_mimxrt1064.o
-    0x20000034   0x70024ebc   0x00000004   Data   RW         1841    .data.camera_uart_handler  zf_device_type.o
-    0x20000038   0x70024ec0   0x00000004   Data   RW          257    .data.corr_x_enc    menu.o
-    0x2000003c   0x70024ec4   0x00000004   Data   RW          258    .data.corr_y_enc    menu.o
-    0x20000040   0x70024ec8   0x00000004   Data   RW          261    .data.corr_yaw      menu.o
-    0x20000044   0x70024ecc   0x00000004   Data   RW          712    .data.flash_instance  zf_driver_flash.o
-    0x20000048   0x70024ed0   0x00000004   Data   RW         1844    .data.flexio_camera_uart_handler  zf_device_type.o
-    0x2000004c   0x70024ed4   0x00000004   Data   RW         1843    .data.flexio_camera_vsync_handler  zf_device_type.o
-    0x20000050   0x70024ed8   0x00000001   Data   RW          367    .data.g_bfs_epoch   path_planning.o
-    0x20000051   0x70024ed9   0x00000001   Data   RW          369    .data.g_dist_epoch  path_planning.o
-    0x20000052   0x70024eda   0x00000002   PAD
-    0x20000054   0x70024edc   0x00000004   Data   RW           65    .data.id            main.o
-    0x20000058   0x70024ee0   0x0000000c   Data   RW         1374    .data.imu963ra_transition_factor  zf_device_imu963ra.o
-    0x20000064   0x70024eec   0x00000001   Data   RW          255    .data.origin_x_enc  menu.o
-    0x20000065   0x70024eed   0x00000001   Data   RW          256    .data.origin_y_enc  menu.o
-    0x20000066   0x70024eee   0x00000002   PAD
-    0x20000068   0x70024ef0   0x00000004   Data   RW          249    .data.pid_x_d       menu.o
-    0x2000006c   0x70024ef4   0x00000004   Data   RW          248    .data.pid_x_i       menu.o
-    0x20000070   0x70024ef8   0x00000004   Data   RW          247    .data.pid_x_p       menu.o
-    0x20000074   0x70024efc   0x00000001   Data   RW          250    .data.pid_x_speed   menu.o
-    0x20000075   0x70024efd   0x00000003   PAD
-    0x20000078   0x70024f00   0x00000004   Data   RW          253    .data.pid_y_d       menu.o
-    0x2000007c   0x70024f04   0x00000004   Data   RW          252    .data.pid_y_i       menu.o
-    0x20000080   0x70024f08   0x00000004   Data   RW          251    .data.pid_y_p       menu.o
-    0x20000084   0x70024f0c   0x00000001   Data   RW          254    .data.pid_y_speed   menu.o
-    0x20000085   0x70024f0d   0x00000003   PAD
-    0x20000088   0x70024f10   0x00000004   Data   RW          194    .data.q.0           imu963.o
-    0x2000008c   0x70024f14   0x00000014   Data   RW          672    .data.qtimer_index  zf_driver_encoder.o
-    0x200000a0   0x70024f28   0x00000004   Data   RW         2592    .data.s_csiIsr      fsl_csi.o
-    0x200000a4   0x70024f2c   0x00000004   Data   RW         3112    .data.s_flexcanIsr  fsl_flexcan.o
-    0x200000a8   0x70024f30   0x00000004   Data   RW         4031    .data.s_lpuartIsr   fsl_lpuart.o
-    0x200000ac   0x70024f34   0x00000004   Data   RW         4789    .data.s_usdhcIsr    fsl_usdhc.o
-    0x200000b0   0x70024f38   0x00000004   Data   RW         2240    .data.seekfree_assistant_receive_callback  seekfree_assistant.o
-    0x200000b4   0x70024f3c   0x00000004   Data   RW         2239    .data.seekfree_assistant_transfer_callback  seekfree_assistant.o
-    0x200000b8   0x70024f40   0x00000004   Data   RW          434    .data.system_clock  zf_common_clock.o
-    0x200000bc   0x70024f44   0x00000002   Data   RW         1800    .data.tft180_bgcolor  zf_device_tft180.o
-    0x200000be   0x70024f46   0x00000001   Data   RW         1802    .data.tft180_display_font  zf_device_tft180.o
-    0x200000bf   0x70024f47   0x00000001   PAD
-    0x200000c0   0x70024f48   0x00000002   Data   RW         1803    .data.tft180_pencolor  zf_device_tft180.o
-    0x200000c2   0x70024f4a   0x00000002   PAD
-    0x200000c4   0x70024f4c   0x00000004   Data   RW         1849    .data.tof_module_exti_handler  zf_device_type.o
-    0x200000c8   0x70024f50   0x00000004   Data   RW         1847    .data.wireless_module_spi_handler  zf_device_type.o
-    0x200000cc   0x70024f54   0x00000004   Data   RW         1846    .data.wireless_module_uart_handler  zf_device_type.o
-    0x200000d0   0x70024f58   0x00000004   Data   RW          262    .data.x_acc         menu.o
-    0x200000d4   0x70024f5c   0x00000004   Data   RW          263    .data.x_dec         menu.o
-    0x200000d8   0x70024f60   0x00000004   Data   RW           48    .data.x_target      main.o
-    0x200000dc   0x70024f64   0x00000004   Data   RW          264    .data.y_acc         menu.o
-    0x200000e0   0x70024f68   0x00000004   Data   RW          265    .data.y_dec         menu.o
-    0x200000e4   0x70024f6c   0x00000004   Data   RW           49    .data.y_target      main.o
-    0x200000e8   0x70024f70   0x00000001   Data   RW          480    .data.zf_debug_assert_enable  zf_common_debug.o
-    0x200000e9   0x70024f71   0x00000003   PAD
+    0x20000000   0x70024ec0   0x00000004   Data   RW         6159    .data               mc_w.l(errno.o)
+    0x20000004   0x70024ec4   0x0000002c   Data   RW          776    .data.PORTPTR       zf_driver_gpio.o
+    0x20000030   0x70024ef0   0x00000004   Data   RW         4915    .data.SystemCoreClock  system_mimxrt1064.o
+    0x20000034   0x70024ef4   0x00000004   Data   RW         1841    .data.camera_uart_handler  zf_device_type.o
+    0x20000038   0x70024ef8   0x00000004   Data   RW          257    .data.corr_x_enc    menu.o
+    0x2000003c   0x70024efc   0x00000004   Data   RW          258    .data.corr_y_enc    menu.o
+    0x20000040   0x70024f00   0x00000004   Data   RW          261    .data.corr_yaw      menu.o
+    0x20000044   0x70024f04   0x00000004   Data   RW          712    .data.flash_instance  zf_driver_flash.o
+    0x20000048   0x70024f08   0x00000004   Data   RW         1844    .data.flexio_camera_uart_handler  zf_device_type.o
+    0x2000004c   0x70024f0c   0x00000004   Data   RW         1843    .data.flexio_camera_vsync_handler  zf_device_type.o
+    0x20000050   0x70024f10   0x00000001   Data   RW          367    .data.g_bfs_epoch   path_planning.o
+    0x20000051   0x70024f11   0x00000001   Data   RW          369    .data.g_dist_epoch  path_planning.o
+    0x20000052   0x70024f12   0x00000002   PAD
+    0x20000054   0x70024f14   0x00000004   Data   RW           65    .data.id            main.o
+    0x20000058   0x70024f18   0x0000000c   Data   RW         1374    .data.imu963ra_transition_factor  zf_device_imu963ra.o
+    0x20000064   0x70024f24   0x00000001   Data   RW          255    .data.origin_x_enc  menu.o
+    0x20000065   0x70024f25   0x00000001   Data   RW          256    .data.origin_y_enc  menu.o
+    0x20000066   0x70024f26   0x00000002   PAD
+    0x20000068   0x70024f28   0x00000004   Data   RW          249    .data.pid_x_d       menu.o
+    0x2000006c   0x70024f2c   0x00000004   Data   RW          248    .data.pid_x_i       menu.o
+    0x20000070   0x70024f30   0x00000004   Data   RW          247    .data.pid_x_p       menu.o
+    0x20000074   0x70024f34   0x00000001   Data   RW          250    .data.pid_x_speed   menu.o
+    0x20000075   0x70024f35   0x00000003   PAD
+    0x20000078   0x70024f38   0x00000004   Data   RW          253    .data.pid_y_d       menu.o
+    0x2000007c   0x70024f3c   0x00000004   Data   RW          252    .data.pid_y_i       menu.o
+    0x20000080   0x70024f40   0x00000004   Data   RW          251    .data.pid_y_p       menu.o
+    0x20000084   0x70024f44   0x00000001   Data   RW          254    .data.pid_y_speed   menu.o
+    0x20000085   0x70024f45   0x00000003   PAD
+    0x20000088   0x70024f48   0x00000004   Data   RW          194    .data.q.0           imu963.o
+    0x2000008c   0x70024f4c   0x00000014   Data   RW          672    .data.qtimer_index  zf_driver_encoder.o
+    0x200000a0   0x70024f60   0x00000004   Data   RW         2592    .data.s_csiIsr      fsl_csi.o
+    0x200000a4   0x70024f64   0x00000004   Data   RW         3112    .data.s_flexcanIsr  fsl_flexcan.o
+    0x200000a8   0x70024f68   0x00000004   Data   RW         4031    .data.s_lpuartIsr   fsl_lpuart.o
+    0x200000ac   0x70024f6c   0x00000004   Data   RW         4789    .data.s_usdhcIsr    fsl_usdhc.o
+    0x200000b0   0x70024f70   0x00000004   Data   RW         2240    .data.seekfree_assistant_receive_callback  seekfree_assistant.o
+    0x200000b4   0x70024f74   0x00000004   Data   RW         2239    .data.seekfree_assistant_transfer_callback  seekfree_assistant.o
+    0x200000b8   0x70024f78   0x00000004   Data   RW          434    .data.system_clock  zf_common_clock.o
+    0x200000bc   0x70024f7c   0x00000002   Data   RW         1800    .data.tft180_bgcolor  zf_device_tft180.o
+    0x200000be   0x70024f7e   0x00000001   Data   RW         1802    .data.tft180_display_font  zf_device_tft180.o
+    0x200000bf   0x70024f7f   0x00000001   PAD
+    0x200000c0   0x70024f80   0x00000002   Data   RW         1803    .data.tft180_pencolor  zf_device_tft180.o
+    0x200000c2   0x70024f82   0x00000002   PAD
+    0x200000c4   0x70024f84   0x00000004   Data   RW         1849    .data.tof_module_exti_handler  zf_device_type.o
+    0x200000c8   0x70024f88   0x00000004   Data   RW         1847    .data.wireless_module_spi_handler  zf_device_type.o
+    0x200000cc   0x70024f8c   0x00000004   Data   RW         1846    .data.wireless_module_uart_handler  zf_device_type.o
+    0x200000d0   0x70024f90   0x00000004   Data   RW          262    .data.x_acc         menu.o
+    0x200000d4   0x70024f94   0x00000004   Data   RW          263    .data.x_dec         menu.o
+    0x200000d8   0x70024f98   0x00000004   Data   RW           48    .data.x_target      main.o
+    0x200000dc   0x70024f9c   0x00000004   Data   RW          264    .data.y_acc         menu.o
+    0x200000e0   0x70024fa0   0x00000004   Data   RW          265    .data.y_dec         menu.o
+    0x200000e4   0x70024fa4   0x00000004   Data   RW           49    .data.y_target      main.o
+    0x200000e8   0x70024fa8   0x00000001   Data   RW          480    .data.zf_debug_assert_enable  zf_common_debug.o
+    0x200000e9   0x70024fa9   0x00000003   PAD
     0x200000ec        -       0x00000004   Zero   RW           56    .bss.BL             main.o
     0x200000f0        -       0x00000004   Zero   RW           54    .bss.FL             main.o
     0x200000f4        -       0x00000004   Zero   RW           55    .bss.FR             main.o
@@ -14276,29 +14276,29 @@ Memory Map of the image
     0x20000126        -       0x00000016   Zero   RW         1303    .bss.bluetooth_ch9141_fifo  zf_device_bluetooth_ch9141.o
     0x2000013c        -       0x00000001   Zero   RW           73    .bss.boom_flag      main.o
     0x2000013d        -       0x00000200   Zero   RW          413    .bss.cam_uart2_read.uart2_rx_buf  cam_uart.o
-    0x2000033d   0x70024f71   0x00000001   PAD
+    0x2000033d   0x70024fa9   0x00000001   PAD
     0x2000033e        -       0x00000002   Zero   RW          414    .bss.cam_uart2_read.uart2_rx_len  cam_uart.o
     0x20000340        -       0x000000c8   Zero   RW          402    .bss.cam_uart_data  cam_uart.o
     0x20000408        -       0x000000c8   Zero   RW           57    .bss.car_data       main.o
     0x200004d0        -       0x00000001   Zero   RW           47    .bss.car_state      main.o
-    0x200004d1   0x70024f71   0x00000003   PAD
+    0x200004d1   0x70024fa9   0x00000003   PAD
     0x200004d4        -       0x00000200   Zero   RW          713    .bss.config         zf_driver_flash.o
     0x200006d4        -       0x00000001   Zero   RW          259    .bss.corr_x_cam     menu.o
     0x200006d5        -       0x00000001   Zero   RW          260    .bss.corr_y_cam     menu.o
     0x200006d6        -       0x00000001   Zero   RW          268    .bss.current_menu   menu.o
     0x200006d7        -       0x00000001   Zero   RW          338    .bss.current_step   path_planning.o
     0x200006d8        -       0x00000001   Zero   RW          266    .bss.cursor         menu.o
-    0x200006d9   0x70024f71   0x00000003   PAD
+    0x200006d9   0x70024fa9   0x00000003   PAD
     0x200006dc        -       0x00000004   Zero   RW          103    .bss.dc_dt          encoder.o
     0x200006e0        -       0x00000001   Zero   RW          481    .bss.debug_assert_handler.assert_nest_index  zf_common_debug.o
-    0x200006e1   0x70024f71   0x00000003   PAD
+    0x200006e1   0x70024fa9   0x00000003   PAD
     0x200006e4        -       0x00000002   Zero   RW          473    .bss.debug_output_info.0  zf_common_debug.o
-    0x200006e6   0x70024f71   0x00000002   PAD
+    0x200006e6   0x70024fa9   0x00000002   PAD
     0x200006e8        -       0x00000002   Zero   RW          474    .bss.debug_output_info.1  zf_common_debug.o
     0x200006ea        -       0x00000001   Zero   RW          475    .bss.debug_output_info.3  zf_common_debug.o
-    0x200006eb   0x70024f71   0x00000001   PAD
+    0x200006eb   0x70024fa9   0x00000001   PAD
     0x200006ec        -       0x00000001   Zero   RW          476    .bss.debug_output_info.4  zf_common_debug.o
-    0x200006ed   0x70024f71   0x00000003   PAD
+    0x200006ed   0x70024fa9   0x00000003   PAD
     0x200006f0        -       0x00000004   Zero   RW          477    .bss.debug_output_info.5  zf_common_debug.o
     0x200006f4        -       0x00000004   Zero   RW          478    .bss.debug_output_info.6  zf_common_debug.o
     0x200006f8        -       0x00000004   Zero   RW          479    .bss.debug_output_info.7  zf_common_debug.o
@@ -14325,17 +14325,17 @@ Memory Map of the image
     0x20001b80        -       0x00009000   Zero   RW          368    .bss.g_bfs_visited  path_planning.o
     0x2000ab80        -       0x00000018   Zero   RW          344    .bss.g_bfs_walls    path_planning.o
     0x2000ab98        -       0x00000001   Zero   RW          335    .bss.g_bomb_count   path_planning.o
-    0x2000ab99   0x70024f71   0x00000001   PAD
+    0x2000ab99   0x70024fa9   0x00000001   PAD
     0x2000ab9a        -       0x00000018   Zero   RW          341    .bss.g_boom_final_walls  path_planning.o
     0x2000abb2        -       0x00000001   Zero   RW          342    .bss.g_boom_used_mask  path_planning.o
     0x2000abb3        -       0x00000001   Zero   RW          351    .bss.g_box_count    path_planning.o
     0x2000abb4        -       0x00000005   Zero   RW          364    .bss.g_box_id_map   path_planning.o
-    0x2000abb9   0x70024f71   0x00000001   PAD
+    0x2000abb9   0x70024fa9   0x00000001   PAD
     0x2000abba        -       0x00000002   Zero   RW          356    .bss.g_current_player_pos  path_planning.o
     0x2000abbc        -       0x00000018   Zero   RW          357    .bss.g_current_walls  path_planning.o
     0x2000abd4        -       0x00000180   Zero   RW          362    .bss.g_dist_map     path_planning.o
     0x2000ad54        -       0x00000001   Zero   RW          370    .bss.g_enclosed_region_count  path_planning.o
-    0x2000ad55   0x70024f71   0x00000001   PAD
+    0x2000ad55   0x70024fa9   0x00000001   PAD
     0x2000ad56        -       0x00000002   Zero   RW          359    .bss.g_fullpath_len  path_planning.o
     0x2000ad58        -       0x0000000a   Zero   RW          363    .bss.g_id_pairing   path_planning.o
     0x2000ad62        -       0x00000008   Zero   RW          336    .bss.g_initial_bombs  path_planning.o
@@ -14343,17 +14343,17 @@ Memory Map of the image
     0x2000ad74        -       0x00000002   Zero   RW          340    .bss.g_initial_player  path_planning.o
     0x2000ad76        -       0x0000000a   Zero   RW          350    .bss.g_initial_targets  path_planning.o
     0x2000ad80        -       0x00000005   Zero   RW         3917    .bss.g_lpspiDummyData  fsl_lpspi.o
-    0x2000ad85   0x70024f71   0x00000001   PAD
+    0x2000ad85   0x70024fa9   0x00000001   PAD
     0x2000ad86        -       0x00000018   Zero   RW          376    .bss.g_non_paired_targets  path_planning.o
     0x2000ad9e        -       0x00000018   Zero   RW          366    .bss.g_obs_buf      path_planning.o
     0x2000adb6        -       0x00000001   Zero   RW          361    .bss.g_order_idx    path_planning.o
     0x2000adb7        -       0x00000001   Zero   RW          371    .bss.g_problem_count  path_planning.o
     0x2000adb8        -       0x00000005   Zero   RW          354    .bss.g_remaining    path_planning.o
     0x2000adbd        -       0x00000001   Zero   RW          355    .bss.g_remaining_cnt  path_planning.o
-    0x2000adbe   0x70024f71   0x00000002   PAD
+    0x2000adbe   0x70024fa9   0x00000002   PAD
     0x2000adc0        -       0x00000004   Zero   RW         2493    .bss.g_rtcXtalFreq  fsl_clock.o
     0x2000adc4        -       0x00000001   Zero   RW          372    .bss.g_saved_problem_count  path_planning.o
-    0x2000adc5   0x70024f71   0x00000001   PAD
+    0x2000adc5   0x70024fa9   0x00000001   PAD
     0x2000adc6        -       0x00000018   Zero   RW          373    .bss.g_saved_walls  path_planning.o
     0x2000adde        -       0x00000005   Zero   RW          360    .bss.g_solve_order  path_planning.o
     0x2000ade3        -       0x00000005   Zero   RW          353    .bss.g_solved       path_planning.o
@@ -14364,7 +14364,7 @@ Memory Map of the image
     0x2000b1ee        -       0x000001f4   Zero   RW          348    .bss.g_temp_push    path_planning.o
     0x2000b3e2        -       0x000001f4   Zero   RW          346    .bss.g_temp_x       path_planning.o
     0x2000b5d6        -       0x000001f4   Zero   RW          347    .bss.g_temp_y       path_planning.o
-    0x2000b7ca   0x70024f71   0x00000002   PAD
+    0x2000b7ca   0x70024fa9   0x00000002   PAD
     0x2000b7cc        -       0x00000004   Zero   RW          358    .bss.g_total_cost   path_planning.o
     0x2000b7d0        -       0x00000004   Zero   RW         2492    .bss.g_xtalFreq     fsl_clock.o
     0x2000b7d4        -       0x00000001   Zero   RW           61    .bss.game_count     main.o
@@ -14410,15 +14410,15 @@ Memory Map of the image
     0x2000babc        -       0x00000001   Zero   RW           74    .bss.look_flag      main.o
     0x2000babd        -       0x00000001   Zero   RW           71    .bss.map_has_car    main.o
     0x2000babe        -       0x00000001   Zero   RW           63    .bss.map_process_flag  main.o
-    0x2000babf   0x70024f71   0x00000001   PAD
+    0x2000babf   0x70024fa9   0x00000001   PAD
     0x2000bac0        -       0x000005dd   Zero   RW           45    .bss.path_boom_car  main.o
-    0x2000c09d   0x70024f71   0x00000003   PAD
+    0x2000c09d   0x70024fa9   0x00000003   PAD
     0x2000c0a0        -       0x000005dd   Zero   RW           42    .bss.path_car       main.o
-    0x2000c67d   0x70024f71   0x00000003   PAD
+    0x2000c67d   0x70024fa9   0x00000003   PAD
     0x2000c680        -       0x00000bba   Zero   RW           43    .bss.path_look_car  main.o
-    0x2000d23a   0x70024f71   0x00000002   PAD
+    0x2000d23a   0x70024fa9   0x00000002   PAD
     0x2000d23c        -       0x000003ee   Zero   RW           44    .bss.path_start_car  main.o
-    0x2000d62a   0x70024f71   0x00000002   PAD
+    0x2000d62a   0x70024fa9   0x00000002   PAD
     0x2000d62c        -       0x00000034   Zero   RW          169    .bss.pid_BL         pid.o
     0x2000d660        -       0x00000034   Zero   RW          170    .bss.pid_BR         pid.o
     0x2000d694        -       0x00000034   Zero   RW          167    .bss.pid_FL         pid.o
@@ -14427,7 +14427,7 @@ Memory Map of the image
     0x2000d730        -       0x00000034   Zero   RW          173    .bss.pid_y          pid.o
     0x2000d764        -       0x00000034   Zero   RW          171    .bss.pid_yaw        pid.o
     0x2000d798        -       0x00000001   Zero   RW          845    .bss.pit_init.init_flag  zf_driver_pit.o
-    0x2000d799   0x70024f71   0x00000003   PAD
+    0x2000d799   0x70024fa9   0x00000003   PAD
     0x2000d79c        -       0x00000004   Zero   RW          343    .bss.pq_size        path_planning.o
     0x2000d7a0        -       0x00000004   Zero   RW          195    .bss.q.1            imu963.o
     0x2000d7a4        -       0x00000004   Zero   RW          196    .bss.q.2            imu963.o
@@ -14458,23 +14458,23 @@ Memory Map of the image
     0x2000d934        -       0x00000004   Zero   RW         4619    .bss.s_spdifTxIsr   fsl_spdif.o
     0x2000d938        -       0x0000000c   Zero   RW         4788    .bss.s_usdhcHandle  fsl_usdhc.o
     0x2000d944        -       0x0000000a   Zero   RW         1172    .bss.spi_cs_index   zf_driver_spi.o
-    0x2000d94e   0x70024f71   0x00000002   PAD
+    0x2000d94e   0x70024fa9   0x00000002   PAD
     0x2000d950        -       0x00000004   Zero   RW           64    .bss.step           main.o
     0x2000d954        -       0x00000001   Zero   RW         1801    .bss.tft180_display_dir  zf_device_tft180.o
     0x2000d955        -       0x00000001   Zero   RW         1798    .bss.tft180_x_max   zf_device_tft180.o
     0x2000d956        -       0x00000001   Zero   RW         1799    .bss.tft180_y_max   zf_device_tft180.o
-    0x2000d957   0x70024f71   0x00000001   PAD
+    0x2000d957   0x70024fa9   0x00000001   PAD
     0x2000d958        -       0x00000004   Zero   RW           46    .bss.time           main.o
     0x2000d95c        -       0x00000001   Zero   RW           66    .bss.type           main.o
     0x2000d95d        -       0x00000016   Zero   RW          403    .bss.uart1_data_fifo  cam_uart.o
     0x2000d973        -       0x00000200   Zero   RW          404    .bss.uart1_get_data  cam_uart.o
     0x2000db73        -       0x00000200   Zero   RW          411    .bss.uart1_rx_buf   cam_uart.o
-    0x2000dd73   0x70024f71   0x00000001   PAD
+    0x2000dd73   0x70024fa9   0x00000001   PAD
     0x2000dd74        -       0x00000002   Zero   RW          410    .bss.uart1_rx_len   cam_uart.o
     0x2000dd76        -       0x00000016   Zero   RW          405    .bss.uart2_data_fifo  cam_uart.o
     0x2000dd8c        -       0x00000200   Zero   RW          406    .bss.uart2_get_data  cam_uart.o
     0x2000df8c        -       0x00000001   Zero   RW          339    .bss.visit_count    path_planning.o
-    0x2000df8d   0x70024f71   0x00000003   PAD
+    0x2000df8d   0x70024fa9   0x00000003   PAD
     0x2000df90        -       0x00000004   Zero   RW           50    .bss.vx             main.o
     0x2000df94        -       0x00000004   Zero   RW          217    .bss.vx             control.o
     0x2000df98        -       0x00000004   Zero   RW           51    .bss.vy             main.o
@@ -14488,7 +14488,7 @@ Memory Map of the image
     0x2000e066        -       0x00000040   Zero   RW         1944    .bss.wireless_uart_buffer  zf_device_wireless_uart.o
     0x2000e0a6        -       0x00000001   Zero   RW         1943    .bss.wireless_uart_data  zf_device_wireless_uart.o
     0x2000e0a7        -       0x00000016   Zero   RW         1942    .bss.wireless_uart_fifo  zf_device_wireless_uart.o
-    0x2000e0bd   0x70024f71   0x00000003   PAD
+    0x2000e0bd   0x70024fa9   0x00000003   PAD
     0x2000e0c0        -       0x00000004   Zero   RW           58    .bss.x_cam          main.o
     0x2000e0c4        -       0x00000004   Zero   RW           76    .bss.x_cam_last     main.o
     0x2000e0c8        -       0x00000004   Zero   RW           95    .bss.x_enc          encoder.o
@@ -14499,26 +14499,26 @@ Memory Map of the image
     0x2000e0dc        -       0x00000004   Zero   RW           98    .bss.y_imu          encoder.o
     0x2000e0e0        -       0x00000004   Zero   RW          187    .bss.yaw            imu963.o
     0x2000e0e4        -       0x00000001   Zero   RW           67    .bss.yaw_flag       main.o
-    0x2000e0e5   0x70024f71   0x00000003   PAD
+    0x2000e0e5   0x70024fa9   0x00000003   PAD
     0x2000e0e8        -       0x00000004   Zero   RW           52    .bss.yaw_target     main.o
     0x2000e0ec        -       0x00000001   Zero   RW          472    .bss.zf_debug_init_flag  zf_common_debug.o
 
 
-    Execution Region ARM_LIB_HEAP (Exec base: 0x2000e0f0, Load base: 0x70024f74, Size: 0x00000400, Max: 0x00000400, ABSOLUTE)
+    Execution Region ARM_LIB_HEAP (Exec base: 0x2000e0f0, Load base: 0x70024fac, Size: 0x00000400, Max: 0x00000400, ABSOLUTE)
 
     Exec Addr    Load Addr    Size         Type   Attr      Idx    E Section Name        Object
 
     0x2000e0f0        -       0x00000400   Zero   RW            2    ARM_LIB_HEAP.bss    anon$$obj.o
 
 
-    Execution Region ARM_LIB_STACK (Exec base: 0x2006e000, Load base: 0x70024f74, Size: 0x00002000, Max: 0x00002000, ABSOLUTE)
+    Execution Region ARM_LIB_STACK (Exec base: 0x2006e000, Load base: 0x70024fac, Size: 0x00002000, Max: 0x00002000, ABSOLUTE)
 
     Exec Addr    Load Addr    Size         Type   Attr      Idx    E Section Name        Object
 
     0x2006e000        -       0x00002000   Zero   RW            3    ARM_LIB_STACK.bss   anon$$obj.o
 
 
-    Execution Region OCRAM_cache (Exec base: 0x20200000, Load base: 0x70024f74, Size: 0x00000000, Max: 0x00080000, ABSOLUTE)
+    Execution Region OCRAM_cache (Exec base: 0x20200000, Load base: 0x70024fac, Size: 0x00000000, Max: 0x00080000, ABSOLUTE)
 
     **** No section assigned to this execution region ****
 
@@ -14577,7 +14577,7 @@ Memory Map of the image
     0x80000000        -       0x00000400   Zero   RW            1    VECTOR_RAM.bss      anon$$obj.o
 
 
-    Execution Region ER_m_ram_text (Exec base: 0x80000400, Load base: 0x700028d8, Size: 0x000225b0, Max: 0x01dfdc00, ABSOLUTE)
+    Execution Region ER_m_ram_text (Exec base: 0x80000400, Load base: 0x700028d8, Size: 0x000225e8, Max: 0x01dfdc00, ABSOLUTE)
 
     Exec Addr    Load Addr    Size         Type   Attr      Idx    E Section Name        Object
 
@@ -14962,254 +14962,254 @@ Memory Map of the image
     0x8000e7e6   0x70010cbe   0x00000002   PAD
     0x8000e7e8   0x70010cc0   0x00000106   Code   RO          138    .text.key_read      key.o
     0x8000e8ee   0x70010dc6   0x00000002   PAD
-    0x8000e8f0   0x70010dc8   0x00000e48   Code   RO           38    .text.main          main.o
-    0x8000f738   0x70011c10   0x00000100   Code   RO          294    .text.map_boom_out  path_planning.o
-    0x8000f838   0x70011d10   0x000008e4   Code   RO          243    .text.menu          menu.o
-    0x8001011c   0x700125f4   0x00000004   PAD
-    0x80010120   0x700125f8   0x0000008c   Code   RO          126    .text.motor_duty    motor.o
-    0x800101ac   0x70012684   0x00000004   PAD
-    0x800101b0   0x70012688   0x00000066   Code   RO          124    .text.motor_init    motor.o
-    0x80010216   0x700126ee   0x00000002   PAD
-    0x80010218   0x700126f0   0x00000148   Code   RO          215    .text.motor_solution  control.o
-    0x80010360   0x70012838   0x0000003e   Code   RO          136    .text.my_key_init   key.o
-    0x8001039e   0x70012876   0x00000002   PAD
-    0x800103a0   0x70012878   0x00000010   Code   RO          227    .text.my_uart_init  wireless_uart.o
-    0x800103b0   0x70012888   0x0000016c   Code   RO          282    .text.parse_map_input  path_planning.o
-    0x8001051c   0x700129f4   0x00000004   PAD
-    0x80010520   0x700129f8   0x0000642e   Code   RO          292    .text.path_boom_calculation  path_planning.o
-    0x8001694e   0x70018e26   0x00000002   PAD
-    0x80016950   0x70018e28   0x000005de   Code   RO          280    .text.path_calculation  path_planning.o
-    0x80016f2e   0x70019406   0x00000002   PAD
-    0x80016f30   0x70019408   0x0000157a   Code   RO          290    .text.path_id_calculation  path_planning.o
-    0x800184aa   0x7001a982   0x00000006   PAD
-    0x800184b0   0x7001a988   0x00000cb6   Code   RO          286    .text.path_look_calculation  path_planning.o
-    0x80019166   0x7001b63e   0x00000002   PAD
-    0x80019168   0x7001b640   0x0000057c   Code   RO          278    .text.path_start_calculation  path_planning.o
-    0x800196e4   0x7001bbbc   0x00000004   PAD
-    0x800196e8   0x7001bbc0   0x000000bc   Code   RO          151    .text.pid_increm    pid.o
-    0x800197a4   0x7001bc7c   0x00000004   PAD
-    0x800197a8   0x7001bc80   0x000001b0   Code   RO          155    .text.pid_init      pid.o
-    0x80019958   0x7001be30   0x000000d8   Code   RO          153    .text.pid_location  pid.o
-    0x80019a30   0x7001bf08   0x0000001a   Code   RO          161    .text.pid_position_target  pid.o
-    0x80019a4a   0x7001bf22   0x00000006   PAD
-    0x80019a50   0x7001bf28   0x0000007c   Code   RO          165    .text.pid_reset     pid.o
-    0x80019acc   0x7001bfa4   0x00000004   PAD
-    0x80019ad0   0x7001bfa8   0x00000006   Code   RO          157    .text.pid_target    pid.o
-    0x80019ad6   0x7001bfae   0x00000002   PAD
-    0x80019ad8   0x7001bfb0   0x00000032   Code   RO          159    .text.pid_wheel_target  pid.o
-    0x80019b0a   0x7001bfe2   0x00000006   PAD
-    0x80019b10   0x7001bfe8   0x000000cc   Code   RO          843    .text.pit_init      zf_driver_pit.o
-    0x80019bdc   0x7001c0b4   0x00000004   PAD
-    0x80019be0   0x7001c0b8   0x000000b4   Code   RO          386    .text.push_cam_data  cam_uart.o
-    0x80019c94   0x7001c16c   0x00000004   PAD
-    0x80019c98   0x7001c170   0x0000021e   Code   RO          858    .text.pwm_init      zf_driver_pwm.o
-    0x80019eb6   0x7001c38e   0x00000002   PAD
-    0x80019eb8   0x7001c390   0x00000420   Code   RO          854    .text.pwm_iomuxc    zf_driver_pwm.o
-    0x8001a2d8   0x7001c7b0   0x000000a2   Code   RO          856    .text.pwm_set_duty  zf_driver_pwm.o
-    0x8001a37a   0x7001c852   0x00000006   PAD
-    0x8001a380   0x7001c858   0x0000030a   Code   RO          662    .text.qtimer_iomuxc  zf_driver_encoder.o
-    0x8001a68a   0x7001cb62   0x00000006   PAD
-    0x8001a690   0x7001cb68   0x0000069e   Code   RO          296    .text.reset_planning_system  path_planning.o
-    0x8001ad2e   0x7001d206   0x00000002   PAD
-    0x8001ad30   0x7001d208   0x00000016   Code   RO          992    .text.rom_api_flexspi_nor_flash_erase  zf_driver_romapi.o
-    0x8001ad46   0x7001d21e   0x00000002   PAD
-    0x8001ad48   0x7001d220   0x00000016   Code   RO          986    .text.rom_api_flexspi_nor_flash_page_program  zf_driver_romapi.o
-    0x8001ad5e   0x7001d236   0x00000002   PAD
-    0x8001ad60   0x7001d238   0x00000024   Code   RO          994    .text.rom_api_flexspi_nor_flash_read  zf_driver_romapi.o
-    0x8001ad84   0x7001d25c   0x00000004   PAD
-    0x8001ad88   0x7001d260   0x00000010   Code   RO          990    .text.rom_api_flexspi_nor_get_config  zf_driver_romapi.o
-    0x8001ad98   0x7001d270   0x00000014   Code   RO          870    .text.rom_api_init  zf_driver_romapi.o
-    0x8001adac   0x7001d284   0x00000004   PAD
-    0x8001adb0   0x7001d288   0x00000058   Code   RO         2262    .text.seekfree_assistant_interface_init  seekfree_assistant_interface.o
-    0x8001ae08   0x7001d2e0   0x00000004   Code   RO         2260    .text.seekfree_assistant_receive  seekfree_assistant_interface.o
-    0x8001ae0c   0x7001d2e4   0x00000004   PAD
-    0x8001ae10   0x7001d2e8   0x00000004   Code   RO         2258    .text.seekfree_assistant_transfer  seekfree_assistant_interface.o
-    0x8001ae14   0x7001d2ec   0x00000004   PAD
-    0x8001ae18   0x7001d2f0   0x00000032   Code   RO         1836    .text.set_wireless_type  zf_device_type.o
-    0x8001ae4a   0x7001d322   0x00000006   PAD
-    0x8001ae50   0x7001d328   0x0000058e   Code   RO          298    .text.simple_astar  path_planning.o
-    0x8001b3de   0x7001d8b6   0x00000002   PAD
-    0x8001b3e0   0x7001d8b8   0x000006d4   Code   RO          312    .text.simulate_box_deadlock  path_planning.o
-    0x8001bab4   0x7001df8c   0x00000004   PAD
-    0x8001bab8   0x7001df90   0x00000660   Code   RO          314    .text.simulate_box_to_target  path_planning.o
-    0x8001c118   0x7001e5f0   0x000005da   Code   RO          306    .text.solve_single_box_a_star  path_planning.o
-    0x8001c6f2   0x7001ebca   0x00000006   PAD
-    0x8001c6f8   0x7001ebd0   0x00000198   Code   RO         1168    .text.spi_init      zf_driver_spi.o
-    0x8001c890   0x7001ed68   0x00000374   Code   RO         1128    .text.spi_iomuxc    zf_driver_spi.o
-    0x8001cc04   0x7001f0dc   0x00000004   PAD
-    0x8001cc08   0x7001f0e0   0x000000c4   Code   RO         1156    .text.spi_read_8bit_register  zf_driver_spi.o
-    0x8001cccc   0x7001f1a4   0x00000004   PAD
-    0x8001ccd0   0x7001f1a8   0x000000d8   Code   RO         1158    .text.spi_read_8bit_registers  zf_driver_spi.o
-    0x8001cda8   0x7001f280   0x00000084   Code   RO         1164    .text.spi_transfer_8bit  zf_driver_spi.o
-    0x8001ce2c   0x7001f304   0x00000004   PAD
-    0x8001ce30   0x7001f308   0x00000084   Code   RO         1138    .text.spi_write_16bit_array  zf_driver_spi.o
-    0x8001ceb4   0x7001f38c   0x00000004   PAD
-    0x8001ceb8   0x7001f390   0x0000006a   Code   RO         1134    .text.spi_write_8bit  zf_driver_spi.o
-    0x8001cf22   0x7001f3fa   0x00000006   PAD
-    0x8001cf28   0x7001f400   0x0000006e   Code   RO         1132    .text.spi_write_8bit_array  zf_driver_spi.o
-    0x8001cf96   0x7001f46e   0x00000002   PAD
-    0x8001cf98   0x7001f470   0x000000b2   Code   RO         1140    .text.spi_write_8bit_register  zf_driver_spi.o
-    0x8001d04a   0x7001f522   0x00000006   PAD
-    0x8001d050   0x7001f528   0x00000036   Code   RO          652    .text.system_delay_init  zf_driver_delay.o
-    0x8001d086   0x7001f55e   0x00000002   PAD
-    0x8001d088   0x7001f560   0x00000054   Code   RO          648    .text.system_delay_ms  zf_driver_delay.o
-    0x8001d0dc   0x7001f5b4   0x00000004   PAD
-    0x8001d0e0   0x7001f5b8   0x00000054   Code   RO          650    .text.system_delay_us  zf_driver_delay.o
-    0x8001d134   0x7001f60c   0x00000004   PAD
-    0x8001d138   0x7001f610   0x000000ca   Code   RO         1760    .text.tft180_clear  zf_device_tft180.o
-    0x8001d202   0x7001f6da   0x00000006   PAD
-    0x8001d208   0x7001f6e0   0x000004f0   Code   RO         1796    .text.tft180_init   zf_device_tft180.o
-    0x8001d6f8   0x7001fbd0   0x00000016   Code   RO         1770    .text.tft180_set_color  zf_device_tft180.o
-    0x8001d70e   0x7001fbe6   0x00000002   PAD
-    0x8001d710   0x7001fbe8   0x00000034   Code   RO         1766    .text.tft180_set_dir  zf_device_tft180.o
-    0x8001d744   0x7001fc1c   0x00000004   PAD
-    0x8001d748   0x7001fc20   0x0000000c   Code   RO         1768    .text.tft180_set_font  zf_device_tft180.o
-    0x8001d754   0x7001fc2c   0x00000004   PAD
-    0x8001d758   0x7001fc30   0x00000176   Code   RO         1762    .text.tft180_set_region  zf_device_tft180.o
-    0x8001d8ce   0x7001fda6   0x00000002   PAD
-    0x8001d8d0   0x7001fda8   0x00000314   Code   RO         1776    .text.tft180_show_char  zf_device_tft180.o
-    0x8001dbe4   0x700200bc   0x00000004   PAD
-    0x8001dbe8   0x700200c0   0x00000188   Code   RO         1784    .text.tft180_show_float  zf_device_tft180.o
-    0x8001dd70   0x70020248   0x0000011c   Code   RO         1780    .text.tft180_show_int  zf_device_tft180.o
-    0x8001de8c   0x70020364   0x00000004   PAD
-    0x8001de90   0x70020368   0x000000a2   Code   RO         1778    .text.tft180_show_string  zf_device_tft180.o
-    0x8001df32   0x7002040a   0x00000006   PAD
-    0x8001df38   0x70020410   0x0000002a   Code   RO          424    .text.tft_init      tft180.o
-    0x8001df62   0x7002043a   0x00000006   PAD
-    0x8001df68   0x70020440   0x000004de   Code   RO          332    .text.try_execute_step  path_planning.o
-    0x8001e446   0x7002091e   0x00000002   PAD
-    0x8001e448   0x70020920   0x00000002   Code   RO         1830    .text.type_default_callback  zf_device_type.o
-    0x8001e44a   0x70020922   0x00000006   PAD
-    0x8001e450   0x70020928   0x00000072   Code   RO         1216    .text.uart_init     zf_driver_uart.o
-    0x8001e4c2   0x7002099a   0x00000006   PAD
-    0x8001e4c8   0x700209a0   0x00000322   Code   RO         1200    .text.uart_iomuxc   zf_driver_uart.o
-    0x8001e7ea   0x70020cc2   0x00000006   PAD
-    0x8001e7f0   0x70020cc8   0x00000038   Code   RO         1210    .text.uart_query_byte  zf_driver_uart.o
-    0x8001e828   0x70020d00   0x00000030   Code   RO         1214    .text.uart_rx_interrupt  zf_driver_uart.o
-    0x8001e858   0x70020d30   0x0000002a   Code   RO         1204    .text.uart_write_buffer  zf_driver_uart.o
-    0x8001e882   0x70020d5a   0x00000006   PAD
-    0x8001e888   0x70020d60   0x0000002a   Code   RO         1202    .text.uart_write_byte  zf_driver_uart.o
-    0x8001e8b2   0x70020d8a   0x00000006   PAD
-    0x8001e8b8   0x70020d90   0x0000003e   Code   RO         1206    .text.uart_write_string  zf_driver_uart.o
-    0x8001e8f6   0x70020dce   0x00000002   PAD
-    0x8001e8f8   0x70020dd0   0x000002ae   Code   RO          324    .text.verify_bomb_push_feasibility  path_planning.o
-    0x8001eba6   0x7002107e   0x00000002   PAD
-    0x8001eba8   0x70021080   0x00000120   Code   RO         2011    .text.wifi_spi_read_buffer  zf_device_wifi_spi.o
-    0x8001ecc8   0x700211a0   0x000001a6   Code   RO         2007    .text.wifi_spi_send_buffer  zf_device_wifi_spi.o
-    0x8001ee6e   0x70021346   0x00000002   PAD
-    0x8001ee70   0x70021348   0x00000038   Code   RO         1902    .text.wifi_uart_read_buffer  zf_device_wifi_uart.o
-    0x8001eea8   0x70021380   0x00000128   Code   RO         1898    .text.wifi_uart_send_buffer  zf_device_wifi_uart.o
-    0x8001efd0   0x700214a8   0x0000009c   Code   RO         1870    .text.wifi_uart_wait_ack  zf_device_wifi_uart.o
-    0x8001f06c   0x70021544   0x00000004   PAD
-    0x8001f070   0x70021548   0x00000026   Code   RO         1937    .text.wireless_uart_callback  zf_device_wireless_uart.o
-    0x8001f096   0x7002156e   0x00000002   PAD
-    0x8001f098   0x70021570   0x00000050   Code   RO         1939    .text.wireless_uart_init  zf_device_wireless_uart.o
-    0x8001f0e8   0x700215c0   0x00000036   Code   RO         1935    .text.wireless_uart_read_buffer  zf_device_wireless_uart.o
-    0x8001f11e   0x700215f6   0x00000002   PAD
-    0x8001f120   0x700215f8   0x00000060   Code   RO         1929    .text.wireless_uart_send_buffer  zf_device_wireless_uart.o
-    0x8001f180   0x70021658   0x00000034   Code   RO         6004    i.__0snprintf       mc_w.l(printfa.o)
-    0x8001f1b4   0x7002168c   0x00000028   Code   RO         6005    i.__0sprintf        mc_w.l(printfa.o)
-    0x8001f1dc   0x700216b4   0x00000030   Code   RO         6092    i.__ARM_fpclassify  m_wv.l(fpclassify.o)
-    0x8001f20c   0x700216e4   0x00000026   Code   RO         6094    i.__ARM_fpclassifyf  m_wv.l(fpclassifyf.o)
-    0x8001f232   0x7002170a   0x00000006   PAD
-    0x8001f238   0x70021710   0x000001f0   Code   RO         5655    i.__hardfp_asin     m_wv.l(asin.o)
-    0x8001f428   0x70021900   0x000001d4   Code   RO         6068    i.__hardfp_atan     m_wv.l(atan.o)
-    0x8001f5fc   0x70021ad4   0x00000004   PAD
-    0x8001f600   0x70021ad8   0x000001c8   Code   RO         5662    i.__hardfp_atan2    m_wv.l(atan2.o)
-    0x8001f7c8   0x70021ca0   0x00000150   Code   RO         5674    i.__hardfp_cosf     m_wv.l(cosf.o)
-    0x8001f918   0x70021df0   0x00000014   Code   RO         5680    i.__hardfp_fabs     m_wv.l(fabs.o)
-    0x8001f92c   0x70021e04   0x0000000e   Code   RO         5723    i.__hardfp_fabsf    m_wv.l(fabsfc99.o)
-    0x8001f93a   0x70021e12   0x00000002   PAD
-    0x8001f93c   0x70021e14   0x000000c0   Code   RO         5686    i.__hardfp_modf     m_wv.l(modf.o)
-    0x8001f9fc   0x70021ed4   0x00000004   PAD
-    0x8001fa00   0x70021ed8   0x000008c4   Code   RO         5692    i.__hardfp_pow      m_wv.l(pow.o)
-    0x800202c4   0x7002279c   0x00000190   Code   RO         5705    i.__hardfp_sinf     m_wv.l(sinf.o)
-    0x80020454   0x7002292c   0x00000066   Code   RO         5711    i.__hardfp_sqrt     m_wv.l(sqrt.o)
-    0x800204ba   0x70022992   0x00000070   Code   RO         6110    i.__kernel_poly     m_wv.l(poly.o)
-    0x8002052a   0x70022a02   0x00000006   PAD
-    0x80020530   0x70022a08   0x00000018   Code   RO         6078    i.__mathlib_dbl_divzero  m_wv.l(dunder.o)
-    0x80020548   0x70022a20   0x00000006   Code   RO         6079    i.__mathlib_dbl_infnan  m_wv.l(dunder.o)
-    0x8002054e   0x70022a26   0x00000006   Code   RO         6080    i.__mathlib_dbl_infnan2  m_wv.l(dunder.o)
-    0x80020554   0x70022a2c   0x00000004   PAD
-    0x80020558   0x70022a30   0x00000018   Code   RO         6081    i.__mathlib_dbl_invalid  m_wv.l(dunder.o)
-    0x80020570   0x70022a48   0x00000018   Code   RO         6082    i.__mathlib_dbl_overflow  m_wv.l(dunder.o)
-    0x80020588   0x70022a60   0x00000018   Code   RO         6084    i.__mathlib_dbl_underflow  m_wv.l(dunder.o)
-    0x800205a0   0x70022a78   0x00000006   Code   RO         6097    i.__mathlib_flt_infnan  m_wv.l(funder.o)
-    0x800205a6   0x70022a7e   0x00000002   PAD
-    0x800205a8   0x70022a80   0x00000010   Code   RO         6099    i.__mathlib_flt_invalid  m_wv.l(funder.o)
-    0x800205b8   0x70022a90   0x00000010   Code   RO         6102    i.__mathlib_flt_underflow  m_wv.l(funder.o)
-    0x800205c8   0x70022aa0   0x00000154   Code   RO         6118    i.__mathlib_rredf2  m_wv.l(rredf.o)
-    0x8002071c   0x70022bf4   0x0000000c   Code   RO         6158    i.__set_errno       mc_w.l(errno.o)
-    0x80020728   0x70022c00   0x00000184   Code   RO         6010    i._fp_digits        mc_w.l(printfa.o)
-    0x800208ac   0x70022d84   0x0000000e   Code   RO         6066    i._is_digit         mc_w.l(scanf_fp.o)
-    0x800208ba   0x70022d92   0x00000002   PAD
-    0x800208bc   0x70022d94   0x000006dc   Code   RO         6011    i._printf_core      mc_w.l(printfa.o)
-    0x80020f98   0x70023470   0x00000024   Code   RO         6012    i._printf_post_padding  mc_w.l(printfa.o)
-    0x80020fbc   0x70023494   0x0000002e   Code   RO         6013    i._printf_pre_padding  mc_w.l(printfa.o)
-    0x80020fea   0x700234c2   0x00000016   Code   RO         6014    i._snputc           mc_w.l(printfa.o)
-    0x80021000   0x700234d8   0x0000000a   Code   RO         6015    i._sputc            mc_w.l(printfa.o)
-    0x8002100a   0x700234e2   0x00000010   Code   RO         6070    i.atan              m_wv.l(atan.o)
-    0x8002101a   0x700234f2   0x00000018   Code   RO         5682    i.fabs              m_wv.l(fabs.o)
-    0x80021032   0x7002350a   0x0000006a   Code   RO         5713    i.sqrt              m_wv.l(sqrt.o)
-    0x8002109c   0x70023574   0x00000004   PAD
-    0x800210a0   0x70023578   0x00000050   Data   RO         5658    .constdata          m_wv.l(asin.o)
-    0x800210f0   0x700235c8   0x00000088   Data   RO         5695    .constdata          m_wv.l(pow.o)
-    0x80021178   0x70023650   0x00000098   Data   RO         6071    .constdata          m_wv.l(atan.o)
-    0x80021210   0x700236e8   0x00000008   Data   RO         6112    .constdata          m_wv.l(qnan.o)
-    0x80021218   0x700236f0   0x00000020   Data   RO         6119    .constdata          m_wv.l(rredf.o)
-    0x80021238   0x70023710   0x00000040   Data   RO         6199    .constdata          mc_w.l(ctype_c.o)
-    0x80021278   0x70023750   0x00000014   Data   RO          861    .rodata.PWMPTR      zf_driver_pwm.o
-    0x8002128c   0x70023764   0x00000008   Data   RO         4879    .rodata.armPllConfig_BOARD_BootClockRUN  clock_config.o
-    0x80021294   0x7002376c   0x00000228   Data   RO          518    .rodata.ascii_font_6x8  zf_common_font.o
-    0x800214bc   0x70023994   0x000005f0   Data   RO          517    .rodata.ascii_font_8x16  zf_common_font.o
-    0x80021aac   0x70023f84   0x00000010   Data   RO         2491    .rodata.cst16       fsl_clock.o
-    0x80021abc   0x70023f94   0x00000008   Data   RO          375    .rodata.cst8        path_planning.o
-    0x80021ac4   0x70023f9c   0x00000008   Data   RO         3920    .rodata.cst8        fsl_lpspi.o
-    0x80021acc   0x70023fa4   0x00000006   Data   RO         3732    .rodata.s_gptClocks  fsl_gpt.o
-    0x80021ad2   0x70023faa   0x0000000a   Data   RO         3919    .rodata.s_lpspiClocks  fsl_lpspi.o
-    0x80021adc   0x70023fb4   0x00000012   Data   RO         4033    .rodata.s_lpuartClock  fsl_lpuart.o
-    0x80021aee   0x70023fc6   0x00000028   Data   RO         4157    .rodata.s_pwmClocks  fsl_pwm.o
-    0x80021b16   0x70023fee   0x0000000a   Data   RO         4244    .rodata.s_qtmrClocks  fsl_qtmr.o
-    0x80021b20   0x70023ff8   0x00000014   Data   RO         1171    .rodata.spi_index   zf_driver_spi.o
-    0x80021b34   0x7002400c   0x00000021   Data   RO          269    .rodata.str1.1      menu.o
-    0x80021b55   0x7002402d   0x00000012   Data   RO          377    .rodata.str1.1      path_planning.o
-    0x80021b67   0x7002403f   0x0000000f   Data   RO          412    .rodata.str1.1      cam_uart.o
-    0x80021b76   0x7002404e   0x00000009   Data   RO          483    .rodata.str1.1      zf_common_debug.o
-    0x80021b7f   0x70024057   0x0000002b   Data   RO          508    .rodata.str1.1      zf_common_fifo.o
-    0x80021baa   0x70024082   0x0000002f   Data   RO          555    .rodata.str1.1      zf_common_function.o
-    0x80021bd9   0x700240b1   0x0000002e   Data   RO          673    .rodata.str1.1      zf_driver_encoder.o
-    0x80021c07   0x700240df   0x0000002a   Data   RO          860    .rodata.str1.1      zf_driver_pwm.o
-    0x80021c31   0x70024109   0x0000002a   Data   RO         1170    .rodata.str1.1      zf_driver_spi.o
-    0x80021c5b   0x70024133   0x0000002b   Data   RO         1218    .rodata.str1.1      zf_driver_uart.o
-    0x80021c86   0x7002415e   0x00000037   Data   RO         1302    .rodata.str1.1      zf_device_bluetooth_ch9141.o
-    0x80021cbd   0x70024195   0x0000002f   Data   RO         1375    .rodata.str1.1      zf_device_imu963ra.o
-    0x80021cec   0x700241c4   0x0000002d   Data   RO         1804    .rodata.str1.1      zf_device_tft180.o
-    0x80021d19   0x700241f1   0x000000b4   Data   RO         1914    .rodata.str1.1      zf_device_wifi_uart.o
-    0x80021dcd   0x700242a5   0x00000034   Data   RO         1941    .rodata.str1.1      zf_device_wireless_uart.o
-    0x80021e01   0x700242d9   0x0000002e   Data   RO         2083    .rodata.str1.1      zf_device_ble6a20.o
-    0x80021e2f   0x70024307   0x0000002d   Data   RO         2487    .rodata.str1.1      fsl_clock.o
-    0x80021e5c   0x70024334   0x00000282   Data   RO         2811    .rodata.str1.1      fsl_edma.o
-    0x800220de   0x700245b6   0x00000312   Data   RO         3109    .rodata.str1.1      fsl_flexcan.o
-    0x800223f0   0x700248c8   0x00000030   Data   RO         3716    .rodata.str1.1      fsl_gpio.o
-    0x80022420   0x700248f8   0x00000047   Data   RO         3731    .rodata.str1.1      fsl_gpt.o
-    0x80022467   0x7002493f   0x00000085   Data   RO         3918    .rodata.str1.1      fsl_lpspi.o
-    0x800224ec   0x700249c4   0x00000134   Data   RO         4032    .rodata.str1.1      fsl_lpuart.o
-    0x80022620   0x70024af8   0x00000047   Data   RO         4106    .rodata.str1.1      fsl_pit.o
-    0x80022667   0x70024b3f   0x00000060   Data   RO         4156    .rodata.str1.1      fsl_pwm.o
-    0x800226c7   0x70024b9f   0x00000049   Data   RO         4243    .rodata.str1.1      fsl_qtmr.o
-    0x80022710   0x70024be8   0x00000210   Data   RO         4403    .rodata.str1.1      fsl_sai.o
-    0x80022920   0x70024df8   0x0000006c   Data   RO         4616    .rodata.str1.1      fsl_spdif.o
-    0x8002298c   0x70024e64   0x00000024   Data   RO         1219    .rodata.uart_index  zf_driver_uart.o
+    0x8000e8f0   0x70010dc8   0x00000e80   Code   RO           38    .text.main          main.o
+    0x8000f770   0x70011c48   0x00000100   Code   RO          294    .text.map_boom_out  path_planning.o
+    0x8000f870   0x70011d48   0x000008e4   Code   RO          243    .text.menu          menu.o
+    0x80010154   0x7001262c   0x00000004   PAD
+    0x80010158   0x70012630   0x0000008c   Code   RO          126    .text.motor_duty    motor.o
+    0x800101e4   0x700126bc   0x00000004   PAD
+    0x800101e8   0x700126c0   0x00000066   Code   RO          124    .text.motor_init    motor.o
+    0x8001024e   0x70012726   0x00000002   PAD
+    0x80010250   0x70012728   0x00000148   Code   RO          215    .text.motor_solution  control.o
+    0x80010398   0x70012870   0x0000003e   Code   RO          136    .text.my_key_init   key.o
+    0x800103d6   0x700128ae   0x00000002   PAD
+    0x800103d8   0x700128b0   0x00000010   Code   RO          227    .text.my_uart_init  wireless_uart.o
+    0x800103e8   0x700128c0   0x0000016c   Code   RO          282    .text.parse_map_input  path_planning.o
+    0x80010554   0x70012a2c   0x00000004   PAD
+    0x80010558   0x70012a30   0x0000642e   Code   RO          292    .text.path_boom_calculation  path_planning.o
+    0x80016986   0x70018e5e   0x00000002   PAD
+    0x80016988   0x70018e60   0x000005de   Code   RO          280    .text.path_calculation  path_planning.o
+    0x80016f66   0x7001943e   0x00000002   PAD
+    0x80016f68   0x70019440   0x0000157a   Code   RO          290    .text.path_id_calculation  path_planning.o
+    0x800184e2   0x7001a9ba   0x00000006   PAD
+    0x800184e8   0x7001a9c0   0x00000cb6   Code   RO          286    .text.path_look_calculation  path_planning.o
+    0x8001919e   0x7001b676   0x00000002   PAD
+    0x800191a0   0x7001b678   0x0000057c   Code   RO          278    .text.path_start_calculation  path_planning.o
+    0x8001971c   0x7001bbf4   0x00000004   PAD
+    0x80019720   0x7001bbf8   0x000000bc   Code   RO          151    .text.pid_increm    pid.o
+    0x800197dc   0x7001bcb4   0x00000004   PAD
+    0x800197e0   0x7001bcb8   0x000001b0   Code   RO          155    .text.pid_init      pid.o
+    0x80019990   0x7001be68   0x000000d8   Code   RO          153    .text.pid_location  pid.o
+    0x80019a68   0x7001bf40   0x0000001a   Code   RO          161    .text.pid_position_target  pid.o
+    0x80019a82   0x7001bf5a   0x00000006   PAD
+    0x80019a88   0x7001bf60   0x0000007c   Code   RO          165    .text.pid_reset     pid.o
+    0x80019b04   0x7001bfdc   0x00000004   PAD
+    0x80019b08   0x7001bfe0   0x00000006   Code   RO          157    .text.pid_target    pid.o
+    0x80019b0e   0x7001bfe6   0x00000002   PAD
+    0x80019b10   0x7001bfe8   0x00000032   Code   RO          159    .text.pid_wheel_target  pid.o
+    0x80019b42   0x7001c01a   0x00000006   PAD
+    0x80019b48   0x7001c020   0x000000cc   Code   RO          843    .text.pit_init      zf_driver_pit.o
+    0x80019c14   0x7001c0ec   0x00000004   PAD
+    0x80019c18   0x7001c0f0   0x000000b4   Code   RO          386    .text.push_cam_data  cam_uart.o
+    0x80019ccc   0x7001c1a4   0x00000004   PAD
+    0x80019cd0   0x7001c1a8   0x0000021e   Code   RO          858    .text.pwm_init      zf_driver_pwm.o
+    0x80019eee   0x7001c3c6   0x00000002   PAD
+    0x80019ef0   0x7001c3c8   0x00000420   Code   RO          854    .text.pwm_iomuxc    zf_driver_pwm.o
+    0x8001a310   0x7001c7e8   0x000000a2   Code   RO          856    .text.pwm_set_duty  zf_driver_pwm.o
+    0x8001a3b2   0x7001c88a   0x00000006   PAD
+    0x8001a3b8   0x7001c890   0x0000030a   Code   RO          662    .text.qtimer_iomuxc  zf_driver_encoder.o
+    0x8001a6c2   0x7001cb9a   0x00000006   PAD
+    0x8001a6c8   0x7001cba0   0x0000069e   Code   RO          296    .text.reset_planning_system  path_planning.o
+    0x8001ad66   0x7001d23e   0x00000002   PAD
+    0x8001ad68   0x7001d240   0x00000016   Code   RO          992    .text.rom_api_flexspi_nor_flash_erase  zf_driver_romapi.o
+    0x8001ad7e   0x7001d256   0x00000002   PAD
+    0x8001ad80   0x7001d258   0x00000016   Code   RO          986    .text.rom_api_flexspi_nor_flash_page_program  zf_driver_romapi.o
+    0x8001ad96   0x7001d26e   0x00000002   PAD
+    0x8001ad98   0x7001d270   0x00000024   Code   RO          994    .text.rom_api_flexspi_nor_flash_read  zf_driver_romapi.o
+    0x8001adbc   0x7001d294   0x00000004   PAD
+    0x8001adc0   0x7001d298   0x00000010   Code   RO          990    .text.rom_api_flexspi_nor_get_config  zf_driver_romapi.o
+    0x8001add0   0x7001d2a8   0x00000014   Code   RO          870    .text.rom_api_init  zf_driver_romapi.o
+    0x8001ade4   0x7001d2bc   0x00000004   PAD
+    0x8001ade8   0x7001d2c0   0x00000058   Code   RO         2262    .text.seekfree_assistant_interface_init  seekfree_assistant_interface.o
+    0x8001ae40   0x7001d318   0x00000004   Code   RO         2260    .text.seekfree_assistant_receive  seekfree_assistant_interface.o
+    0x8001ae44   0x7001d31c   0x00000004   PAD
+    0x8001ae48   0x7001d320   0x00000004   Code   RO         2258    .text.seekfree_assistant_transfer  seekfree_assistant_interface.o
+    0x8001ae4c   0x7001d324   0x00000004   PAD
+    0x8001ae50   0x7001d328   0x00000032   Code   RO         1836    .text.set_wireless_type  zf_device_type.o
+    0x8001ae82   0x7001d35a   0x00000006   PAD
+    0x8001ae88   0x7001d360   0x0000058e   Code   RO          298    .text.simple_astar  path_planning.o
+    0x8001b416   0x7001d8ee   0x00000002   PAD
+    0x8001b418   0x7001d8f0   0x000006d4   Code   RO          312    .text.simulate_box_deadlock  path_planning.o
+    0x8001baec   0x7001dfc4   0x00000004   PAD
+    0x8001baf0   0x7001dfc8   0x00000660   Code   RO          314    .text.simulate_box_to_target  path_planning.o
+    0x8001c150   0x7001e628   0x000005da   Code   RO          306    .text.solve_single_box_a_star  path_planning.o
+    0x8001c72a   0x7001ec02   0x00000006   PAD
+    0x8001c730   0x7001ec08   0x00000198   Code   RO         1168    .text.spi_init      zf_driver_spi.o
+    0x8001c8c8   0x7001eda0   0x00000374   Code   RO         1128    .text.spi_iomuxc    zf_driver_spi.o
+    0x8001cc3c   0x7001f114   0x00000004   PAD
+    0x8001cc40   0x7001f118   0x000000c4   Code   RO         1156    .text.spi_read_8bit_register  zf_driver_spi.o
+    0x8001cd04   0x7001f1dc   0x00000004   PAD
+    0x8001cd08   0x7001f1e0   0x000000d8   Code   RO         1158    .text.spi_read_8bit_registers  zf_driver_spi.o
+    0x8001cde0   0x7001f2b8   0x00000084   Code   RO         1164    .text.spi_transfer_8bit  zf_driver_spi.o
+    0x8001ce64   0x7001f33c   0x00000004   PAD
+    0x8001ce68   0x7001f340   0x00000084   Code   RO         1138    .text.spi_write_16bit_array  zf_driver_spi.o
+    0x8001ceec   0x7001f3c4   0x00000004   PAD
+    0x8001cef0   0x7001f3c8   0x0000006a   Code   RO         1134    .text.spi_write_8bit  zf_driver_spi.o
+    0x8001cf5a   0x7001f432   0x00000006   PAD
+    0x8001cf60   0x7001f438   0x0000006e   Code   RO         1132    .text.spi_write_8bit_array  zf_driver_spi.o
+    0x8001cfce   0x7001f4a6   0x00000002   PAD
+    0x8001cfd0   0x7001f4a8   0x000000b2   Code   RO         1140    .text.spi_write_8bit_register  zf_driver_spi.o
+    0x8001d082   0x7001f55a   0x00000006   PAD
+    0x8001d088   0x7001f560   0x00000036   Code   RO          652    .text.system_delay_init  zf_driver_delay.o
+    0x8001d0be   0x7001f596   0x00000002   PAD
+    0x8001d0c0   0x7001f598   0x00000054   Code   RO          648    .text.system_delay_ms  zf_driver_delay.o
+    0x8001d114   0x7001f5ec   0x00000004   PAD
+    0x8001d118   0x7001f5f0   0x00000054   Code   RO          650    .text.system_delay_us  zf_driver_delay.o
+    0x8001d16c   0x7001f644   0x00000004   PAD
+    0x8001d170   0x7001f648   0x000000ca   Code   RO         1760    .text.tft180_clear  zf_device_tft180.o
+    0x8001d23a   0x7001f712   0x00000006   PAD
+    0x8001d240   0x7001f718   0x000004f0   Code   RO         1796    .text.tft180_init   zf_device_tft180.o
+    0x8001d730   0x7001fc08   0x00000016   Code   RO         1770    .text.tft180_set_color  zf_device_tft180.o
+    0x8001d746   0x7001fc1e   0x00000002   PAD
+    0x8001d748   0x7001fc20   0x00000034   Code   RO         1766    .text.tft180_set_dir  zf_device_tft180.o
+    0x8001d77c   0x7001fc54   0x00000004   PAD
+    0x8001d780   0x7001fc58   0x0000000c   Code   RO         1768    .text.tft180_set_font  zf_device_tft180.o
+    0x8001d78c   0x7001fc64   0x00000004   PAD
+    0x8001d790   0x7001fc68   0x00000176   Code   RO         1762    .text.tft180_set_region  zf_device_tft180.o
+    0x8001d906   0x7001fdde   0x00000002   PAD
+    0x8001d908   0x7001fde0   0x00000314   Code   RO         1776    .text.tft180_show_char  zf_device_tft180.o
+    0x8001dc1c   0x700200f4   0x00000004   PAD
+    0x8001dc20   0x700200f8   0x00000188   Code   RO         1784    .text.tft180_show_float  zf_device_tft180.o
+    0x8001dda8   0x70020280   0x0000011c   Code   RO         1780    .text.tft180_show_int  zf_device_tft180.o
+    0x8001dec4   0x7002039c   0x00000004   PAD
+    0x8001dec8   0x700203a0   0x000000a2   Code   RO         1778    .text.tft180_show_string  zf_device_tft180.o
+    0x8001df6a   0x70020442   0x00000006   PAD
+    0x8001df70   0x70020448   0x0000002a   Code   RO          424    .text.tft_init      tft180.o
+    0x8001df9a   0x70020472   0x00000006   PAD
+    0x8001dfa0   0x70020478   0x000004de   Code   RO          332    .text.try_execute_step  path_planning.o
+    0x8001e47e   0x70020956   0x00000002   PAD
+    0x8001e480   0x70020958   0x00000002   Code   RO         1830    .text.type_default_callback  zf_device_type.o
+    0x8001e482   0x7002095a   0x00000006   PAD
+    0x8001e488   0x70020960   0x00000072   Code   RO         1216    .text.uart_init     zf_driver_uart.o
+    0x8001e4fa   0x700209d2   0x00000006   PAD
+    0x8001e500   0x700209d8   0x00000322   Code   RO         1200    .text.uart_iomuxc   zf_driver_uart.o
+    0x8001e822   0x70020cfa   0x00000006   PAD
+    0x8001e828   0x70020d00   0x00000038   Code   RO         1210    .text.uart_query_byte  zf_driver_uart.o
+    0x8001e860   0x70020d38   0x00000030   Code   RO         1214    .text.uart_rx_interrupt  zf_driver_uart.o
+    0x8001e890   0x70020d68   0x0000002a   Code   RO         1204    .text.uart_write_buffer  zf_driver_uart.o
+    0x8001e8ba   0x70020d92   0x00000006   PAD
+    0x8001e8c0   0x70020d98   0x0000002a   Code   RO         1202    .text.uart_write_byte  zf_driver_uart.o
+    0x8001e8ea   0x70020dc2   0x00000006   PAD
+    0x8001e8f0   0x70020dc8   0x0000003e   Code   RO         1206    .text.uart_write_string  zf_driver_uart.o
+    0x8001e92e   0x70020e06   0x00000002   PAD
+    0x8001e930   0x70020e08   0x000002ae   Code   RO          324    .text.verify_bomb_push_feasibility  path_planning.o
+    0x8001ebde   0x700210b6   0x00000002   PAD
+    0x8001ebe0   0x700210b8   0x00000120   Code   RO         2011    .text.wifi_spi_read_buffer  zf_device_wifi_spi.o
+    0x8001ed00   0x700211d8   0x000001a6   Code   RO         2007    .text.wifi_spi_send_buffer  zf_device_wifi_spi.o
+    0x8001eea6   0x7002137e   0x00000002   PAD
+    0x8001eea8   0x70021380   0x00000038   Code   RO         1902    .text.wifi_uart_read_buffer  zf_device_wifi_uart.o
+    0x8001eee0   0x700213b8   0x00000128   Code   RO         1898    .text.wifi_uart_send_buffer  zf_device_wifi_uart.o
+    0x8001f008   0x700214e0   0x0000009c   Code   RO         1870    .text.wifi_uart_wait_ack  zf_device_wifi_uart.o
+    0x8001f0a4   0x7002157c   0x00000004   PAD
+    0x8001f0a8   0x70021580   0x00000026   Code   RO         1937    .text.wireless_uart_callback  zf_device_wireless_uart.o
+    0x8001f0ce   0x700215a6   0x00000002   PAD
+    0x8001f0d0   0x700215a8   0x00000050   Code   RO         1939    .text.wireless_uart_init  zf_device_wireless_uart.o
+    0x8001f120   0x700215f8   0x00000036   Code   RO         1935    .text.wireless_uart_read_buffer  zf_device_wireless_uart.o
+    0x8001f156   0x7002162e   0x00000002   PAD
+    0x8001f158   0x70021630   0x00000060   Code   RO         1929    .text.wireless_uart_send_buffer  zf_device_wireless_uart.o
+    0x8001f1b8   0x70021690   0x00000034   Code   RO         6004    i.__0snprintf       mc_w.l(printfa.o)
+    0x8001f1ec   0x700216c4   0x00000028   Code   RO         6005    i.__0sprintf        mc_w.l(printfa.o)
+    0x8001f214   0x700216ec   0x00000030   Code   RO         6092    i.__ARM_fpclassify  m_wv.l(fpclassify.o)
+    0x8001f244   0x7002171c   0x00000026   Code   RO         6094    i.__ARM_fpclassifyf  m_wv.l(fpclassifyf.o)
+    0x8001f26a   0x70021742   0x00000006   PAD
+    0x8001f270   0x70021748   0x000001f0   Code   RO         5655    i.__hardfp_asin     m_wv.l(asin.o)
+    0x8001f460   0x70021938   0x000001d4   Code   RO         6068    i.__hardfp_atan     m_wv.l(atan.o)
+    0x8001f634   0x70021b0c   0x00000004   PAD
+    0x8001f638   0x70021b10   0x000001c8   Code   RO         5662    i.__hardfp_atan2    m_wv.l(atan2.o)
+    0x8001f800   0x70021cd8   0x00000150   Code   RO         5674    i.__hardfp_cosf     m_wv.l(cosf.o)
+    0x8001f950   0x70021e28   0x00000014   Code   RO         5680    i.__hardfp_fabs     m_wv.l(fabs.o)
+    0x8001f964   0x70021e3c   0x0000000e   Code   RO         5723    i.__hardfp_fabsf    m_wv.l(fabsfc99.o)
+    0x8001f972   0x70021e4a   0x00000002   PAD
+    0x8001f974   0x70021e4c   0x000000c0   Code   RO         5686    i.__hardfp_modf     m_wv.l(modf.o)
+    0x8001fa34   0x70021f0c   0x00000004   PAD
+    0x8001fa38   0x70021f10   0x000008c4   Code   RO         5692    i.__hardfp_pow      m_wv.l(pow.o)
+    0x800202fc   0x700227d4   0x00000190   Code   RO         5705    i.__hardfp_sinf     m_wv.l(sinf.o)
+    0x8002048c   0x70022964   0x00000066   Code   RO         5711    i.__hardfp_sqrt     m_wv.l(sqrt.o)
+    0x800204f2   0x700229ca   0x00000070   Code   RO         6110    i.__kernel_poly     m_wv.l(poly.o)
+    0x80020562   0x70022a3a   0x00000006   PAD
+    0x80020568   0x70022a40   0x00000018   Code   RO         6078    i.__mathlib_dbl_divzero  m_wv.l(dunder.o)
+    0x80020580   0x70022a58   0x00000006   Code   RO         6079    i.__mathlib_dbl_infnan  m_wv.l(dunder.o)
+    0x80020586   0x70022a5e   0x00000006   Code   RO         6080    i.__mathlib_dbl_infnan2  m_wv.l(dunder.o)
+    0x8002058c   0x70022a64   0x00000004   PAD
+    0x80020590   0x70022a68   0x00000018   Code   RO         6081    i.__mathlib_dbl_invalid  m_wv.l(dunder.o)
+    0x800205a8   0x70022a80   0x00000018   Code   RO         6082    i.__mathlib_dbl_overflow  m_wv.l(dunder.o)
+    0x800205c0   0x70022a98   0x00000018   Code   RO         6084    i.__mathlib_dbl_underflow  m_wv.l(dunder.o)
+    0x800205d8   0x70022ab0   0x00000006   Code   RO         6097    i.__mathlib_flt_infnan  m_wv.l(funder.o)
+    0x800205de   0x70022ab6   0x00000002   PAD
+    0x800205e0   0x70022ab8   0x00000010   Code   RO         6099    i.__mathlib_flt_invalid  m_wv.l(funder.o)
+    0x800205f0   0x70022ac8   0x00000010   Code   RO         6102    i.__mathlib_flt_underflow  m_wv.l(funder.o)
+    0x80020600   0x70022ad8   0x00000154   Code   RO         6118    i.__mathlib_rredf2  m_wv.l(rredf.o)
+    0x80020754   0x70022c2c   0x0000000c   Code   RO         6158    i.__set_errno       mc_w.l(errno.o)
+    0x80020760   0x70022c38   0x00000184   Code   RO         6010    i._fp_digits        mc_w.l(printfa.o)
+    0x800208e4   0x70022dbc   0x0000000e   Code   RO         6066    i._is_digit         mc_w.l(scanf_fp.o)
+    0x800208f2   0x70022dca   0x00000002   PAD
+    0x800208f4   0x70022dcc   0x000006dc   Code   RO         6011    i._printf_core      mc_w.l(printfa.o)
+    0x80020fd0   0x700234a8   0x00000024   Code   RO         6012    i._printf_post_padding  mc_w.l(printfa.o)
+    0x80020ff4   0x700234cc   0x0000002e   Code   RO         6013    i._printf_pre_padding  mc_w.l(printfa.o)
+    0x80021022   0x700234fa   0x00000016   Code   RO         6014    i._snputc           mc_w.l(printfa.o)
+    0x80021038   0x70023510   0x0000000a   Code   RO         6015    i._sputc            mc_w.l(printfa.o)
+    0x80021042   0x7002351a   0x00000010   Code   RO         6070    i.atan              m_wv.l(atan.o)
+    0x80021052   0x7002352a   0x00000018   Code   RO         5682    i.fabs              m_wv.l(fabs.o)
+    0x8002106a   0x70023542   0x0000006a   Code   RO         5713    i.sqrt              m_wv.l(sqrt.o)
+    0x800210d4   0x700235ac   0x00000004   PAD
+    0x800210d8   0x700235b0   0x00000050   Data   RO         5658    .constdata          m_wv.l(asin.o)
+    0x80021128   0x70023600   0x00000088   Data   RO         5695    .constdata          m_wv.l(pow.o)
+    0x800211b0   0x70023688   0x00000098   Data   RO         6071    .constdata          m_wv.l(atan.o)
+    0x80021248   0x70023720   0x00000008   Data   RO         6112    .constdata          m_wv.l(qnan.o)
+    0x80021250   0x70023728   0x00000020   Data   RO         6119    .constdata          m_wv.l(rredf.o)
+    0x80021270   0x70023748   0x00000040   Data   RO         6199    .constdata          mc_w.l(ctype_c.o)
+    0x800212b0   0x70023788   0x00000014   Data   RO          861    .rodata.PWMPTR      zf_driver_pwm.o
+    0x800212c4   0x7002379c   0x00000008   Data   RO         4879    .rodata.armPllConfig_BOARD_BootClockRUN  clock_config.o
+    0x800212cc   0x700237a4   0x00000228   Data   RO          518    .rodata.ascii_font_6x8  zf_common_font.o
+    0x800214f4   0x700239cc   0x000005f0   Data   RO          517    .rodata.ascii_font_8x16  zf_common_font.o
+    0x80021ae4   0x70023fbc   0x00000010   Data   RO         2491    .rodata.cst16       fsl_clock.o
+    0x80021af4   0x70023fcc   0x00000008   Data   RO          375    .rodata.cst8        path_planning.o
+    0x80021afc   0x70023fd4   0x00000008   Data   RO         3920    .rodata.cst8        fsl_lpspi.o
+    0x80021b04   0x70023fdc   0x00000006   Data   RO         3732    .rodata.s_gptClocks  fsl_gpt.o
+    0x80021b0a   0x70023fe2   0x0000000a   Data   RO         3919    .rodata.s_lpspiClocks  fsl_lpspi.o
+    0x80021b14   0x70023fec   0x00000012   Data   RO         4033    .rodata.s_lpuartClock  fsl_lpuart.o
+    0x80021b26   0x70023ffe   0x00000028   Data   RO         4157    .rodata.s_pwmClocks  fsl_pwm.o
+    0x80021b4e   0x70024026   0x0000000a   Data   RO         4244    .rodata.s_qtmrClocks  fsl_qtmr.o
+    0x80021b58   0x70024030   0x00000014   Data   RO         1171    .rodata.spi_index   zf_driver_spi.o
+    0x80021b6c   0x70024044   0x00000021   Data   RO          269    .rodata.str1.1      menu.o
+    0x80021b8d   0x70024065   0x00000012   Data   RO          377    .rodata.str1.1      path_planning.o
+    0x80021b9f   0x70024077   0x0000000f   Data   RO          412    .rodata.str1.1      cam_uart.o
+    0x80021bae   0x70024086   0x00000009   Data   RO          483    .rodata.str1.1      zf_common_debug.o
+    0x80021bb7   0x7002408f   0x0000002b   Data   RO          508    .rodata.str1.1      zf_common_fifo.o
+    0x80021be2   0x700240ba   0x0000002f   Data   RO          555    .rodata.str1.1      zf_common_function.o
+    0x80021c11   0x700240e9   0x0000002e   Data   RO          673    .rodata.str1.1      zf_driver_encoder.o
+    0x80021c3f   0x70024117   0x0000002a   Data   RO          860    .rodata.str1.1      zf_driver_pwm.o
+    0x80021c69   0x70024141   0x0000002a   Data   RO         1170    .rodata.str1.1      zf_driver_spi.o
+    0x80021c93   0x7002416b   0x0000002b   Data   RO         1218    .rodata.str1.1      zf_driver_uart.o
+    0x80021cbe   0x70024196   0x00000037   Data   RO         1302    .rodata.str1.1      zf_device_bluetooth_ch9141.o
+    0x80021cf5   0x700241cd   0x0000002f   Data   RO         1375    .rodata.str1.1      zf_device_imu963ra.o
+    0x80021d24   0x700241fc   0x0000002d   Data   RO         1804    .rodata.str1.1      zf_device_tft180.o
+    0x80021d51   0x70024229   0x000000b4   Data   RO         1914    .rodata.str1.1      zf_device_wifi_uart.o
+    0x80021e05   0x700242dd   0x00000034   Data   RO         1941    .rodata.str1.1      zf_device_wireless_uart.o
+    0x80021e39   0x70024311   0x0000002e   Data   RO         2083    .rodata.str1.1      zf_device_ble6a20.o
+    0x80021e67   0x7002433f   0x0000002d   Data   RO         2487    .rodata.str1.1      fsl_clock.o
+    0x80021e94   0x7002436c   0x00000282   Data   RO         2811    .rodata.str1.1      fsl_edma.o
+    0x80022116   0x700245ee   0x00000312   Data   RO         3109    .rodata.str1.1      fsl_flexcan.o
+    0x80022428   0x70024900   0x00000030   Data   RO         3716    .rodata.str1.1      fsl_gpio.o
+    0x80022458   0x70024930   0x00000047   Data   RO         3731    .rodata.str1.1      fsl_gpt.o
+    0x8002249f   0x70024977   0x00000085   Data   RO         3918    .rodata.str1.1      fsl_lpspi.o
+    0x80022524   0x700249fc   0x00000134   Data   RO         4032    .rodata.str1.1      fsl_lpuart.o
+    0x80022658   0x70024b30   0x00000047   Data   RO         4106    .rodata.str1.1      fsl_pit.o
+    0x8002269f   0x70024b77   0x00000060   Data   RO         4156    .rodata.str1.1      fsl_pwm.o
+    0x800226ff   0x70024bd7   0x00000049   Data   RO         4243    .rodata.str1.1      fsl_qtmr.o
+    0x80022748   0x70024c20   0x00000210   Data   RO         4403    .rodata.str1.1      fsl_sai.o
+    0x80022958   0x70024e30   0x0000006c   Data   RO         4616    .rodata.str1.1      fsl_spdif.o
+    0x800229c4   0x70024e9c   0x00000024   Data   RO         1219    .rodata.uart_index  zf_driver_uart.o
 
 
-    Execution Region SDRAM_ZI (Exec base: 0x800229b0, Load base: 0x70024e88, Size: 0x00242214, Max: 0xffffffff, ABSOLUTE, UNINIT)
+    Execution Region SDRAM_ZI (Exec base: 0x800229e8, Load base: 0x70024ec0, Size: 0x00242214, Max: 0xffffffff, ABSOLUTE, UNINIT)
 
     Exec Addr    Load Addr    Size         Type   Attr      Idx    E Section Name        Object
 
-    0x800229b0        -       0x00242214   Zero   RW          334    .bss.SDRAM_CACHE    path_planning.o
+    0x800229e8        -       0x00242214   Zero   RW          334    .bss.SDRAM_CACHE    path_planning.o
 
 
-    Execution Region SDRAM_ncache (Exec base: 0x81e00000, Load base: 0x70024f74, Size: 0x00000000, Max: 0x00200000, ABSOLUTE)
+    Execution Region SDRAM_ncache (Exec base: 0x81e00000, Load base: 0x70024fac, Size: 0x00000000, Max: 0x00200000, ABSOLUTE)
 
     **** No section assigned to this execution region ****
 
@@ -15252,7 +15252,7 @@ Image component sizes
       2000        100          0          4         76       5195   imu963.o
        456          0          0          0          0       5380   isr.o
        324          0          0          0         64       3347   key.o
-      4464        118          0         12       7468       8737   main.o
+      4520        118          0         12       7468       8779   main.o
       2836        324         33         56          5       5353   menu.o
        242          0          0          0          0       2074   motor.o
      57254        112         26          2    2409036     144609   path_planning.o
@@ -15293,7 +15293,7 @@ Image component sizes
         28          0          0          0         16      20472   zf_driver_usb_cdc.o
 
     ----------------------------------------------------------------------
-    123438       2730       8616        232    2435608    1246332   Object Totals
+    123494       2730       8616        232    2435608    1246374   Object Totals
          0          0         48          0      10240          0   (incl. Generated)
        814         68          0         16         55          0   (incl. Padding)
 
@@ -15386,15 +15386,15 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-    135496       3542       9088        236    2435608    1248356   Grand Totals
-    135496       3542       9088        236    2435608    1248356   ELF Image Totals
-    135496       3542       9088        236          0          0   ROM Totals
+    135552       3542       9088        236    2435608    1248398   Grand Totals
+    135552       3542       9088        236    2435608    1248398   ELF Image Totals
+    135552       3542       9088        236          0          0   ROM Totals
 
 ==============================================================================
 
-    Total RO  Size (Code + RO Data)               144584 ( 141.20kB)
+    Total RO  Size (Code + RO Data)               144640 ( 141.25kB)
     Total RW  Size (RW Data + ZI Data)           2435844 (2378.75kB)
-    Total ROM Size (Code + RO Data + RW Data)     144820 ( 141.43kB)
+    Total ROM Size (Code + RO Data + RW Data)     144876 ( 141.48kB)
 
 ==============================================================================
 
