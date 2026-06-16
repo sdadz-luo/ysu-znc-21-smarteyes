@@ -14,6 +14,8 @@
 #define MAP_ROWS             12         /* 地图行数 */
 #define MAP_COLS             16         /* 地图列数 */
 #define MAX_BOXES            5          /* 最大箱子数量 */
+#define MAX_IDS              10         /* 最大ID编号数 */
+#define MAX_VISIT_STEPS      (2 * MAX_BOXES) /* 最大访问步骤数 */
 #define MAX_PATH_LEN         500        /* 最大路径长度 */
 #define INF                  65535U     /* 无穷大值 */
 #define DIR_COUNT            4          /* 方向数量 */
@@ -180,7 +182,7 @@ typedef struct {
 typedef struct {
     uint8_t x[MAX_PATH_LEN];        /* 路径 x 坐标（列） */
     uint8_t y[MAX_PATH_LEN];        /* 路径 y 坐标（行） */
-    uint8_t len;                    /* 路径长度 */
+    uint16_t len;                   /* 路径长度 */
     uint8_t is_push[MAX_PATH_LEN];  /* 是否为推动动作 */
 } Path;
 
@@ -194,7 +196,7 @@ typedef struct {
     uint8_t direction;              /* 方向 */
     int16_t angle;                  /* 角度 */
     Point path[MAX_PATH_LEN];       /* 路径 */
-    uint8_t path_len;               /* 路径长度 */
+    uint16_t path_len;              /* 路径长度 */
     int8_t scanned_id;              /* 扫描ID */
     uint16_t step_cost;             /* 步骤代价 */
 } VisitStep;
@@ -294,7 +296,7 @@ static bool is_wall_bit(const uint16_t walls[MAP_ROWS], Point p);
 static bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]);
 
 /* --- 3.3 简单 A* 寻路（无推箱） --- */
-static uint8_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path);
+static uint16_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path);
 
 /* --- 3.4 BFS 距离计算 --- */
 static void bfs_compute_distances(Point start, uint16_t walls[MAP_ROWS]);
@@ -478,8 +480,6 @@ static uint16_t g_fullpath_len;                      /* 完整路径长度 */
 static Point g_fullpath[MAX_PATH_LEN];               /* 完整路径 */
 static uint8_t g_solve_order[MAX_BOXES];             /* 解决顺序 */
 static uint8_t g_order_idx;                          /* 顺序索引 */
-static uint16_t g_non_paired_targets[MAP_ROWS];      /* 非配对目标点位图（推箱时视为墙） */
-static bool g_id_mode_active = false;                /* 模式二标志：true时目标点始终为空地 */
 
 /* ---------- 4.7 全局输出路径 ---------- */
 static Path g_path_out = {0};                        /* 模式1输出 */
@@ -488,13 +488,13 @@ static Path_Look g_path_look_out = {0};              /* ID模式输出 */
 
 /* ---------- 4.8 ID模式状态 ---------- */
 static uint16_t g_dist_map[MAP_ROWS][MAP_COLS];      /* BFS距离图 */
-static VisitStep g_visit_plan[2 * MAX_BOXES];        /* 访问计划 */
-static uint8_t visit_count = 0;                      /* 访问计数 */
-static uint8_t current_step = 0;                     /* 当前步骤 */
-static int8_t g_id_pairing[10];                       /* ID配对表 */
+static VisitStep g_visit_plan[MAX_VISIT_STEPS];       /* 访问计划 */
+static uint8_t g_visit_count = 0;                    /* 访问计数 */
+static uint8_t g_current_step = 0;                   /* 当前步骤 */
+static int8_t g_id_pairing[MAX_IDS];                  /* ID配对表 */
 static int8_t g_box_id_map[MAX_BOXES];                /* 箱子ID映射 */
 static int8_t g_target_id_map[MAX_BOXES];             /* 目标ID映射 */
-static SolutionSequence id_based_sol;                 /* ID方案 */
+static SolutionSequence g_id_based_sol;               /* ID方案 */
 
 /* ---------- 4.9 模式3最终地图 ---------- */
 static uint16_t g_boom_final_walls[MAP_ROWS];        /* 引爆后最终墙位图 */
@@ -693,6 +693,15 @@ static uint8_t is_goal(const State *s) {
 
 /**
  * @brief 获取当前状态的后继状态列表（含普通移动和推箱）
+ */
+/**
+ * @brief 生成推箱A*的后继状态
+ * 
+ * 玩家可移动或推箱子，推箱时检查目标位是否合法（非墙、非死角）。
+ * 
+ * @param cur 当前状态
+ * @param res 后继状态输出数组
+ * @param cnt 输出后继数量
  */
 static void get_successors(const State *cur, State *res, uint8_t *cnt) {
     *cnt = 0;
@@ -898,6 +907,18 @@ static uint16_t estimate_bomb_push_distance(Point bomb_pos, Point detonate_pos, 
     return INF; /* 不可达——通常不应发生（bomb_reach_get 已预检） */
 }
 
+/**
+ * @brief 根据接近位置与元素的相对偏移计算观察角度
+ * 
+ * dx = elem.x - approach.x, dy = elem.y - approach.y
+ * 返回值: 0(右侧观察), 180(左侧), 90(下方), -90(上方)
+ */
+static int16_t compute_approach_angle(int8_t dx, int8_t dy) {
+    if (dx == 0)      return (dy > 0) ? 0 : 180;
+    else if (dy == 0) return (dx > 0) ? -90 : 90;
+    return 0;
+}
+
 /* ===================================================================
  * 第6部分：模式算法函数
  * =================================================================== */
@@ -957,7 +978,7 @@ static void parse_map_input(uint8_t map[MAP_ROWS][MAP_COLS]) {
  * @param out_path 输出路径数组
  * @return 路径长度（0=无路径）
  */
-static uint8_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path) {
+static uint16_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path) {
     for (int i = 0; i < (MAP_ROWS * MAP_COLS * 5); i++) {
         path_nodes[i].g_cost = INF;
         path_nodes[i].closed = false;
@@ -1152,10 +1173,8 @@ static ApproachResult* find_nearest_approach(uint8_t map[MAP_ROWS][MAP_COLS]) {
                     best_res.approach_pos = app;
                     best_res.path_len = len;
                     memcpy(best_res.path, g_temp_path, sizeof(Point) * len);
-                    int8_t dx = (int8_t)(elem_pos.x - app.x);
-                    int8_t dy = (int8_t)(elem_pos.y - app.y);
-                    if (dx == 0)      best_res.angle = (dy > 0) ? 0 : 180;
-                    else if (dy == 0) best_res.angle = (dx > 0) ? -90 : 90;
+                    best_res.angle = compute_approach_angle(
+                        (int8_t)(elem_pos.x - app.x), (int8_t)(elem_pos.y - app.y));
                     }
                 }
             }
@@ -1348,6 +1367,11 @@ static bool backtrack_validate(SolutionSequence* sol) {
 
 /**
  * @brief 验证推箱子方案的入口函数
+ * 
+ * 初始化回溯状态，调用 backtrack_validate 递归验证，
+ * 成功后将配对按解决顺序重排（保持最优序）。
+ * 
+ * @param sol 待验证的配对方案
  */
 static void validate_solution(SolutionSequence* sol) {
     if (sol->count == 0 || g_box_count != g_target_count) {
@@ -1383,7 +1407,7 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
             if (map[i][j] == WALL || map[i][j] == BOX || map[i][j] == BOMB)
                 walls[i] |= (1 << j);
 
-    if (g_box_count == 0 || g_target_count == 0) { visit_count = 0; return; }
+    if (g_box_count == 0 || g_target_count == 0) { g_visit_count = 0; return; }
 
     /* 第一阶段：全遍历确定"最后一个" */
     bool tvb[MAX_BOXES] = {false}, tvt[MAX_BOXES] = {false};
@@ -1430,12 +1454,12 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
     if (last_target >= 0) vt[last_target] = true;
 
     Point cp = g_initial_player;
-    visit_count = 0;
+    g_visit_count = 0;
     int to_visit = 0;
     for (int i = 0; i < g_box_count; i++)    if (!vb[i]) to_visit++;
     for (int i = 0; i < g_target_count; i++) if (!vt[i]) to_visit++;
 
-    while (visit_count < to_visit) {
+    while (g_visit_count < to_visit) {
         bfs_compute_distances(cp, walls);
         uint16_t md = INF;
         int bei = -1; uint8_t bt = 0; Point ba = {0,0};
@@ -1464,7 +1488,7 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
         }
         if (bei == -1) break;
 
-        VisitStep* step = &g_visit_plan[visit_count];
+        VisitStep* step = &g_visit_plan[g_visit_count];
         step->pos = ba;
         step->original_idx = (uint8_t)bei;
         step->type = (bt == 0) ? BOX : TARGET;
@@ -1476,23 +1500,28 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
         Point ep = (step->type == BOX) ? g_initial_boxes[bei] : g_initial_targets[bei];
         int8_t dxep = (int8_t)(ep.x - ba.x);
         int8_t dyep = (int8_t)(ep.y - ba.y);
-        if (dxep == -1)      { step->direction = 0; step->angle = 90; }
-        else if (dxep == 1)  { step->direction = 1; step->angle = -90; }
-        else if (dyep == -1) { step->direction = 2; step->angle = 180; }
-        else if (dyep == 1)  { step->direction = 3; step->angle = 0; }
-        else                 { step->direction = DIR_INVALID; step->angle = 0; }
+        step->angle = compute_approach_angle(dxep, dyep);
+        if (dxep == -1)      step->direction = 0;
+        else if (dxep == 1)  step->direction = 1;
+        else if (dyep == -1) step->direction = 2;
+        else if (dyep == 1)  step->direction = 3;
+        else                 step->direction = DIR_INVALID;
         if (bt == 0) vb[bei] = true; else vt[bei] = true;
-        visit_count++;
+        g_visit_count++;
         cp = ba;
     }
 }
 
 /**
- * @brief 记录用户输入的ID
+ * @brief 记录用户输入的ID，绑定到当前观察步骤的元素
+ * 
+ * 仅在观察阶段（g_current_step < g_visit_count）有效。
+ * 
+ * @param id 用户扫描得到的ID编号
  */
 static void id_record(int id) {
-    if (current_step >= visit_count) return;
-    VisitStep* step = &g_visit_plan[current_step];
+    if (g_current_step >= g_visit_count) return;
+    VisitStep* step = &g_visit_plan[g_current_step];
     step->scanned_id = (int8_t)id;
     if (step->type == BOX) g_box_id_map[step->original_idx] = (int8_t)id;
     else                   g_target_id_map[step->original_idx] = (int8_t)id;
@@ -1518,7 +1547,7 @@ static bool next_permutation(int *arr, int n) {
  * 核心逻辑：统计频次→平衡→分配新ID→多配对优化（曼哈顿距离最优匹配）。
  */
 static void id_inference(void) {
-    int bfreq[10] = {0}, tfreq[10] = {0};
+    int bfreq[MAX_IDS] = {0}, tfreq[MAX_IDS] = {0};
     int ubi[MAX_BOXES], uti[MAX_BOXES], ubc = 0, utc = 0;
     for (int i = 0; i < g_box_count; i++) {
         if (g_box_id_map[i] != -1) bfreq[g_box_id_map[i]]++;
@@ -1528,7 +1557,7 @@ static void id_inference(void) {
         if (g_target_id_map[i] != -1) tfreq[g_target_id_map[i]]++;
         else uti[utc++] = i;
     }
-    for (int id = 0; id < 10; id++) {
+    for (int id = 0; id < MAX_IDS; id++) {
         if (bfreq[id] > tfreq[id]) {
             int need = bfreq[id] - tfreq[id];
             while (need > 0 && utc > 0) { g_target_id_map[uti[--utc]] = (int8_t)id; tfreq[id]++; need--; }
@@ -1539,13 +1568,13 @@ static void id_inference(void) {
     }
     while (ubc > 0 && utc > 0) {
         int nid = 0;
-        while (nid < 10 && (bfreq[nid] > 0 || tfreq[nid] > 0)) nid++;
-        if (nid >= 10) break;
+        while (nid < MAX_IDS && (bfreq[nid] > 0 || tfreq[nid] > 0)) nid++;
+        if (nid >= MAX_IDS) break;
         g_box_id_map[ubi[--ubc]] = (int8_t)nid;
         g_target_id_map[uti[--utc]] = (int8_t)nid;
         bfreq[nid] = 1; tfreq[nid] = 1;
     }
-    for (int id = 0; id < 10; id++) {
+    for (int id = 0; id < MAX_IDS; id++) {
         if (bfreq[id] >= 2 && tfreq[id] >= 2 && bfreq[id] == tfreq[id]) {
             int k = bfreq[id];
             int bi[MAX_BOXES], ti[MAX_BOXES], bc = 0, tc = 0;
@@ -1570,12 +1599,12 @@ static void id_inference(void) {
                     cost += (int)dist[i][perm[i]];
                 if (cost < minc) { minc = cost; for (int i = 0; i < k; i++) bperm[i] = perm[i]; }
             } while (next_permutation(perm, k));
-            bool occ[10] = {false};
-            for (int i = 0; i < 10; i++) if (bfreq[i] > 0 || tfreq[i] > 0) occ[i] = true;
+            bool occ[MAX_IDS] = {false};
+            for (int i = 0; i < MAX_IDS; i++) if (bfreq[i] > 0 || tfreq[i] > 0) occ[i] = true;
             for (int i = 1; i < k; i++) {
                 int nid = 0;
-                while (nid < 10 && occ[nid]) nid++;
-                if (nid >= 10) break;
+                while (nid < MAX_IDS && occ[nid]) nid++;
+                if (nid >= MAX_IDS) break;
                 g_box_id_map[bi[i]] = (int8_t)nid;
                 g_target_id_map[ti[bperm[i]]] = (int8_t)nid;
                 bfreq[id]--; tfreq[id]--;
@@ -1584,10 +1613,10 @@ static void id_inference(void) {
         }
     }
     memset(g_id_pairing, -1, sizeof(g_id_pairing));
-    bool bex[10] = {false}, tex[10] = {false};
+    bool bex[MAX_IDS] = {false}, tex[MAX_IDS] = {false};
     for (int i = 0; i < g_box_count; i++)    if (g_box_id_map[i] != -1) bex[g_box_id_map[i]] = true;
     for (int i = 0; i < g_target_count; i++) if (g_target_id_map[i] != -1) tex[g_target_id_map[i]] = true;
-    for (int i = 0; i < 10; i++) if (bex[i] && tex[i]) g_id_pairing[i] = i;
+    for (int i = 0; i < MAX_IDS; i++) if (bex[i] && tex[i]) g_id_pairing[i] = i;
 }
 
 /**
@@ -1595,13 +1624,13 @@ static void id_inference(void) {
  */
 static void extract_look_turn_points(VisitStep* plan) {
     int li = 0;
-    if (visit_count > 0 && plan[0].path_len > 0) {
+    if (g_visit_count > 0 && plan[0].path_len > 0) {
         Point sp = plan[0].path[0];
         g_path_look_out.x[li] = sp.y; g_path_look_out.y[li] = sp.x;
         g_path_look_out.angle[li] = 0; g_path_look_out.type[li] = 0; g_path_look_out.is_look[li] = 0;
         li++;
     }
-    for (int i = 0; i < visit_count; i++) {
+    for (int i = 0; i < g_visit_count; i++) {
         if (plan[i].path_len == 0) continue;
         Point prev = (li > 0) ? (Point){g_path_look_out.y[li-1], g_path_look_out.x[li-1]} : plan[i].path[0];
         for (int j = 0; j < plan[i].path_len; j++) {
@@ -1632,26 +1661,26 @@ static void extract_look_turn_points(VisitStep* plan) {
  * @brief 从ID配对构造解决方案
  */
 static SolutionSequence* build_solution_from_id_pairing(void) {
-    memset(&id_based_sol, 0, sizeof(SolutionSequence));
+    memset(&g_id_based_sol, 0, sizeof(SolutionSequence));
     uint8_t pc = 0;
-    for (int id = 0; id < 10; id++) {
+    for (int id = 0; id < MAX_IDS; id++) {
         if (g_id_pairing[id] == -1) continue;
         int bi = -1, ti = -1;
         for (int i = 0; i < g_box_count; i++)    if (g_box_id_map[i] == id) { bi = i; break; }
         for (int i = 0; i < g_target_count; i++) if (g_target_id_map[i] == id) { ti = i; break; }
         if (bi >= 0 && ti >= 0 && pc < MAX_BOXES) {
-            id_based_sol.pairs[pc].box_idx = (uint8_t)bi;
-            id_based_sol.pairs[pc].target_idx = (uint8_t)ti;
-            id_based_sol.pairs[pc].box_pos = g_initial_boxes[bi];
-            id_based_sol.pairs[pc].target_pos = g_initial_targets[ti];
+            g_id_based_sol.pairs[pc].box_idx = (uint8_t)bi;
+            g_id_based_sol.pairs[pc].target_idx = (uint8_t)ti;
+            g_id_based_sol.pairs[pc].box_pos = g_initial_boxes[bi];
+            g_id_based_sol.pairs[pc].target_pos = g_initial_targets[ti];
             pc++;
         }
     }
-    id_based_sol.count = pc;
-    id_based_sol.is_valid = false;
-    id_based_sol.total_cost = 0;
-    id_based_sol.full_path_len = 0;
-    return (pc > 0) ? &id_based_sol : NULL;
+    g_id_based_sol.count = pc;
+    g_id_based_sol.is_valid = false;
+    g_id_based_sol.total_cost = 0;
+    g_id_based_sol.full_path_len = 0;
+    return (pc > 0) ? &g_id_based_sol : NULL;
 }
 
 /**
@@ -1663,7 +1692,7 @@ static Path path_id_calculate(SolutionSequence* sol) {
     validate_solution(sol);
     if (!sol->is_valid) return rp;
     uint16_t len = (sol->full_path_len > MAX_PATH_LEN) ? MAX_PATH_LEN : sol->full_path_len;
-    rp.len = (uint8_t)len;
+    rp.len = len;
     for (uint16_t i = 0; i < len; i++) {
         rp.x[i] = sol->full_path[i].y;
         rp.y[i] = sol->full_path[i].x;
@@ -3112,7 +3141,7 @@ Path path_calculation(uint8_t box_x[MAP_ROWS][MAP_COLS]) {
     validate_solution(&sol);
     if (sol.is_valid && sol.full_path_len > 0) {
         uint16_t len = (sol.full_path_len > MAX_PATH_LEN) ? MAX_PATH_LEN : sol.full_path_len;
-        g_path_out.len = (uint8_t)len;
+        g_path_out.len = len;
         for (uint16_t i = 0; i < len; i++) {
             g_path_out.x[i] = sol.full_path[i].y;
             g_path_out.y[i] = sol.full_path[i].x;
@@ -3137,9 +3166,9 @@ Path_Look path_look_calculation(uint8_t box_x[MAP_ROWS][MAP_COLS]) {
  * @brief 记录用户输入的ID（ID模式交互回调）
  */
 void id_input(int id) {
-    if (current_step < visit_count) {
+    if (g_current_step < g_visit_count) {
         id_record(id);
-        current_step++;
+        g_current_step++;
     }
 }
 
@@ -3147,8 +3176,8 @@ void id_input(int id) {
  * @brief 模式2推理阶段顶层接口
  */
 Path path_id_calculation(void) {
-    if (visit_count > 0) {
-        g_initial_player = g_visit_plan[visit_count - 1].pos;
+    if (g_visit_count > 0) {
+        g_initial_player = g_visit_plan[g_visit_count - 1].pos;
     }
     id_inference();
     SolutionSequence* id_sol = build_solution_from_id_pairing();
@@ -3200,7 +3229,7 @@ Path path_boom_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
             g_path_out.is_push[total] = 0; last_added = cur; total++;
         }
     }
-    g_path_out.len = (uint8_t)total;
+    g_path_out.len = total;
     extract_turn_points(&g_path_out);
     return g_path_out;
 }
@@ -3277,11 +3306,11 @@ void reset_planning_system(void) {
         for (int j = 0; j < MAP_COLS; j++)
             g_dist_map[i][j] = INF;
     memset(g_visit_plan, 0, sizeof(g_visit_plan));
-    visit_count = 0; current_step = 0;
+    g_visit_count = 0; g_current_step = 0;
     memset(g_id_pairing, -1, sizeof(g_id_pairing));
     memset(g_box_id_map, -1, sizeof(g_box_id_map));
     memset(g_target_id_map, -1, sizeof(g_target_id_map));
-    memset(&id_based_sol, 0, sizeof(SolutionSequence));
+    memset(&g_id_based_sol, 0, sizeof(SolutionSequence));
     memset(g_original_map, 0, sizeof(g_original_map));
     memset(g_sim_queue, 0, sizeof(g_sim_queue));
     memset(g_obs_buf, 0, sizeof(g_obs_buf));
