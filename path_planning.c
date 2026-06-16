@@ -3425,7 +3425,7 @@ int main(void) {
                 id_input(id); 
             }
             step++;
-        }
+        } 
         if (step == path_look.len) {
             double st = clock();
             path_car = path_id_calculation();
