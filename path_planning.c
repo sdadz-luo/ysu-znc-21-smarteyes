@@ -33,6 +33,7 @@
 #define MAX_SEARCH_CNT       50000      /* A*最大搜索步数 */
 #define SINGLE_STEP_MAX_PATH 500        /* 单步A*最大路径长度 */
 #define TURN_WEIGHT          4          /* 转向惩罚代价 */
+#define ROTATION_PENALTY     3          /* 非0度角观察的旋转惩罚（0度=站在元素左侧看向右侧） */
 #define DIR_INVALID          255        /* 无效方向标记 */
 
 /* ---- 模式3（炸弹破局）容量上限 ---- */
@@ -1141,8 +1142,10 @@ static ApproachResult* find_nearest_approach(uint8_t map[MAP_ROWS][MAP_COLS]) {
                 if (app.x >= MAP_ROWS || app.y >= MAP_COLS) continue;
                 if (tw[app.x] & (1 << app.y)) continue;
                 uint16_t len = simple_astar(player, app, tw, g_temp_path);
-                if (len > 0 && len < global_min_cost) {
-                    global_min_cost = len;
+                if (len > 0) {
+                    int eff = (int)len + ((DIRS[d][1] != -1) ? ROTATION_PENALTY : 0);
+                    if (eff < global_min_cost) {
+                        global_min_cost = eff;
                     best_res.success = true;
                     best_res.elem_pos = elem_pos;
                     best_res.elem_type = cell;
@@ -1153,6 +1156,7 @@ static ApproachResult* find_nearest_approach(uint8_t map[MAP_ROWS][MAP_COLS]) {
                     int8_t dy = (int8_t)(elem_pos.y - app.y);
                     if (dx == 0)      best_res.angle = (dy > 0) ? 0 : 180;
                     else if (dy == 0) best_res.angle = (dx > 0) ? -90 : 90;
+                    }
                 }
             }
         }
@@ -1397,7 +1401,9 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
                 Point ap = {g_initial_boxes[i].x + DIRS[d][0], g_initial_boxes[i].y + DIRS[d][1]};
                 if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
                 if (walls[ap.x] & (1 << ap.y)) continue;
-                if (g_dist_map[ap.x][ap.y] < md) { md = g_dist_map[ap.x][ap.y]; bei = i; bt = 0; ba = ap; }
+                uint16_t raw = g_dist_map[ap.x][ap.y];
+                uint16_t eff = (raw < INF && DIRS[d][1] != -1) ? (uint16_t)(raw + ROTATION_PENALTY) : raw;
+                if (eff < md) { md = eff; bei = i; bt = 0; ba = ap; }
             }
         }
         for (int i = 0; i < g_target_count; i++) {
@@ -1407,7 +1413,9 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
                 Point ap = {tp.x + DIRS[d][0], tp.y + DIRS[d][1]};
                 if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
                 if (walls[ap.x] & (1 << ap.y)) continue;
-                if (g_dist_map[ap.x][ap.y] < md) { md = g_dist_map[ap.x][ap.y]; bei = i; bt = 1; ba = ap; }
+                uint16_t raw = g_dist_map[ap.x][ap.y];
+                uint16_t eff = (raw < INF && DIRS[d][1] != -1) ? (uint16_t)(raw + ROTATION_PENALTY) : raw;
+                if (eff < md) { md = eff; bei = i; bt = 1; ba = ap; }
             }
         }
         if (bei == -1) break;
@@ -1437,7 +1445,9 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
                 Point ap = {g_initial_boxes[i].x + DIRS[d][0], g_initial_boxes[i].y + DIRS[d][1]};
                 if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
                 if (walls[ap.x] & (1 << ap.y)) continue;
-                if (g_dist_map[ap.x][ap.y] < md) { md = g_dist_map[ap.x][ap.y]; bei = i; bt = 0; ba = ap; }
+                uint16_t raw = g_dist_map[ap.x][ap.y];
+                uint16_t eff = (raw < INF && DIRS[d][1] != -1) ? (uint16_t)(raw + ROTATION_PENALTY) : raw;
+                if (eff < md) { md = eff; bei = i; bt = 0; ba = ap; }
             }
         }
         for (int i = 0; i < g_target_count; i++) {
@@ -1447,7 +1457,9 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
                 Point ap = {tp.x + DIRS[d][0], tp.y + DIRS[d][1]};
                 if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
                 if (walls[ap.x] & (1 << ap.y)) continue;
-                if (g_dist_map[ap.x][ap.y] < md) { md = g_dist_map[ap.x][ap.y]; bei = i; bt = 1; ba = ap; }
+                uint16_t raw = g_dist_map[ap.x][ap.y];
+                uint16_t eff = (raw < INF && DIRS[d][1] != -1) ? (uint16_t)(raw + ROTATION_PENALTY) : raw;
+                if (eff < md) { md = eff; bei = i; bt = 1; ba = ap; }
             }
         }
         if (bei == -1) break;
@@ -3298,16 +3310,16 @@ void reset_planning_system(void) {
 /* 当前使用的测试地图 */
 static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,6,0,0,0,0,0,1,1,1,1,1,1,0,1},
-    {1,1,3,1,1,1,1,1,1,1,6,0,0,1,0,1},
-    {1,0,0,0,0,0,1,1,1,1,6,1,0,1,0,1},
-    {1,0,0,0,0,0,0,0,0,3,0,1,0,1,0,1}, 
-    {1,0,2,0,0,0,0,0,0,0,0,3,0,1,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,6,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,6,1},
+    {1,0,0,0,1,0,0,0,3,0,0,0,0,0,0,1},
+    {1,0,0,1,0,0,0,0,3,0,0,0,0,0,0,1},
+    {1,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,6,0,1,0,1,0,0,0,1},
+    {1,0,1,2,0,0,0,0,0,0,0,0,1,0,0,1},
+    {1,0,0,3,0,0,1,0,0,0,3,0,1,0,0,1},
+    {1,1,0,0,0,1,0,3,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,1,0,6,0,0,0,0,0,0,6,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
