@@ -701,8 +701,6 @@ static void get_successors(const State *cur, State *res, uint8_t *cnt) {
         if (pos_equal(np, cur->box)) {
             Point bp = {np.x + DIRS[d][0], np.y + DIRS[d][1]};
             if (is_wall_bit(cur->wall_bitmap, bp)) continue;
-            /* 推箱时：非配对目标视为墙，防止箱子被"抢夺" */
-            if (is_wall_bit(g_non_paired_targets, bp)) continue;
             if (!pos_equal(bp, cur->target) && is_corner_deadlock(bp, cur->wall_bitmap)) continue;
             State ns = *cur; ns.player = np; ns.box = bp; ns.last_dir = d;
             res[(*cnt)++] = ns;
@@ -1309,17 +1307,6 @@ static bool backtrack_validate(SolutionSequence* sol) {
                 g_current_walls[obs.x] |= (1 << obs.y);
             }
 
-        /* 构建非配对目标点位图（仅模式一：推箱时拦截，模式二：始终放行） */
-        if (!g_id_mode_active) {
-            memset(g_non_paired_targets, 0, sizeof(g_non_paired_targets));
-            for (uint8_t t = 0; t < sol->count; t++) {
-                if (t != try_idx) {
-                    Point tp = sol->pairs[t].target_pos;
-                    g_non_paired_targets[tp.x] |= (1 << tp.y);
-                }
-            }
-        }
-
         if (!pos_equal(cur_box, cur_target) && is_corner_deadlock(cur_box, g_current_walls))
             continue;
 
@@ -1661,9 +1648,7 @@ static SolutionSequence* build_solution_from_id_pairing(void) {
 static Path path_id_calculate(SolutionSequence* sol) {
     Path rp = {0};
     if (sol == NULL || sol->count == 0) return rp;
-    g_id_mode_active = true;                  /* 模式二：目标点始终为空地 */
     validate_solution(sol);
-    g_id_mode_active = false;
     if (!sol->is_valid) return rp;
     uint16_t len = (sol->full_path_len > MAX_PATH_LEN) ? MAX_PATH_LEN : sol->full_path_len;
     rp.len = (uint8_t)len;
@@ -3313,16 +3298,16 @@ void reset_planning_system(void) {
 /* 当前使用的测试地图 */
 static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,6,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,6,1},
-    {1,0,0,0,1,0,0,0,3,0,0,0,0,0,0,1},
-    {1,0,0,1,0,0,0,0,3,0,0,0,0,0,0,1},
-    {1,0,0,0,1,0,1,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,6,0,1,0,1,0,0,0,1},
-    {1,0,1,2,0,0,0,0,0,0,0,0,1,0,0,1},
-    {1,0,0,3,0,0,1,0,0,0,3,0,1,0,0,1},
-    {1,1,0,0,0,1,0,3,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,1,0,6,0,0,0,0,0,0,6,1},
+    {1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,6,0,0,0,0,0,1,1,1,1,1,1,0,1},
+    {1,1,3,1,1,1,1,1,1,1,6,0,0,1,0,1},
+    {1,0,0,0,0,0,1,1,1,1,6,1,0,1,0,1},
+    {1,0,0,0,0,0,0,0,0,3,0,1,0,1,0,1}, 
+    {1,0,2,0,0,0,0,0,0,0,0,3,0,1,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
