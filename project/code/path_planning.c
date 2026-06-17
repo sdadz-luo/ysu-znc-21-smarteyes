@@ -1158,12 +1158,23 @@ static void id_inference(void) {
             int bi[MAX_BOXES], ti[MAX_BOXES], bc = 0, tc = 0;
             for (int i = 0; i < g_box_count; i++)    if (g_box_id_map[i] == id) bi[bc++] = i;
             for (int i = 0; i < g_target_count; i++) if (g_target_id_map[i] == id) ti[tc++] = i;
+
+            /* 预计算 BFS 真实距离矩阵 dist[i][j] = 箱子bi[i]到目标ti[j]的最短路径 */
+            uint16_t dist[MAX_BOXES][MAX_BOXES];
+            for (int i = 0; i < k; i++) {
+                bfs_compute_distances(g_initial_boxes[bi[i]], g_static_walls);
+                for (int j = 0; j < k; j++) {
+                    dist[i][j] = g_dist_map[g_initial_targets[ti[j]].x]
+                                              [g_initial_targets[ti[j]].y];
+                }
+            }
+
             int bperm[MAX_BOXES] = {0}, minc = 0x7FFFFFFF, perm[MAX_BOXES];
             for (int i = 0; i < k; i++) perm[i] = i;
             do {
                 int cost = 0;
                 for (int i = 0; i < k; i++)
-                    cost += manhattan_distance(g_initial_boxes[bi[i]], g_initial_targets[ti[perm[i]]]);
+                    cost += (int)dist[i][perm[i]];
                 if (cost < minc) { minc = cost; for (int i = 0; i < k; i++) bperm[i] = perm[i]; }
             } while (next_permutation(perm, k));
             bool occ[10] = {false};
@@ -2899,5 +2910,4 @@ void reset_planning_system(void) {
     memset(g_vcache_mask, 0, sizeof(g_vcache_mask)); g_vcache_epoch = 0;
     memset(g_boom_final_walls, 0, sizeof(g_boom_final_walls));
     g_boom_used_mask = 0;
-    g_id_mode_active = false;
 }

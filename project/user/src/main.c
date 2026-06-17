@@ -21,10 +21,10 @@ typedef enum {
 
 static volatile Car_State car_state = NoGame; // 初始状态
 // ================= 路径结构体 =================
-Path path_car = {0};          		// 正常行驶路径
-Path_Look path_look_car = {0}; 		// 观察路径
-Path_Start path_start_car = {0}; 	// 起始路径
-Path path_boom_car = {0};			// 炸弹破局路径
+static Path path_car = {0};          		// 正常行驶路径
+static Path_Look path_look_car = {0}; 		// 观察路径
+static Path_Start path_start_car = {0}; 	// 起始路径
+static Path path_boom_car = {0};			// 炸弹破局路径
 
 // ================= 函数声明 =================
 static void Init(void);
@@ -74,21 +74,21 @@ int main(void){
     
     interrupt_global_enable(0);     // 开启全局中断
 
-    system_delay_ms(2000);
+    system_delay_ms(1000);
 
 	while(1){ 
 
         // 状态机判断与状态转换处理
 		state_judgment();
 
-        // my_uart_write(0,x_cam);
-        // my_uart_write(1,y_cam);
-        // my_uart_write(2,x_enc);
+        // my_uart_write(0,id);
+        // my_uart_write(1,car_state);
+        // my_uart_write(2,path_car.len);
         // my_uart_write(3,y_enc);
         // my_uart_write(4,x_imu);
         // my_uart_write(5,y_imu);
         // my_uart_write(6,yaw);
-        // my_uart_send(7);
+        // my_uart_send(3);
 
 	}
 }
@@ -250,7 +250,7 @@ static void state_judgment(void){
                 // 停车入位: 到达停车位
                 if (fabsf(x_enc - x_target) <= 2 && fabsf(y_enc - y_target) <= 2){
                     vx = 0;vy = 0;
-                    system_delay_ms(1000);
+                    system_delay_ms(500);
                     if (find_in_grid(&car_data, 3, 6)) system_delay_ms(3000);
                     game_over_flag = 0;
                 }
@@ -272,7 +272,7 @@ static void state_judgment(void){
 					memset(&path_look_car, 0, sizeof(path_look_car));
                     memset(&path_car, 0, sizeof(path_car));
                     memset(&path_boom_car, 0, sizeof(path_boom_car));
-                    system_delay_ms(300);
+                    system_delay_ms(500);
                     car_state = NoGame; // 回到初始状态
                     return;
                 } 
@@ -339,6 +339,7 @@ static void process_normal_path(const Path *path, uint8_t end_x, uint8_t end_y){
         if (step > path->len) {
             x_target = (float)end_x * x_enc_uint;
             y_target = (float)end_y * y_enc_uint;
+            pid_position_speed();
             game_over_flag = 1;
             car_state = GameOver;
             return;
@@ -348,6 +349,7 @@ static void process_normal_path(const Path *path, uint8_t end_x, uint8_t end_y){
         x_target = (path->x[step] + 0.5f) * x_enc_uint;
         y_target = (path->y[step] + 0.5f) * y_enc_uint;
         car_state = Run;
+        return;
     }
 }
 
@@ -355,7 +357,7 @@ static void process_normal_path(const Path *path, uint8_t end_x, uint8_t end_y){
 static void path_process(void){
     // 1. 扫描地图数据 (检测是否有车位2, 障碍3, 车辆6)
     if (map_process_flag == 1) {
-        system_delay_ms(300);
+        system_delay_ms(1000);
         for (uint8_t row = 0; row < 12; row++) {
             for (uint8_t col = 0; col < 16; col++) {
                 uint8_t val = car_data.grid[row][col];
@@ -392,6 +394,7 @@ static void path_process(void){
                 yaw_target = path_start_car.angle; // 设置目标角度
                 type = path_start_car.type;
                 grid[origin_y_enc][origin_x_enc] = 0;
+                grid[path_start_car.y[0]][path_start_car.x[0]] = 0;
                 grid[path_start_car.y[path_start_car.len - 1]][path_start_car.x[path_start_car.len - 1]] = 2;
                 look_flag = 1;
                 // 起始路径走完，转入 Look 状态识别ID
@@ -443,7 +446,6 @@ static void path_process(void){
         process_normal_path(&path_car, 1, 6);
         return;
     }else if (game_mode == 4 && !map_process_flag && path_boom_car.len > 0){
-
         if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
             step++;
             // 检查是否走完整个路径

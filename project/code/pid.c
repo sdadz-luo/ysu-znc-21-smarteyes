@@ -120,6 +120,11 @@ void pid_position_target(float x, float y){
     pid_target(&pid_y, y);
 }
 
+void pid_position_speed(void){
+    pid_x.maxOutput = 120;
+    pid_y.maxOutput = 120;
+}
+
 void pid_change(pid *pid_struct, float kp, float ki, float kd){
     pid_struct->kp = kp;
     pid_struct->ki = ki;
@@ -142,4 +147,6 @@ void pid_reset(void){
     PID_reset(&pid_BR);
     PID_reset(&pid_x);
     PID_reset(&pid_y);
+    pid_x.maxOutput = pid_x_speed;
+    pid_y.maxOutput = pid_y_speed;
 }
