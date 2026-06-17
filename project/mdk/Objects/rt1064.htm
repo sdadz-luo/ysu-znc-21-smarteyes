@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\rt1064.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\rt1064.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Mon Jun 15 19:34:46 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Thu Jun 18 00:46:39 2026
 <BR><P>
 <H3>Maximum Stack Usage =      21320 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -958,8 +958,8 @@ Global Symbols
 <LI><a href="#[fb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_llsl
 </UL>
 <BR>[Called By]<UL><LI><a href="#[136]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LPSPI_MasterInit
-<LI><a href="#[128]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DbgConsole_Vprintf
 <LI><a href="#[fc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_ldivmod
+<LI><a href="#[128]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DbgConsole_Vprintf
 <LI><a href="#[1f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_printf_core
 <LI><a href="#[207]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_fp_digits
 </UL>
@@ -1007,8 +1007,7 @@ Global Symbols
 <P><STRONG><a name="[12c]"></a>memcpy</STRONG> (Thumb, 0 bytes, Stack size 8 bytes, memmove.o(.text))
 <BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = memcpy
 </UL>
-<BR>[Called By]<UL><LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
-<LI><a href="#[192]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;fifo_read_tail_buffer
+<BR>[Called By]<UL><LI><a href="#[192]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;fifo_read_tail_buffer
 <LI><a href="#[166]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;fifo_read_buffer
 <LI><a href="#[179]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;fifo_write_buffer
 <LI><a href="#[16f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;push_cam_data
@@ -1025,6 +1024,7 @@ Global Symbols
 <LI><a href="#[1c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_look_calculation
 <LI><a href="#[1be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_start_calculation
 <LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
+<LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
 <LI><a href="#[e9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;wifi_spi_send_buffer
 <LI><a href="#[128]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DbgConsole_Vprintf
 </UL>
@@ -1052,10 +1052,10 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[19e]"></a>__aeabi_memclr4</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text))
-<BR><BR>[Called By]<UL><LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
-<LI><a href="#[16f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;push_cam_data
+<BR><BR>[Called By]<UL><LI><a href="#[16f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;push_cam_data
 <LI><a href="#[163]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;solve_single_box_a_star
 <LI><a href="#[1c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_id_calculation
+<LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
 </UL>
 
 <P><STRONG><a name="[220]"></a>__aeabi_memclr8</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text), UNUSED)
@@ -1065,8 +1065,7 @@ Global Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[fe]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memset
 </UL>
-<BR>[Called By]<UL><LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
-<LI><a href="#[158]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;QTMR_GetDefaultConfig
+<BR>[Called By]<UL><LI><a href="#[158]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;QTMR_GetDefaultConfig
 <LI><a href="#[12f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPT_GetDefaultConfig
 <LI><a href="#[191]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;fifo_clear
 <LI><a href="#[185]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;debug_output
@@ -1079,7 +1078,6 @@ Global Symbols
 <LI><a href="#[17e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;simulate_box_to_target
 <LI><a href="#[17c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;simulate_box_deadlock
 <LI><a href="#[17d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;compute_box_influence
-<LI><a href="#[161]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;backtrack_validate
 <LI><a href="#[1cf]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;parse_map_input
 <LI><a href="#[196]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_buffer_clear
 <LI><a href="#[1c9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tft180_show_int
@@ -1094,11 +1092,12 @@ Global Symbols
 <LI><a href="#[141]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LPUART_GetDefaultConfig
 <LI><a href="#[135]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LPSPI_MasterGetDefaultConfig
 <LI><a href="#[153]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PWM_GetDefaultConfig
-<LI><a href="#[15a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SAI_TransferRxHandleIRQ
-<LI><a href="#[15b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SAI_TransferTxHandleIRQ
+<LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
 <LI><a href="#[131]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LPI2C_SlaveTransferHandleIRQ
 <LI><a href="#[15d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPDIF_TransferRxHandleIRQ
 <LI><a href="#[15c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPDIF_TransferTxHandleIRQ
+<LI><a href="#[15a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SAI_TransferRxHandleIRQ
+<LI><a href="#[15b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SAI_TransferTxHandleIRQ
 </UL>
 
 <P><STRONG><a name="[1d6]"></a>strstr</STRONG> (Thumb, 36 bytes, Stack size 12 bytes, strstr.o(.text))
@@ -1450,8 +1449,8 @@ Global Symbols
 <BR>[Address Reference Count : 1]<UL><LI> startup_mimxrt1064.o(.isr_vector)
 </UL>
 <P><STRONG><a name="[19b]"></a>DCACHE_CleanInvalidateByRange</STRONG> (Thumb, 84 bytes, Stack size 0 bytes, fsl_cache.o(.text.DCACHE_CleanInvalidateByRange))
-<BR><BR>[Called By]<UL><LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
-<LI><a href="#[19a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_read_page_to_buffer
+<BR><BR>[Called By]<UL><LI><a href="#[19a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_read_page_to_buffer
+<LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
 </UL>
 
 <P><STRONG><a name="[ac]"></a>DMA0_DMA16_DriverIRQHandler</STRONG> (Thumb, 66 bytes, Stack size 16 bytes, fsl_edma.o(.text.DMA0_DMA16_DriverIRQHandler))
@@ -2303,8 +2302,6 @@ Global Symbols
 <LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;CAN2_DriverIRQHandler
 <LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;CAN1_DriverIRQHandler
 <LI><a href="#[126]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;EDMA_HandleIRQ
-<LI><a href="#[15a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SAI_TransferRxHandleIRQ
-<LI><a href="#[15b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SAI_TransferTxHandleIRQ
 <LI><a href="#[cc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LPSPI4_DriverIRQHandler
 <LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LPSPI3_DriverIRQHandler
 <LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LPSPI2_DriverIRQHandler
@@ -2317,6 +2314,8 @@ Global Symbols
 <LI><a href="#[15c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPDIF_TransferTxHandleIRQ
 <LI><a href="#[d1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SAI3_RX_DriverIRQHandler
 <LI><a href="#[d2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SAI3_TX_DriverIRQHandler
+<LI><a href="#[15a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SAI_TransferRxHandleIRQ
+<LI><a href="#[15b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SAI_TransferTxHandleIRQ
 </UL>
 
 <P><STRONG><a name="[1d9]"></a>afio_init</STRONG> (Thumb, 36 bytes, Stack size 8 bytes, zf_driver_gpio.o(.text.afio_init))
@@ -2454,8 +2453,7 @@ Global Symbols
 <LI><a href="#[185]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;debug_output
 <LI><a href="#[184]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pwm_set_duty
 </UL>
-<BR>[Called By]<UL><LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
-<LI><a href="#[190]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;qtimer_iomuxc
+<BR>[Called By]<UL><LI><a href="#[190]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;qtimer_iomuxc
 <LI><a href="#[1a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;func_double_to_str
 <LI><a href="#[1a4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;func_int_to_str
 <LI><a href="#[192]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;fifo_read_tail_buffer
@@ -2484,6 +2482,7 @@ Global Symbols
 <LI><a href="#[1e0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;spi_write_8bit_array
 <LI><a href="#[1db]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;spi_iomuxc
 <LI><a href="#[1d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;pwm_iomuxc
+<LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
 <LI><a href="#[f0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ble6a20_read_buffer
 <LI><a href="#[ea]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ble6a20_send_buffer
 <LI><a href="#[ef]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;wifi_spi_read_buffer
@@ -2693,12 +2692,12 @@ Global Symbols
 <P><STRONG><a name="[19d]"></a>flash_write_page</STRONG> (Thumb, 444 bytes, Stack size 304 bytes, zf_driver_flash.o(.text.flash_write_page))
 <BR><BR>[Stack]<UL><LI>Max Depth = 792<LI>Call Chain = flash_write_page &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
 </UL>
-<BR>[Calls]<UL><LI><a href="#[1a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;rom_api_flexspi_nor_flash_page_program
-<LI><a href="#[19f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;rom_api_flexspi_nor_flash_erase
-<LI><a href="#[19b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DCACHE_CleanInvalidateByRange
-<LI><a href="#[183]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;interrupt_global_disable
+<BR>[Calls]<UL><LI><a href="#[183]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;interrupt_global_disable
 <LI><a href="#[165]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;debug_assert_handler
 <LI><a href="#[1a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;interrupt_global_enable
+<LI><a href="#[1a1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;rom_api_flexspi_nor_flash_page_program
+<LI><a href="#[19f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;rom_api_flexspi_nor_flash_erase
+<LI><a href="#[19b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DCACHE_CleanInvalidateByRange
 <LI><a href="#[ff]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memset
 <LI><a href="#[19e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
 <LI><a href="#[12c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memcpy
@@ -2709,9 +2708,9 @@ Global Symbols
 <P><STRONG><a name="[1a2]"></a>flash_write_page_from_buffer</STRONG> (Thumb, 42 bytes, Stack size 16 bytes, zf_driver_flash.o(.text.flash_write_page_from_buffer))
 <BR><BR>[Stack]<UL><LI>Max Depth = 808<LI>Call Chain = flash_write_page_from_buffer &rArr; flash_write_page &rArr; debug_assert_handler &rArr; pwm_set_duty &rArr;  debug_assert_handler (Cycle)
 </UL>
-<BR>[Calls]<UL><LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
-<LI><a href="#[183]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;interrupt_global_disable
+<BR>[Calls]<UL><LI><a href="#[183]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;interrupt_global_disable
 <LI><a href="#[1a0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;interrupt_global_enable
+<LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
 </UL>
 <BR>[Called By]<UL><LI><a href="#[1b9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;menu
 </UL>
@@ -2844,16 +2843,16 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[183]"></a>interrupt_global_disable</STRONG> (Thumb, 26 bytes, Stack size 0 bytes, zf_common_interrupt.o(.text.interrupt_global_disable))
-<BR><BR>[Called By]<UL><LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
-<LI><a href="#[165]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;debug_assert_handler
+<BR><BR>[Called By]<UL><LI><a href="#[165]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;debug_assert_handler
 <LI><a href="#[1a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page_from_buffer
+<LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
 </UL>
 
 <P><STRONG><a name="[1a0]"></a>interrupt_global_enable</STRONG> (Thumb, 24 bytes, Stack size 0 bytes, zf_common_interrupt.o(.text.interrupt_global_enable))
-<BR><BR>[Called By]<UL><LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
-<LI><a href="#[1a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page_from_buffer
+<BR><BR>[Called By]<UL><LI><a href="#[1a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page_from_buffer
 <LI><a href="#[1b7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;tft_init
 <LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
+<LI><a href="#[19d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;flash_write_page
 </UL>
 
 <P><STRONG><a name="[182]"></a>interrupt_init</STRONG> (Thumb, 30 bytes, Stack size 0 bytes, zf_common_interrupt.o(.text.interrupt_init))
@@ -2982,7 +2981,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[1c5]"></a>path_boom_calculation</STRONG> (Thumb, 25646 bytes, Stack size 15968 bytes, path_planning.o(.text.path_boom_calculation))
+<P><STRONG><a name="[1c5]"></a>path_boom_calculation</STRONG> (Thumb, 25630 bytes, Stack size 15968 bytes, path_planning.o(.text.path_boom_calculation))
 <BR><BR>[Stack]<UL><LI>Max Depth = 18312<LI>Call Chain = path_boom_calculation &rArr; try_execute_step &rArr; solve_single_box_a_star &rArr; hash_lookup_insert &rArr; __aeabi_memcpy
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1d2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;try_execute_step
@@ -3005,8 +3004,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[1c4]"></a>path_calculation</STRONG> (Thumb, 1502 bytes, Stack size 1120 bytes, path_planning.o(.text.path_calculation))
-<BR><BR>[Stack]<UL><LI>Max Depth = 2448<LI>Call Chain = path_calculation &rArr; backtrack_validate &rArr;  backtrack_validate (Cycle)
+<P><STRONG><a name="[1c4]"></a>path_calculation</STRONG> (Thumb, 1546 bytes, Stack size 1120 bytes, path_planning.o(.text.path_calculation))
+<BR><BR>[Stack]<UL><LI>Max Depth = 2472<LI>Call Chain = path_calculation &rArr; backtrack_validate &rArr;  backtrack_validate (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;extract_turn_points
 <LI><a href="#[161]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;backtrack_validate
@@ -3018,8 +3017,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[1c3]"></a>path_id_calculation</STRONG> (Thumb, 5524 bytes, Stack size 448 bytes, path_planning.o(.text.path_id_calculation))
-<BR><BR>[Stack]<UL><LI>Max Depth = 1776<LI>Call Chain = path_id_calculation &rArr; backtrack_validate &rArr;  backtrack_validate (Cycle)
+<P><STRONG><a name="[1c3]"></a>path_id_calculation</STRONG> (Thumb, 5492 bytes, Stack size 448 bytes, path_planning.o(.text.path_id_calculation))
+<BR><BR>[Stack]<UL><LI>Max Depth = 1800<LI>Call Chain = path_id_calculation &rArr; backtrack_validate &rArr;  backtrack_validate (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1d3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;extract_turn_points
 <LI><a href="#[161]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;backtrack_validate
@@ -3031,7 +3030,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[1c2]"></a>path_look_calculation</STRONG> (Thumb, 3254 bytes, Stack size 152 bytes, path_planning.o(.text.path_look_calculation))
+<P><STRONG><a name="[1c2]"></a>path_look_calculation</STRONG> (Thumb, 3522 bytes, Stack size 152 bytes, path_planning.o(.text.path_look_calculation))
 <BR><BR>[Stack]<UL><LI>Max Depth = 232<LI>Call Chain = path_look_calculation &rArr; simple_astar
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1d4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;bfs_compute_distances
@@ -3044,8 +3043,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[1be]"></a>path_start_calculation</STRONG> (Thumb, 1404 bytes, Stack size 128 bytes, path_planning.o(.text.path_start_calculation))
-<BR><BR>[Stack]<UL><LI>Max Depth = 208<LI>Call Chain = path_start_calculation &rArr; simple_astar
+<P><STRONG><a name="[1be]"></a>path_start_calculation</STRONG> (Thumb, 1364 bytes, Stack size 120 bytes, path_planning.o(.text.path_start_calculation))
+<BR><BR>[Stack]<UL><LI>Max Depth = 200<LI>Call Chain = path_start_calculation &rArr; simple_astar
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1d5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;simple_astar
 <LI><a href="#[ff]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memset
@@ -3167,7 +3166,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[18f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;encoder_quad_init
 </UL>
 
-<P><STRONG><a name="[1bf]"></a>reset_planning_system</STRONG> (Thumb, 1694 bytes, Stack size 24 bytes, path_planning.o(.text.reset_planning_system))
+<P><STRONG><a name="[1bf]"></a>reset_planning_system</STRONG> (Thumb, 1730 bytes, Stack size 24 bytes, path_planning.o(.text.reset_planning_system))
 <BR><BR>[Stack]<UL><LI>Max Depth = 32<LI>Call Chain = reset_planning_system &rArr; memset
 </UL>
 <BR>[Calls]<UL><LI><a href="#[ff]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memset
@@ -3860,7 +3859,7 @@ Local Symbols
 <LI><a href="#[1be]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_start_calculation
 </UL>
 
-<P><STRONG><a name="[1cf]"></a>parse_map_input</STRONG> (Thumb, 364 bytes, Stack size 40 bytes, path_planning.o(.text.parse_map_input))
+<P><STRONG><a name="[1cf]"></a>parse_map_input</STRONG> (Thumb, 398 bytes, Stack size 40 bytes, path_planning.o(.text.parse_map_input))
 <BR><BR>[Stack]<UL><LI>Max Depth = 48<LI>Call Chain = parse_map_input &rArr; memset
 </UL>
 <BR>[Calls]<UL><LI><a href="#[ff]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memset
@@ -3879,14 +3878,13 @@ Local Symbols
 <LI><a href="#[1c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_look_calculation
 </UL>
 
-<P><STRONG><a name="[161]"></a>backtrack_validate</STRONG> (Thumb, 2726 bytes, Stack size 1096 bytes, path_planning.o(.text.backtrack_validate))
-<BR><BR>[Stack]<UL><LI>Max Depth = 1328 + In Cycle
+<P><STRONG><a name="[161]"></a>backtrack_validate</STRONG> (Thumb, 2504 bytes, Stack size 1120 bytes, path_planning.o(.text.backtrack_validate))
+<BR><BR>[Stack]<UL><LI>Max Depth = 1352 + In Cycle
 <LI>Call Chain = backtrack_validate &rArr;  backtrack_validate (Cycle)
 </UL>
 <BR>[Calls]<UL><LI><a href="#[163]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;solve_single_box_a_star
 <LI><a href="#[162]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;is_corner_deadlock
 <LI><a href="#[161]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;backtrack_validate
-<LI><a href="#[ff]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memset
 <LI><a href="#[12c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;memcpy
 </UL>
 <BR>[Called By]<UL><LI><a href="#[161]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;backtrack_validate
@@ -3894,8 +3892,8 @@ Local Symbols
 <LI><a href="#[1c3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_id_calculation
 </UL>
 
-<P><STRONG><a name="[1d3]"></a>extract_turn_points</STRONG> (Thumb, 434 bytes, Stack size 44 bytes, path_planning.o(.text.extract_turn_points))
-<BR><BR>[Stack]<UL><LI>Max Depth = 44<LI>Call Chain = extract_turn_points
+<P><STRONG><a name="[1d3]"></a>extract_turn_points</STRONG> (Thumb, 508 bytes, Stack size 40 bytes, path_planning.o(.text.extract_turn_points))
+<BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = extract_turn_points
 </UL>
 <BR>[Called By]<UL><LI><a href="#[1c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_boom_calculation
 <LI><a href="#[1c4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;path_calculation
@@ -4004,7 +4002,7 @@ Local Symbols
 <LI><a href="#[161]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;backtrack_validate
 </UL>
 
-<P><STRONG><a name="[163]"></a>solve_single_box_a_star</STRONG> (Thumb, 1498 bytes, Stack size 128 bytes, path_planning.o(.text.solve_single_box_a_star))
+<P><STRONG><a name="[163]"></a>solve_single_box_a_star</STRONG> (Thumb, 1496 bytes, Stack size 128 bytes, path_planning.o(.text.solve_single_box_a_star))
 <BR><BR>[Stack]<UL><LI>Max Depth = 232<LI>Call Chain = solve_single_box_a_star &rArr; hash_lookup_insert &rArr; __aeabi_memcpy
 </UL>
 <BR>[Calls]<UL><LI><a href="#[1a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;hash_lookup_insert

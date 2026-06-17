@@ -9,6 +9,8 @@
 #define MAP_ROWS             12         /* 地图行数 */
 #define MAP_COLS             16         /* 地图列数 */
 #define MAX_BOXES            5          /* 最大箱子数量 */
+#define MAX_IDS              10         /* 最大ID编号数 */
+#define MAX_VISIT_STEPS      (2 * MAX_BOXES) /* 最大访问步骤数 */
 #define MAX_PATH_LEN         500        /* 最大路径长度 */
 #define INF                  65535U     /* 无穷大值 */
 #define DIR_COUNT            4          /* 方向数量 */
@@ -28,6 +30,7 @@
 #define MAX_SEARCH_CNT       50000      /* A*最大搜索步数 */
 #define SINGLE_STEP_MAX_PATH 500        /* 单步A*最大路径长度 */
 #define TURN_WEIGHT          4          /* 转向惩罚代价 */
+#define ROTATION_PENALTY     3          /* 非0度角观察的旋转惩罚（0度=站在元素左侧看向右侧） */
 #define DIR_INVALID          255        /* 无效方向标记 */
 
 /* ---- 模式3（炸弹破局）容量上限 ---- */
@@ -174,7 +177,7 @@ typedef struct {
 typedef struct {
     uint8_t x[MAX_PATH_LEN];        /* 路径 x 坐标（列） */
     uint8_t y[MAX_PATH_LEN];        /* 路径 y 坐标（行） */
-    uint8_t len;                    /* 路径长度 */
+    uint16_t len;                   /* 路径长度 */
     uint8_t is_push[MAX_PATH_LEN];  /* 是否为推动动作 */
 } Path;
 
@@ -188,7 +191,7 @@ typedef struct {
     uint8_t direction;              /* 方向 */
     int16_t angle;                  /* 角度 */
     Point path[MAX_PATH_LEN];       /* 路径 */
-    uint8_t path_len;               /* 路径长度 */
+    uint16_t path_len;              /* 路径长度 */
     int8_t scanned_id;              /* 扫描ID */
     uint16_t step_cost;             /* 步骤代价 */
 } VisitStep;
@@ -288,7 +291,7 @@ static bool is_wall_bit(const uint16_t walls[MAP_ROWS], Point p);
 static bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]);
 
 /* --- 3.3 简单 A* 寻路（无推箱） --- */
-static uint8_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path);
+static uint16_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path);
 
 /* --- 3.4 BFS 距离计算 --- */
 static void bfs_compute_distances(Point start, uint16_t walls[MAP_ROWS]);
