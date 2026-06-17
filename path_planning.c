@@ -1332,14 +1332,21 @@ static bool backtrack_validate(SolutionSequence* sol) {
         Point cur_target = sol->pairs[try_idx].target_pos;
 
         memcpy(g_current_walls, g_static_walls, sizeof(g_current_walls));
-        /* 构建障碍物：其他箱子 + 模式1下的非配对靶位 */
-        for (uint8_t m = 0; m < g_remaining_cnt; m++) {
-            if (m == k) continue;
-            Point obs = sol->pairs[g_remaining[m]].box_pos;
-            g_current_walls[obs.x] |= (1 << obs.y);
-            if (g_mode1_strict) {
-                Point tp = sol->pairs[g_remaining[m]].target_pos;
-                g_current_walls[tp.x] |= (1 << tp.y);
+        /* 构建障碍物：其他箱子 + 会吸收当前箱子的非配对靶位
+           模式1：所有靶位都吸收 → 阻挡全部非配对靶位
+           模式2：仅同ID靶位吸收 → 仅阻挡同ID的非配对靶位 */
+        {
+            int8_t my_id = g_box_id_map[sol->pairs[try_idx].box_idx];
+            for (uint8_t m = 0; m < g_remaining_cnt; m++) {
+                if (m == k) continue;
+                uint8_t pi = g_remaining[m];
+                Point obs = sol->pairs[pi].box_pos;
+                g_current_walls[obs.x] |= (1 << obs.y);
+                if (g_mode1_strict ||
+                    (my_id != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id)) {
+                    Point tp = sol->pairs[pi].target_pos;
+                    g_current_walls[tp.x] |= (1 << tp.y);
+                }
             }
         }
 
@@ -1349,12 +1356,19 @@ static bool backtrack_validate(SolutionSequence* sol) {
         AStarResult res = solve_single_box_a_star(g_current_player_pos, cur_box, cur_target, g_current_walls);
         if (!res.success) continue;
 
-        /* 模式1严格模式：事后验证箱子不穿越非配对靶位（位图 O(1) 查表） */
-        if (g_mode1_strict) {
+        /* 事后验证：箱子不穿越会吸收它的非配对靶位（位图 O(1) 查表）
+           模式1：所有靶位都吸收 → 检查全部非配对靶位
+           模式2：仅同ID靶位吸收 → 仅检查同ID的非配对靶位 */
+        {
+            int8_t my_id = g_box_id_map[sol->pairs[try_idx].box_idx];
             uint16_t forbid_targets[MAP_ROWS] = {0};
-            for (uint8_t m = 0; m < sol->count; m++)
-                if (m != try_idx && !g_solved[m])
+            for (uint8_t m = 0; m < sol->count; m++) {
+                if (m == try_idx || g_solved[m]) continue;
+                uint8_t ti = sol->pairs[m].target_idx;
+                if (g_mode1_strict ||
+                    (my_id != -1 && g_target_id_map[ti] == my_id))
                     forbid_targets[sol->pairs[m].target_pos.x] |= (1 << sol->pairs[m].target_pos.y);
+            }
 
             Point sim_box = cur_box;
             bool box_path_valid = true;
@@ -3309,6 +3323,7 @@ void map_boom_out(uint8_t out_map[MAP_ROWS][MAP_COLS])
  * @brief 重置整个规划系统的所有全局状态
  */
 void reset_planning_system(void) {
+    /* ---- 4.1 A* 搜索全局缓冲区 ---- */
     memset(hash_table, 0, sizeof(hash_table));
     memset(pq, 0, sizeof(pq)); pq_size = 0;
     memset(g_succ_buf, 0, sizeof(g_succ_buf));
@@ -3316,60 +3331,87 @@ void reset_planning_system(void) {
         path_nodes[i].g_cost = INF; path_nodes[i].closed = false;
         path_nodes[i].parent_idx = -1; path_nodes[i].last_dir = -1;
     }
+
+    /* ---- 4.2 simple_astar 最小堆 ---- */
     s_heap_size = 0; memset(s_heap, 0, sizeof(s_heap));
+
+    /* ---- 4.3 共享临时缓冲区 ---- */
     memset(g_bfs_walls, 0, sizeof(g_bfs_walls));
     memset(g_bfs_queue, 0, sizeof(g_bfs_queue));
     memset(g_temp_path, 0, sizeof(g_temp_path));
-    memset(g_temp_x, 0, sizeof(g_temp_x)); memset(g_temp_y, 0, sizeof(g_temp_y));
-    memset(g_temp_push, 0, sizeof(g_temp_push));
-    memset(g_initial_boxes, 0, sizeof(g_initial_boxes));
-    memset(g_initial_targets, 0, sizeof(g_initial_targets));
-    memset(&g_initial_player, 0, sizeof(g_initial_player));
-    memset(g_static_walls, 0, sizeof(g_static_walls));
+    memset(g_temp_x,   0, sizeof(g_temp_x));
+    memset(g_temp_y,   0, sizeof(g_temp_y));
+    memset(g_temp_push,0, sizeof(g_temp_push));
+
+    /* ---- 4.4 地图初始状态 ---- */
+    memset(g_initial_boxes,  0, sizeof(g_initial_boxes));
+    memset(g_initial_targets,0, sizeof(g_initial_targets));
+    memset(&g_initial_player,0, sizeof(g_initial_player));
+    g_box_count    = 0;
+    g_target_count = 0;
+    g_bomb_count   = 0;
+    memset(g_static_walls,  0, sizeof(g_static_walls));
     memset(g_target_bitmap, 0, sizeof(g_target_bitmap));
-    g_box_count = 0; g_target_count = 0;
-    g_bomb_count = 0;
+    memset(g_initial_bombs, 0, sizeof(g_initial_bombs));
     for (uint8_t i = 0; i < MAX_BOMBS; i++) {
-        g_initial_bombs[i].x = 0xFF;
+        g_initial_bombs[i].x = 0xFF;  /* 0xFF = 无效/已消失 */
         g_initial_bombs[i].y = 0xFF;
     }
-    memset(g_solved, 0, sizeof(g_solved));
-    g_mode1_strict = false;
-    memset(g_remaining, 0, sizeof(g_remaining)); g_remaining_cnt = 0;
-    memset(&g_current_player_pos, 0, sizeof(g_current_player_pos));
-    memset(g_current_walls, 0, sizeof(g_current_walls));
-    g_total_cost = 0; g_fullpath_len = 0;
-    memset(g_fullpath, 0, sizeof(g_fullpath));
-    memset(g_solve_order, 0, sizeof(g_solve_order)); g_order_idx = 0;
-    memset(&g_path_out, 0, sizeof(Path));
-    memset(&g_path_start_out, 0, sizeof(Path_Start));
-    memset(&g_path_look_out, 0, sizeof(Path_Look));
-    for (int i = 0; i < MAP_ROWS; i++)
-        for (int j = 0; j < MAP_COLS; j++)
-            g_dist_map[i][j] = INF;
-    memset(g_visit_plan, 0, sizeof(g_visit_plan));
-    g_visit_count = 0; g_current_step = 0;
-    memset(g_id_pairing, -1, sizeof(g_id_pairing));
-    memset(g_box_id_map, -1, sizeof(g_box_id_map));
-    memset(g_target_id_map, -1, sizeof(g_target_id_map));
-    memset(&g_id_based_sol, 0, sizeof(SolutionSequence));
-    memset(g_original_map, 0, sizeof(g_original_map));
-    memset(g_sim_queue, 0, sizeof(g_sim_queue));
-    memset(g_obs_buf, 0, sizeof(g_obs_buf));
-    g_bfs_epoch = 1; memset(g_bfs_visited, 0, sizeof(g_bfs_visited));
+
+    /* ---- 4.5 模式3（炸弹破局）全局缓冲区 ---- */
+    memset(g_original_map,        0, sizeof(g_original_map));
+    memset(g_sim_queue,           0, sizeof(g_sim_queue));
+    memset(g_obs_buf,             0, sizeof(g_obs_buf));
+    g_bfs_epoch = 1;  memset(g_bfs_visited, 0, sizeof(g_bfs_visited));
     g_dist_epoch = 1; memset(g_dist_epoch_tag, 0, sizeof(g_dist_epoch_tag));
-    memset(g_vis1, 0, sizeof(g_vis1)); memset(g_vis2, 0, sizeof(g_vis2));
-    memset(g_region_masks, 0, sizeof(g_region_masks));
+    memset(g_vis1, 0, sizeof(g_vis1));
+    memset(g_vis2, 0, sizeof(g_vis2));
+    memset(g_region_masks,     0, sizeof(g_region_masks));
     memset(g_enclosed_regions, 0, sizeof(g_enclosed_regions));
     g_enclosed_region_count = 0;
     memset(g_player_region, 0, sizeof(g_player_region));
-    memset(g_problem_points, 0, sizeof(g_problem_points)); g_problem_count = 0;
-    memset(g_saved_problem_points, 0, sizeof(g_saved_problem_points)); g_saved_problem_count = 0;
-    memset(g_bomb_reach_map, 0, sizeof(g_bomb_reach_map));
-    memset(g_saved_walls, 0, sizeof(g_saved_walls));
-    memset(g_saved_player_region, 0, sizeof(g_saved_player_region));
+    memset(g_problem_points,       0, sizeof(g_problem_points));
+    g_problem_count = 0;
+    memset(g_saved_problem_points, 0, sizeof(g_saved_problem_points));
+    g_saved_problem_count = 0;
+    memset(g_bomb_reach_map,       0, sizeof(g_bomb_reach_map));
+    memset(g_saved_walls,          0, sizeof(g_saved_walls));
+    memset(g_saved_player_region,  0, sizeof(g_saved_player_region));
     memset(g_vcache_hash, 0, sizeof(g_vcache_hash));
-    memset(g_vcache_mask, 0, sizeof(g_vcache_mask)); g_vcache_epoch = 0;
+    memset(g_vcache_mask, 0, sizeof(g_vcache_mask));
+    g_vcache_epoch = 0;
+
+    /* ---- 4.6 推箱验证全局状态 ---- */
+    memset(g_solved,   0, sizeof(g_solved));
+    g_mode1_strict = false;
+    memset(g_remaining, 0, sizeof(g_remaining));
+    g_remaining_cnt = 0;
+    memset(&g_current_player_pos, 0, sizeof(g_current_player_pos));
+    memset(g_current_walls, 0, sizeof(g_current_walls));
+    g_total_cost   = 0;
+    g_fullpath_len = 0;
+    memset(g_fullpath,   0, sizeof(g_fullpath));
+    memset(g_solve_order,0, sizeof(g_solve_order));
+    g_order_idx = 0;
+
+    /* ---- 4.7 全局输出路径 ---- */
+    memset(&g_path_out,       0, sizeof(Path));
+    memset(&g_path_start_out, 0, sizeof(Path_Start));
+    memset(&g_path_look_out,  0, sizeof(Path_Look));
+
+    /* ---- 4.8 ID模式状态 ---- */
+    for (int i = 0; i < MAP_ROWS; i++)
+        for (int j = 0; j < MAP_COLS; j++)
+            g_dist_map[i][j] = INF;
+    memset(g_visit_plan,  0, sizeof(g_visit_plan));
+    g_visit_count  = 0;
+    g_current_step = 0;
+    memset(g_id_pairing,    -1, sizeof(g_id_pairing));
+    memset(g_box_id_map,    -1, sizeof(g_box_id_map));
+    memset(g_target_id_map, -1, sizeof(g_target_id_map));
+    memset(&g_id_based_sol,  0, sizeof(SolutionSequence));
+
+    /* ---- 4.9 模式3最终地图 ---- */
     memset(g_boom_final_walls, 0, sizeof(g_boom_final_walls));
     g_boom_used_mask = 0;
 }
