@@ -206,6 +206,7 @@ static void state_judgment(void){
         case NoGame:{
             // 检测是否进入开始区域
             if (x_cam >= 0 && x_cam <= 2.5 * x_cam_uint && y_cam >= 5 * y_cam_uint && y_cam <= 7 * y_cam_uint){
+                system_delay_ms(300);
                 // 根据摄像头坐标初始化车辆位置
                 x_enc = (x_cam / x_cam_uint) * x_enc_uint;
                 y_enc = (y_cam / y_cam_uint) * y_enc_uint;
@@ -333,12 +334,14 @@ static void uart_updata(void){
  * @param end_x 终点栅格X坐标
  * @param end_y 终点栅格Y坐标
  */
-static void process_normal_path(const Path *path, uint8_t end_x, uint8_t end_y){
+static void process_normal_path(const Path *path, float end_x, float end_y){
     if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {
         step++;
         if (step > path->len) {
-            x_target = (float)end_x * x_enc_uint;
-            y_target = (float)end_y * y_enc_uint;
+            if (x_enc >= 12 * x_enc_uint) end_x = 0.5;
+            else end_x = 1;
+            x_target = end_x * x_enc_uint;
+            y_target = end_y * y_enc_uint;
             pid_position_speed();
             game_over_flag = 1;
             car_state = GameOver;
@@ -357,7 +360,7 @@ static void process_normal_path(const Path *path, uint8_t end_x, uint8_t end_y){
 static void path_process(void){
     // 1. 扫描地图数据 (检测是否有车位2, 障碍3, 车辆6)
     if (map_process_flag == 1) {
-        system_delay_ms(1000);
+        system_delay_ms(500);
         for (uint8_t row = 0; row < 12; row++) {
             for (uint8_t col = 0; col < 16; col++) {
                 uint8_t val = car_data.grid[row][col];
@@ -385,7 +388,7 @@ static void path_process(void){
 
     // 3. 路径跟踪执行 (根据不同模式)
     if (game_mode == 1 && !map_process_flag && path_car.len > 0){
-        process_normal_path(&path_car, 1, 6);
+        process_normal_path(&path_car, 0.5, 6);
         return;
     }else if (game_mode == 0 && !map_process_flag && path_start_car.len > 0){
         if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
@@ -443,7 +446,7 @@ static void path_process(void){
             return;
         }
     }else if (game_mode == 3 && !map_process_flag && path_car.len > 0){
-        process_normal_path(&path_car, 1, 6);
+        process_normal_path(&path_car, 0.5, 6);
         return;
     }else if (game_mode == 4 && !map_process_flag && path_boom_car.len > 0){
         if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
