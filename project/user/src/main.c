@@ -413,13 +413,6 @@ static void path_process(void){
             return;
         }
     }else if (game_mode == 2 && !map_process_flag && path_look_car.len > 0){
-        if (step <= 1){
-            id_input(id);
-            id = -1;
-            step = 2;
-            x_target = (path_look_car.x[step] + 0.5f) * x_enc_uint;
-            y_target = (path_look_car.y[step] + 0.5f) * y_enc_uint;
-        }
         if ((fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) || yaw_flag == 1) { 
             yaw_flag = 0;           
             if (path_look_car.is_look[step] == 1 && step < path_look_car.len){
@@ -498,6 +491,7 @@ static void cam2_process(void){
                     return;
                 }else{
                     game_mode = 2;      // 切换到ID识别模式
+                    id = -1;
                     car_state = Waiting;
                     return;
                 }
