@@ -1156,7 +1156,7 @@ static ApproachResult* find_nearest_approach(uint8_t map[MAP_ROWS][MAP_COLS]) {
     memset(sw, 0, sizeof(sw));
     for (int i = 0; i < MAP_ROWS; i++)
         for (int j = 0; j < MAP_COLS; j++)
-            if (map[i][j] == WALL || map[i][j] == BOMB) sw[i] |= (1 << j);
+            if (map[i][j] == WALL || map[i][j] == BOMB || map[i][j] == TARGET) sw[i] |= (1 << j);
 
     for (int i = 0; i < MAP_ROWS; i++) {
         for (int j = 0; j < MAP_COLS; j++) {
