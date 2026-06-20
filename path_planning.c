@@ -230,7 +230,6 @@ typedef struct {
     uint8_t box_indices[MAX_BOXES]; uint8_t box_count;
     uint8_t target_indices[MAX_BOXES]; uint8_t target_count;
     uint16_t influence_mask[MAP_ROWS]; /* 箱子的影响区域（位图） */
-    char description[64];
 } DeadlockProblemPoint;
 
 /* 可炸墙 */
@@ -306,7 +305,7 @@ static uint8_t heuristic(const State *s);
 static uint8_t is_goal(const State *s);
 static void get_successors(const State *cur, State *res, uint8_t *cnt);
 static AStarResult solve_single_box_a_star(Point player, Point box, Point target,
-                                           uint16_t dynamic_walls[MAP_ROWS]);
+                                        uint16_t dynamic_walls[MAP_ROWS]);
 /* --- 3.6 模式1贪心配对与回溯验证 --- */
 static void generate_greedy_pairing(SolutionSequence* sol);
 static bool backtrack_validate(SolutionSequence* sol);
@@ -331,14 +330,14 @@ static uint32_t hash_walls(const uint16_t walls[MAP_ROWS]);
 static void compute_player_region_with_walls(const uint16_t walls[MAP_ROWS], bool ignore_bombs);
 static void compute_player_region(void);
 static uint16_t compute_box_influence(Point box, const uint16_t walls[MAP_ROWS],
-                                      uint16_t influence_mask[MAP_ROWS]);
+                                    uint16_t influence_mask[MAP_ROWS]);
 static bool influence_contains_target(const uint16_t influence[MAP_ROWS]);
 static bool box_can_reach_any_target(Point box, const uint16_t walls[MAP_ROWS],
-                                     const Point targets[], uint8_t target_count);
+                                    const Point targets[], uint8_t target_count);
 static bool simulate_box_deadlock(uint8_t box_idx, const uint16_t obstacles[MAP_ROWS],
-                                   const Point targets[], uint8_t target_count,
-                                   const uint16_t walls[MAP_ROWS],
-                                   Point start_player, Point start_box);
+                                const Point targets[], uint8_t target_count,
+                                const uint16_t walls[MAP_ROWS],
+                                Point start_player, Point start_box);
 static bool simulate_box_to_target(uint8_t box_idx, Point target,
                                     const uint16_t walls[MAP_ROWS],
                                     Point start_player, Point start_box);
@@ -367,15 +366,15 @@ static bool analyze_bomb_breakthrough(const DeadlockResult *deadlock,
                                        DetonatePlan out_plans[], uint8_t *out_plan_count,
                                        int *out_best_benefit);
 static uint8_t bfs_bomb_distances(Point player, const uint16_t walls[MAP_ROWS],
-                                   const bool done[], uint8_t plan_count,
-                                   const DetonatePlan plans[], uint16_t dists[MAX_BOOMS]);
+                                const bool done[], uint8_t plan_count,
+                                const DetonatePlan plans[], uint16_t dists[MAX_BOOMS]);
 static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
-                                   Point detonate_pos, Point player_start,
-                                   const uint16_t walls[MAP_ROWS],
-                                   const bool active_bombs[MAX_BOOMS],
+                                Point detonate_pos, Point player_start,
+                                const uint16_t walls[MAP_ROWS],
+                                const bool active_bombs[MAX_BOOMS],
                                    BombPushPath *out_path);
 static bool try_execute_step(const DetonatePlan *p, uint8_t step_idx,
-                              const bool active_bombs[MAX_BOOMS],
+                            const bool active_bombs[MAX_BOOMS],
                               Point *player, uint16_t walls[MAP_ROWS],
                               BombExecutionStep *out_st);
 static void plan_bomb_execution_sequence(const DetonatePlan plans[], uint8_t plan_count,
@@ -418,15 +417,15 @@ static uint8_t g_temp_y[MAX_PATH_LEN];               /* 临时y坐标 */
 static uint8_t g_temp_push[MAX_PATH_LEN];            /* 临时推动标识 */
 
 /* ---------- 4.4 地图初始状态 ---------- */
-static Point g_initial_boxes[MAX_BOXES];             /* 初始箱子位置 */
-static Point g_initial_targets[MAX_BOXES];           /* 初始目标位置 */
-static Point g_initial_player;                       /* 初始玩家位置 */
-static uint8_t g_box_count = 0;                      /* 箱子数量 */
-static uint8_t g_target_count = 0;                   /* 目标数量 */
-static uint16_t g_static_walls[MAP_ROWS];            /* 静态墙位图 */
+static Point g_initial_boxes[MAX_BOXES];            /* 初始箱子位置 */
+static Point g_initial_targets[MAX_BOXES];          /* 初始目标位置 */
+static Point g_initial_player;                      /* 初始玩家位置 */
+static uint8_t g_box_count = 0;                     /* 箱子数量 */
+static uint8_t g_target_count = 0;                  /* 目标数量 */
+static uint16_t g_static_walls[MAP_ROWS];           /* 静态墙位图 */
 static uint16_t g_target_bitmap[MAP_ROWS];          /* 目标位图（O(1) 查询） */
-static Point g_initial_bombs[MAX_BOOMS];             /* 初始炸弹位置 */
-static uint8_t g_bomb_count = 0;                     /* 炸弹数量 */
+static Point g_initial_bombs[MAX_BOOMS];            /* 初始炸弹位置 */
+static uint8_t g_bomb_count = 0;                    /* 炸弹数量 */
 
 /* ---------- 4.5 模式3炸弹破局全局缓冲 ---------- */
 static uint8_t g_original_map[MAP_ROWS][MAP_COLS];   /* 原始地图（供模式3用） */
@@ -1371,8 +1370,8 @@ static bool backtrack_validate(SolutionSequence* sol) {
 
         memcpy(g_current_walls, g_static_walls, sizeof(g_current_walls));
         /* 重置 BFS 缓冲区与距离图
-       模式1（非ID配对）：已配对箱子加入障碍物，其目标位阻塞后续操作
-       模式2（ID配对）：已配对同ID箱子和同ID目标位均阻塞 */
+        模式1（非ID配对）：已配对箱子加入障碍物，其目标位阻塞后续操作
+        模式2（ID配对）：已配对同ID箱子和同ID目标位均阻塞 */
         {
             int8_t my_id = g_box_id_map[sol->pairs[try_idx].box_idx];
             for (uint8_t m = 0; m < g_remaining_cnt; m++) {
@@ -1395,8 +1394,8 @@ static bool backtrack_validate(SolutionSequence* sol) {
         if (!res.success) continue;
 
         /* 更新箱子和目标位图，支持目标位 O(1) 阻塞判断
-       模式1（非ID配对）：禁止踏入同ID已配对目标位
-       模式2（ID配对）：仅同ID目标位标记为禁止 */
+        模式1（非ID配对）：禁止踏入同ID已配对目标位
+        模式2（ID配对）：仅同ID目标位标记为禁止 */
         {
             int8_t my_id = g_box_id_map[sol->pairs[try_idx].box_idx];
             uint16_t forbid_targets[MAP_ROWS] = {0};
@@ -1677,7 +1676,7 @@ static void id_inference(void) {
                 bfs_compute_distances(g_initial_boxes[bi[i]], g_static_walls);
                 for (int j = 0; j < k; j++) {
                     dist[i][j] = g_dist_map[g_initial_targets[ti[j]].x]
-                                              [g_initial_targets[ti[j]].y];
+                                            [g_initial_targets[ti[j]].y];
                 }
             }
 
@@ -1935,7 +1934,7 @@ static bool simulate_box_deadlock(uint8_t box_idx, const uint16_t obstacles[MAP_
     }
     uint16_t head = 0, tail = 0;
     { uint32_t idx = BFS_VISITED_INDEX(start_player.x, start_player.y, start_box.x, start_box.y);
-      g_bfs_visited[idx] = g_bfs_epoch; }
+    g_bfs_visited[idx] = g_bfs_epoch; }
     g_sim_queue[tail++] = ENCODE_STATE(start_player.x, start_player.y, start_box.x, start_box.y);
     while (head < tail) {
         uint16_t s = g_sim_queue[head++];
@@ -1953,12 +1952,12 @@ static bool simulate_box_deadlock(uint8_t box_idx, const uint16_t obstacles[MAP_
             /* 箱子不能推到另一个箱子或炸弹占的格子 */
             if (g_obs_buf[dest_x] & (1 << dest_y)) continue;
             { bool blocked_by_bomb = false;
-              for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
+            for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
                 if (g_initial_bombs[bi].x == 0xFF) continue; /* 已失效 */
                 if (g_initial_bombs[bi].x == dest_x && g_initial_bombs[bi].y == dest_y)
                     { blocked_by_bomb = true; break; }
-              }
-              if (blocked_by_bomb) continue; }
+            }
+            if (blocked_by_bomb) continue; }
             uint8_t push_px = (uint8_t)(sbx - DIRS[d][0]), push_py = (uint8_t)(sby - DIRS[d][1]);
             if (push_px >= MAP_ROWS || push_py >= MAP_COLS) continue;
             if (is_wall_bit(walls, (Point){push_px, push_py})) continue;
@@ -2009,7 +2008,7 @@ static bool simulate_box_to_target(uint8_t box_idx, Point target,
     uint16_t head = 0, tail = 0;
     {
         uint32_t idx = BFS_VISITED_INDEX(start_player.x, start_player.y,
-                                          start_box.x, start_box.y);
+                                        start_box.x, start_box.y);
         g_bfs_visited[idx] = g_bfs_epoch;
     }
     g_sim_queue[tail++] = ENCODE_STATE(start_player.x, start_player.y,
@@ -2112,13 +2111,11 @@ static void detect_and_generate_problems(void) {
                 Point tp = g_initial_targets[tj];
                 if (infl[tp.x] & (1 << tp.y)) pp->target_indices[pp->target_count++] = tj;
             }
-            snprintf(pp->description, sizeof(pp->description), "封闭区域 #%d", pp->region_id);
         } else if (!has_target) {
             pp->type = PROBLEM_SEPARATED;
             pp->region_id = -1;
             pp->box_indices[0] = bi; pp->box_count = 1;
             memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
-            snprintf(pp->description, sizeof(pp->description), "箱子 #%d 隔离区域", bi);
             box_handled[bi] = true;
         } else {
             if (simulate_box_deadlock(bi, g_static_walls, g_initial_targets, g_target_count,
@@ -2127,7 +2124,6 @@ static void detect_and_generate_problems(void) {
                 pp->region_id = -1;
                 pp->box_indices[0] = bi; pp->box_count = 1;
                 memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
-                snprintf(pp->description, sizeof(pp->description), "箱子#%d 需仿真验证", bi);
                 box_handled[bi] = true;
             }
         }
@@ -2170,9 +2166,9 @@ static void detect_and_generate_problems(void) {
                     Point bp = g_initial_boxes[bj];
                     if (catchment[bp.x] & (1 << bp.y)) pp->box_indices[pp->box_count++] = bj;
                 }
-                snprintf(pp->description, sizeof(pp->description), "封闭区域 #%d(含箱子)", pp->region_id);
+                /* 封闭区域，含箱子 */
             } else {
-                snprintf(pp->description, sizeof(pp->description), "封闭区域 #%d(无箱子)", pp->region_id);
+                /* 无箱子 */
             }
             g_problem_count++;
             if (g_problem_count >= MAX_PROBLEM_POINTS) break;
@@ -2217,8 +2213,6 @@ static void detect_and_generate_problems(void) {
                 uint16_t infl[MAP_ROWS];
                 compute_box_influence(tp, g_static_walls, infl);
                 memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
-                snprintf(pp->description, sizeof(pp->description),
-                         "目标 #%d 不可达", ti);
                 g_problem_count++;
                 target_covered[ti] = true;
                 if (g_problem_count >= MAX_PROBLEM_POINTS) break;
@@ -2291,8 +2285,6 @@ static void detect_and_generate_problems(void) {
                 uint16_t infl[MAP_ROWS];
                 compute_box_influence(tp, g_static_walls, infl);
                 memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
-                snprintf(pp->description, sizeof(pp->description),
-                         "目标 #%d 不可达", ti);
                 g_problem_count++;
             }
         }
@@ -2333,7 +2325,7 @@ static uint8_t check_problems_resolved_incremental(const uint16_t modified_walls
             /* 在 modified_walls 下重新计算影响区（炸墙后墙已移除） */
             {
                 Point seed = (pp->box_count > 0) ? g_initial_boxes[pp->box_indices[0]]
-                          : g_initial_targets[pp->target_indices[0]];
+                        : g_initial_targets[pp->target_indices[0]];
                 uint16_t new_infl[MAP_ROWS];
                 compute_box_influence(seed, modified_walls, new_infl);
                 for (uint8_t ri = 0; ri < MAP_ROWS && !reachable; ri++) {
@@ -2427,7 +2419,7 @@ static void precompute_bomb_reachability(void)
                 if (v == WALL) {
                     g_obs_buf[i] |= (1 << j);
                 } else if ((v == BOX || v == BOOM) &&
-                           !(i == bomb_pos.x && j == bomb_pos.y)) {
+                            !(i == bomb_pos.x && j == bomb_pos.y)) {
                     g_obs_buf[i] |= (1 << j);
                 }
             }
@@ -3535,8 +3527,8 @@ int main(void) {
         printf("(x,y),angel,is_look,type,%d\n",path_look.len);
         for (int i = 0; i < path_look.len; i++) {
             printf("(%d,%d),%d, %d,%d,%d\n",
-                   path_look.x[i], path_look.y[i],i,
-                   path_look.angle[i], path_look.is_look[i], path_look.type[i]);
+                    path_look.x[i], path_look.y[i],i,
+                    path_look.angle[i], path_look.is_look[i], path_look.type[i]);
         }
         int step = 0,id = -1;
         Path path_car = {0};
