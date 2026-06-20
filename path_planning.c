@@ -213,13 +213,6 @@ typedef struct {
 /* 压缩的推箱模拟状态（原4字节→2字节） */
 typedef uint16_t SimState;
 
-/* 封闭区域 */
-typedef struct {
-    uint8_t box_indices[MAX_BOXES]; uint8_t box_count;
-    uint8_t target_indices[MAX_BOXES]; uint8_t target_count;
-    bool is_empty;
-} EnclosedRegion;
-
 /* 死锁检测结果 */
 typedef struct {
     uint8_t box_deadlock_indices[MAX_BOXES]; uint8_t box_deadlock_count;
@@ -229,7 +222,7 @@ typedef struct {
 
 /* 死锁待解决点 */
 typedef struct {
-    uint8_t type; int8_t region_id;
+    uint8_t type; 
     uint8_t box_indices[MAX_BOXES]; uint8_t box_count;
     uint8_t target_indices[MAX_BOXES]; uint8_t target_count;
     uint16_t influence_mask[MAP_ROWS]; /* 箱子的影响域掩码（位图） */
@@ -237,7 +230,7 @@ typedef struct {
 
 /* 可炸墙 */
 typedef struct {
-    Point wall_pos; uint8_t deadlock_type; int benefit_score;
+    Point wall_pos; int benefit_score;
 } BreakableWall;
 
 /* 爆炸方案 */
@@ -246,7 +239,6 @@ typedef struct {
     uint8_t bomb_index; Point bomb_initial_pos;
     uint16_t bomb_push_distance; int total_benefit;
     bool resolves_deadlock; uint8_t resolved_mask;
-    uint8_t affected_mask;
 } DetonatePlan;
 
 /* 炸弹推送路径（纯玩家路径） */
@@ -332,7 +324,7 @@ static Path path_id_calculate(SolutionSequence* sol);
 static uint32_t hash_walls(const uint16_t walls[MAP_ROWS]);
 static void compute_player_region_with_walls(const uint16_t walls[MAP_ROWS], bool ignore_bombs);
 static void compute_player_region(void);
-static uint16_t compute_box_influence(Point box, const uint16_t walls[MAP_ROWS],
+static void compute_box_influence(Point box, const uint16_t walls[MAP_ROWS],
                                       uint16_t influence_mask[MAP_ROWS]);
 static bool influence_contains_target(const uint16_t influence[MAP_ROWS]);
 static bool box_can_reach_any_target(Point box, const uint16_t walls[MAP_ROWS],
@@ -350,7 +342,6 @@ static uint8_t check_problems_resolved_incremental(const uint16_t modified_walls
 static uint8_t check_problems_resolved_cached(const uint16_t modified_walls[MAP_ROWS], Point player_pos);
 static bool is_breakable_wall(Point pos);
 static void precompute_bomb_reachability(void);
-static inline bool bomb_reach_get(uint8_t bomb_idx, Point p);
 static bool is_valid_detonation_point(Point pos);
 static inline bool can_explosion_cover_wall(Point detonate_pos, Point target_wall);
 static void find_detonation_points_for_wall(Point target_wall, Point out_points[], uint8_t *out_count);
@@ -440,15 +431,9 @@ static uint8_t g_dist_epoch = 1;
 static uint8_t g_dist_epoch_tag[MAP_ROWS][MAP_COLS];
 
 static uint8_t g_vis1[MAP_ROWS][MAP_COLS];           /* 临时访问标记1 */
-static uint8_t g_vis2[MAP_ROWS][MAP_COLS];           /* 临时访问标记2 */
 
-/* 区域掩码压缩：uint16_t[10][12]=240B */
-static uint16_t g_region_masks[MAX_ENCLOSED_REGIONS][MAP_ROWS];
-static EnclosedRegion g_enclosed_regions[MAX_ENCLOSED_REGIONS];
-static uint8_t g_enclosed_region_count = 0;
 static uint8_t g_player_region[MAP_ROWS][MAP_COLS];   /* 玩家可达区域 */
 static uint8_t g_vis1_epoch = 1;
-static uint8_t g_vis2_epoch = 1;
 static uint8_t g_player_region_epoch = 1;
 
 /* 死锁待解决点 */
@@ -467,7 +452,6 @@ static uint8_t g_saved_player_region[MAP_ROWS][MAP_COLS];
 /* 验证缓存：hash(walls)→resolved_mask */
 static uint32_t g_vcache_hash[VCACHE_SIZE];
 static uint8_t  g_vcache_mask[VCACHE_SIZE];
-static uint8_t  g_vcache_epoch = 0;
 
 /* ---------- 4.6 推箱验证全局状态 ---------- */
 static bool g_mode1_strict = false;                  /* 模式1严格模式：靶位阻挡箱子 */
@@ -826,13 +810,6 @@ static bool is_breakable_wall(Point pos) {
         if (!is_wall_bit(g_static_walls, adj)) return true;
     }
     return false;
-}
-
-/**
- * @brief 炸弹可达性查询（位图O(1)）
- */
-static inline bool bomb_reach_get(uint8_t bomb_idx, Point p) {
-    return (g_bomb_reach_map[bomb_idx][p.x] & (1 << p.y)) != 0;
 }
 
 /**
@@ -1841,15 +1818,15 @@ static void compute_player_region(void) {
 /**
  * @brief 计算箱子的影响域（可达区域位图）
  */
-static uint16_t compute_box_influence(Point box, const uint16_t walls[MAP_ROWS],
+static void compute_box_influence(Point box, const uint16_t walls[MAP_ROWS],
     uint16_t influence_mask[MAP_ROWS]) {
     memset(influence_mask, 0, MAP_ROWS * sizeof(uint16_t));
     g_dist_epoch++;
     if (g_dist_epoch == 0) { memset(g_dist_epoch_tag, 0, sizeof(g_dist_epoch_tag)); g_dist_epoch = 1; }
-    uint16_t head = 0, tail = 0, count = 0;
+    uint16_t head = 0, tail = 0;
     g_dist_epoch_tag[box.x][box.y] = g_dist_epoch;
     g_bfs_queue[tail++] = box;
-    influence_mask[box.x] |= (1 << box.y); count++;
+    influence_mask[box.x] |= (1 << box.y);
     while (head < tail) {
         Point curr = g_bfs_queue[head++];
         for (uint8_t d = 0; d < DIR_COUNT; d++) {
@@ -1868,10 +1845,9 @@ static uint16_t compute_box_influence(Point box, const uint16_t walls[MAP_ROWS],
             if (g_dist_epoch_tag[next.x][next.y] == g_dist_epoch) continue;
             g_dist_epoch_tag[next.x][next.y] = g_dist_epoch;
             g_bfs_queue[tail++] = next;
-            influence_mask[next.x] |= (1 << next.y); count++;
+            influence_mask[next.x] |= (1 << next.y);
         }
     }
-    return count;
 }
 
 /**
@@ -2083,7 +2059,6 @@ static bool simulate_box_to_target(uint8_t box_idx, Point target,
  */
 static void detect_and_generate_problems(void) {
     g_problem_count = 0;
-    g_enclosed_region_count = 0;
 
     /* 1. 计算玩家可达区域（炸弹视为障碍，确保炸弹堵路时触发 PROBLEM_ENCLOSED） */
     memset(g_obs_buf, 0, sizeof(g_obs_buf));
@@ -2134,12 +2109,7 @@ static void detect_and_generate_problems(void) {
 
         if (!player_can_reach) {
             pp->type = PROBLEM_ENCLOSED;
-            pp->region_id = (int8_t)g_enclosed_region_count;
-            if (g_enclosed_region_count < MAX_ENCLOSED_REGIONS) {
-                memcpy(g_region_masks[g_enclosed_region_count], infl, MAP_ROWS * sizeof(uint16_t));
-                memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
-                g_enclosed_region_count++;
-            }
+            memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
             for (uint8_t bj = 0; bj < g_box_count; bj++) {
                 Point bp2 = g_initial_boxes[bj];
                 if (infl[bp2.x] & (1 << bp2.y)) { pp->box_indices[pp->box_count++] = bj; box_handled[bj] = true; }
@@ -2150,7 +2120,6 @@ static void detect_and_generate_problems(void) {
             }
         } else if (!has_target) {
             pp->type = PROBLEM_SEPARATED;
-            pp->region_id = -1;
             pp->box_indices[0] = bi; pp->box_count = 1;
             memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
             box_handled[bi] = true;
@@ -2158,7 +2127,6 @@ static void detect_and_generate_problems(void) {
             if (simulate_box_deadlock(bi, g_static_walls, g_initial_targets, g_target_count,
                 g_static_walls, g_initial_player, bp)) {
                 pp->type = PROBLEM_NEED_SIM;
-                pp->region_id = -1;
                 pp->box_indices[0] = bi; pp->box_count = 1;
                 memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
                 box_handled[bi] = true;
@@ -2189,12 +2157,7 @@ static void detect_and_generate_problems(void) {
             DeadlockProblemPoint *pp = &g_problem_points[g_problem_count];
             memset(pp, 0, sizeof(DeadlockProblemPoint));
             pp->type = PROBLEM_ENCLOSED;
-            pp->region_id = (int8_t)g_enclosed_region_count;
             memcpy(pp->influence_mask, catchment, MAP_ROWS * sizeof(uint16_t));
-            if (g_enclosed_region_count < MAX_ENCLOSED_REGIONS) {
-                memcpy(g_region_masks[g_enclosed_region_count], catchment, MAP_ROWS * sizeof(uint16_t));
-                g_enclosed_region_count++;
-            }
             for (uint8_t tj = 0; tj < g_target_count; tj++) {
                 Point tp2 = g_initial_targets[tj];
                 if (catchment[tp2.x] & (1 << tp2.y)) pp->target_indices[pp->target_count++] = tj;
@@ -2244,7 +2207,6 @@ static void detect_and_generate_problems(void) {
                 DeadlockProblemPoint *pp = &g_problem_points[g_problem_count];
                 memset(pp, 0, sizeof(DeadlockProblemPoint));
                 pp->type = PROBLEM_TARGET_UNREACHABLE;
-                pp->region_id = -1;
                 pp->target_indices[0] = ti; pp->target_count = 1;
                 uint16_t infl[MAP_ROWS];
                 compute_box_influence(tp, g_static_walls, infl);
@@ -2316,7 +2278,6 @@ static void detect_and_generate_problems(void) {
                 DeadlockProblemPoint *pp = &g_problem_points[g_problem_count];
                 memset(pp, 0, sizeof(DeadlockProblemPoint));
                 pp->type = PROBLEM_TARGET_UNREACHABLE;
-                pp->region_id = -1;
                 pp->target_indices[0] = ti; pp->target_count = 1;
                 uint16_t infl[MAP_ROWS];
                 compute_box_influence(tp, g_static_walls, infl);
@@ -2533,7 +2494,6 @@ static void find_walls_for_enclosed(const uint16_t region_mask[MAP_ROWS],
                         }
                     if (!found && *out_count < MAX_BREAK_WALLS) {
                         out_walls[*out_count].wall_pos = p;
-                        out_walls[*out_count].deadlock_type = DEADLOCK_ENCLOSED;
                         out_walls[*out_count].benefit_score = -10;
                         (*out_count)++;
                     }
@@ -2562,7 +2522,6 @@ static void find_walls_for_separated(const uint16_t influence[MAP_ROWS],
         }
         if (touches_influence && touches_outside && *out_count < MAX_BREAK_WALLS) {
             out_walls[*out_count].wall_pos = p;
-            out_walls[*out_count].deadlock_type = DEADLOCK_BOX;
             out_walls[*out_count].benefit_score = -5; (*out_count)++;
         }
     }
@@ -2675,7 +2634,7 @@ static void generate_plans_for_walls(const BreakableWall breakable_walls[], uint
                 plan->bomb_push_distance = push_dist; plan->wall_count = covered_count;
                 memcpy(plan->walls_covered, covered_walls, covered_count * sizeof(Point));
                 plan->total_benefit = total_benefit; plan->resolves_deadlock = resolves;
-                plan->resolved_mask = resolved_mask; plan->affected_mask = resolved_mask;
+                plan->resolved_mask = resolved_mask;
                 /* 快速预检：炸弹能否被推动（仅检查第一步是否合法） */
                 {   bool can_push = false;
                     for (uint8_t d = 0; d < DIR_COUNT && !can_push; d++) {
@@ -2945,8 +2904,7 @@ static bool analyze_bomb_breakthrough(const DeadlockResult *deadlock, DetonatePl
                     for (uint8_t k = 0; k < bwc; k++)
                         if (pos_equal(bw[k].wall_pos, wp)) { found = true; break; }
                     if (!found && bwc < MAX_BREAK_WALLS) {
-                        bw[bwc].wall_pos = wp; bw[bwc].deadlock_type = DEADLOCK_BOX;
-                        bw[bwc].benefit_score = -5; bwc++;
+                        bw[bwc].wall_pos = wp; bw[bwc].benefit_score = -5; bwc++;
                     }
                 }
             }
@@ -2977,8 +2935,7 @@ static bool analyze_bomb_breakthrough(const DeadlockResult *deadlock, DetonatePl
                     for (uint8_t k = 0; k < bwc; k++)
                         if (pos_equal(bw[k].wall_pos, wp)) { found2 = true; break; }
                     if (!found2 && bwc < MAX_BREAK_WALLS) {
-                        bw[bwc].wall_pos = wp; bw[bwc].deadlock_type = DEADLOCK_BOX;
-                        bw[bwc].benefit_score = -5; bwc++;
+                        bw[bwc].wall_pos = wp; bw[bwc].benefit_score = -5; bwc++;
                     }
                 }
                 for (uint8_t wi = 0; wi < bwc && wall_count < MAX_BREAK_WALLS; wi++) {
@@ -3463,10 +3420,6 @@ void reset_planning_system(void) {
     g_bfs_epoch = 1;  memset(g_bfs_visited, 0, sizeof(g_bfs_visited));
     g_dist_epoch = 1; memset(g_dist_epoch_tag, 0, sizeof(g_dist_epoch_tag));
     g_vis1_epoch = 1;
-    g_vis2_epoch = 1;
-    memset(g_region_masks,     0, sizeof(g_region_masks));
-    memset(g_enclosed_regions, 0, sizeof(g_enclosed_regions));
-    g_enclosed_region_count = 0;
     g_player_region_epoch = 1;
     memset(g_problem_points,       0, sizeof(g_problem_points));
     g_problem_count = 0;
@@ -3477,7 +3430,6 @@ void reset_planning_system(void) {
     memset(g_saved_player_region,  0, sizeof(g_saved_player_region));
     memset(g_vcache_hash, 0, sizeof(g_vcache_hash));
     memset(g_vcache_mask, 0, sizeof(g_vcache_mask));
-    g_vcache_epoch = 0;
 
     /* ---- 4.6 推箱验证全局状态 ---- */
     memset(g_solved,   0, sizeof(g_solved));
