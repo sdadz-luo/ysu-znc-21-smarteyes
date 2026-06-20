@@ -2646,6 +2646,14 @@ static void generate_plans_for_walls(const BreakableWall breakable_walls[], uint
                     for (uint8_t wj = 0; wj < wall_count; wj++)
                         if (pos_equal(covered_walls[k], breakable_walls[wj].wall_pos))
                             { total_benefit += breakable_walls[wj].benefit_score; break; }
+                /* 统计炸开后连通的目标数量，目标越多越优（#8：封闭区域多目标连通性） */
+                {
+                    int target_bonus = 0;
+                    for (uint8_t pi = 0; pi < g_saved_problem_count; pi++)
+                        if (resolved_mask & (1 << pi))
+                            target_bonus += g_saved_problem_points[pi].target_count;
+                    total_benefit -= target_bonus * 10;  /* 每个目标减10，让多目标方案排前 */
+                }
                 if (!resolves) total_benefit += 100;
                 bool duplicate = false; uint8_t dupe_idx = 0;
                 for (uint8_t pi = 0; pi < *out_plan_count; pi++)
@@ -3527,16 +3535,16 @@ static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
 /* 模式3 含炸弹的测试地图 */
 static uint8_t g_map_test_bomb_complex[MAP_ROWS][MAP_COLS] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,0,1,0,0,0,1,0,0,1,0,0,0,0,6,1},
-    {1,0,0,0,1,0,0,1,0,1,1,1,1,0,0,1},
-    {1,1,0,1,1,1,0,1,0,1,0,0,0,0,0,1},
-    {1,0,6,1,0,1,0,1,0,1,0,0,1,0,0,1},
-    {1,0,1,1,0,1,0,0,0,0,0,0,0,0,0,1},
-    {1,0,2,1,0,0,0,0,0,0,0,1,1,0,0,1},
-    {1,0,7,0,0,0,0,0,0,0,7,0,1,0,0,1},
-    {1,0,0,3,0,1,0,0,0,0,0,3,7,0,0,1},
-    {1,0,3,0,0,1,1,1,1,1,1,1,1,0,0,1},
-    {1,0,0,0,0,1,6,0,0,0,0,0,0,0,0,1},
+    {1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,6,0,0,0,0,0,1,1,1,1,1,1,0,1},
+    {1,1,3,1,1,1,1,1,1,1,6,1,0,0,0,1},
+    {1,0,0,0,0,0,1,1,1,1,1,1,0,0,0,1},
+    {1,0,0,0,0,0,0,0,1,1,6,1,0,0,0,1}, 
+    {1,0,2,0,0,0,0,0,1,1,1,1,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,3,3,0,0,0,7,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
