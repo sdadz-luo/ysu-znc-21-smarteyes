@@ -1,0 +1,59 @@
+# ===== Compilation artifacts =====
+*.o
+*.d
+*.obj
+*.axf
+*.elf
+*.hex
+*.bin
+*.map
+*.lnp
+*.dep
+*.crf
+*.htm
+*.lst
+*.tra
+*.__i
+*.iex
+*.rpt
+*.plg
+*.scvd
+*.bak
+*.ddk
+*.edk
+*.tmp
+*.omf
+*.sct
+
+# ===== Keil MDK =====
+project/mdk/Objects/
+project/mdk/Listings/
+*.uvoptx
+*.uvgui*
+JLinkLog.txt
+
+# ===== IAR EWARM =====
+project/iar/Debug/
+project/iar/Release/
+project/iar/settings/
+*.wsdt
+*.dni
+*.dbgconf
+
+# ===== IDE / Debugger =====
+.vscode/
+JLinkSettings.ini
+*.jlink
+*.dnx
+*.ewt
+*.eww
+*.ewd
+
+# ===== Logs =====
+*.log
+
+# ===== Others =====
+project/mdk/ini/
+
+# ===== Temp scripts =====
+*.bat
