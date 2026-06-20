@@ -238,7 +238,7 @@ h = |dx| + |dy|    （曼哈顿距离）
 用于计算距离图、可达区域、影响域等多种场景。
 
 **优化技术：**
-- **epoch 标记**：自增计数器代替全局 memset，`O(1)` 重置
+- **epoch 标记**：`g_bfs_visited`、`g_vis1`、`g_player_region`、`g_dist_epoch_tag` 均采用 epoch 自增计数器代替全局 memset，`O(1)` 重置
 - **位图压缩**：墙信息用 `uint16_t[12]` 位图存储，`O(1)` 查询
 - **共享队列**：全局 BFS 队列复用
 
@@ -273,7 +273,6 @@ ENCODE_STATE(px, py, bx, by) = px<<12 | py<<8 | bx<<4 | by
 | `g_dist_map[12][16]` | BFS 距离图 | 192 格 |
 | `g_static_walls[12]` | 静态墙位图 | 12 × uint16_t |
 | `g_target_bitmap[12]` | 目标点位图（O(1) 碰撞查询） | 12 × uint16_t |
-| `g_region_masks[10][12]` | 封闭区域掩码 | 10 个区域 |
 | `g_bomb_reach_map[4][12]` | 炸弹可达性缓存 | 4 × uint16_t |
 | `g_problem_points[10]` | 死锁待解决点 | 10 个 |
 | `g_vcache[2048]` | 增量验证缓存 | 2048 项 |
@@ -381,4 +380,4 @@ gcc -O2 path_planning.c -o path_planning.exe -lm
 
 ## 📝 许可
 
-本项目为 SmartEyes 路径规划子系统，用于教育和研究目的。
+本项目为 SmartEyes 路径规划子系统。
