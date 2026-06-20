@@ -26,7 +26,7 @@
 #define PLAYER               2          /* 玩家 */
 #define BOX                  3          /* 箱子 */
 #define TARGET               6          /* 目标 */
-#define BOMB                 7          /* 炸弹 */
+#define BOOM                 7          /* 炸弹 */
 
 /* ---- A* 相关常量 ---- */
 #define MAX_OPENSET          50000      /* 哈希表容量（推箱A*） */
@@ -39,11 +39,11 @@
 #define DIR_INVALID          255        /* 无效方向标记 */
 
 /* ---- 模式3（炸弹破局）容量上限 ---- */
-#define MAX_BOMBS            4          /* 最大炸弹数量 */
+#define MAX_BOOMS            4          /* 最大炸弹数量 */
 #define MAX_BREAK_WALLS      100        /* 最大可炸墙数量 */
 #define MAX_DETONATE_POINTS  40         /* 最大爆炸点候选数量 */
 #define MAX_PROBLEM_POINTS   10         /* 最大死锁问题点数量 */
-#define MAX_PLANS_PER_BOMB   50         /* 每炸弹最大方案数 */
+#define MAX_PLANS_PER_BOOM   50         /* 每炸弹最大方案数 */
 #define MAX_ENCLOSED_REGIONS 10         /* 最大封闭区域数量 */
 #define MAX_SIM_QUEUE        16384      /* 推箱模拟队列容量（压缩版） */
 
@@ -275,7 +275,7 @@ typedef struct {
 
 /* 完整炸弹执行序列 */
 typedef struct {
-    BombExecutionStep steps[MAX_BOMBS];
+    BombExecutionStep steps[MAX_BOOMS];
     uint8_t  step_count;
     uint16_t total_cost;
     bool     is_valid;
@@ -375,14 +375,14 @@ static bool analyze_bomb_breakthrough(const DeadlockResult *deadlock,
                                        int *out_best_benefit);
 static uint8_t bfs_bomb_distances(Point player, const uint16_t walls[MAP_ROWS],
                                    const bool done[], uint8_t plan_count,
-                                   const DetonatePlan plans[], uint16_t dists[MAX_BOMBS]);
+                                   const DetonatePlan plans[], uint16_t dists[MAX_BOOMS]);
 static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
                                    Point detonate_pos, Point player_start,
                                    const uint16_t walls[MAP_ROWS],
-                                   const bool active_bombs[MAX_BOMBS],
+                                   const bool active_bombs[MAX_BOOMS],
                                    BombPushPath *out_path);
 static bool try_execute_step(const DetonatePlan *p, uint8_t step_idx,
-                              const bool active_bombs[MAX_BOMBS],
+                              const bool active_bombs[MAX_BOOMS],
                               Point *player, uint16_t walls[MAP_ROWS],
                               BombExecutionStep *out_st);
 static void plan_bomb_execution_sequence(const DetonatePlan plans[], uint8_t plan_count,
@@ -429,7 +429,7 @@ static uint8_t g_box_count = 0;                      /* 箱子数量 */
 static uint8_t g_target_count = 0;                   /* 目标数量 */
 static uint16_t g_static_walls[MAP_ROWS];            /* 静态墙位图 */
 static uint16_t g_target_bitmap[MAP_ROWS];          /* 目标点位图（O(1) 查询） */
-static Point g_initial_bombs[MAX_BOMBS];             /* 初始炸弹位置 */
+static Point g_initial_bombs[MAX_BOOMS];             /* 初始炸弹位置 */
 static uint8_t g_bomb_count = 0;                     /* 炸弹数量 */
 
 /* ---------- 4.5 模式3（炸弹破局）全局缓冲区 ---------- */
@@ -459,7 +459,7 @@ static DeadlockProblemPoint g_saved_problem_points[MAX_PROBLEM_POINTS];
 static uint8_t g_saved_problem_count = 0;
 
 /* 炸弹可达性缓存：每个炸弹预计算完整可达区域（位图） */
-static uint16_t g_bomb_reach_map[MAX_BOMBS][MAP_ROWS];
+static uint16_t g_bomb_reach_map[MAX_BOOMS][MAP_ROWS];
 
 /* 增量验证时临时保存 */
 static uint16_t g_saved_walls[MAP_ROWS];
@@ -1010,7 +1010,7 @@ static void parse_map_input(uint8_t map[MAP_ROWS][MAP_COLS]) {
                 g_initial_targets[g_target_count].y = j;
                 g_target_bitmap[i] |= (1 << j);  /* 记录目标点位图 */
                 g_target_count++;
-            } else if (val == BOMB && g_bomb_count < MAX_BOMBS) {
+            } else if (val == BOOM && g_bomb_count < MAX_BOOMS) {
                 g_initial_bombs[g_bomb_count].x = i;
                 g_initial_bombs[g_bomb_count].y = j;
                 g_bomb_count++;
@@ -1200,7 +1200,7 @@ static ApproachResult* find_nearest_approach(uint8_t map[MAP_ROWS][MAP_COLS]) {
     memset(sw, 0, sizeof(sw));
     for (int i = 0; i < MAP_ROWS; i++)
         for (int j = 0; j < MAP_COLS; j++)
-            if (map[i][j] == WALL || map[i][j] == BOMB || map[i][j] == TARGET) sw[i] |= (1 << j);
+            if (map[i][j] == WALL || map[i][j] == BOOM || map[i][j] == TARGET) sw[i] |= (1 << j);
 
     for (int i = 0; i < MAP_ROWS; i++) {
         for (int j = 0; j < MAP_COLS; j++) {
@@ -1500,7 +1500,7 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
     uint16_t walls[MAP_ROWS] = {0};
     for (int i = 0; i < MAP_ROWS; i++)
         for (int j = 0; j < MAP_COLS; j++)
-            if (map[i][j] == WALL || map[i][j] == BOX || map[i][j] == BOMB)
+            if (map[i][j] == WALL || map[i][j] == BOX || map[i][j] == BOOM)
                 walls[i] |= (1 << j);
 
     if (g_box_count == 0 || g_target_count == 0) { g_visit_count = 0; return; }
@@ -1809,7 +1809,7 @@ static void compute_player_region_with_walls(const uint16_t walls[MAP_ROWS], boo
         uint8_t v = g_original_map[i][j];
         if (v == WALL) continue;
         if (v == BOX) g_obs_buf[i] |= (1 << j);
-        if (v == BOMB && !ignore_bombs) g_obs_buf[i] |= (1 << j);
+        if (v == BOOM && !ignore_bombs) g_obs_buf[i] |= (1 << j);
     }
     memset(g_player_region, 0, sizeof(g_player_region));
     for (uint8_t i = 0; i < MAP_ROWS; i++) for (uint8_t j = 0; j < MAP_COLS; j++)
@@ -2082,11 +2082,11 @@ static void detect_and_generate_problems(void) {
     g_problem_count = 0;
     g_enclosed_region_count = 0;
 
-    /* 1. 计算玩家可达区域（炸弹可被推走，不视为永久障碍） */
+    /* 1. 计算玩家可达区域（炸弹视为障碍，确保炸弹堵路时触发 PROBLEM_ENCLOSED） */
     memset(g_obs_buf, 0, sizeof(g_obs_buf));
     for (uint8_t i = 0; i < MAP_ROWS; i++) for (uint8_t j = 0; j < MAP_COLS; j++) {
         uint8_t v = g_original_map[i][j];
-        if (v == BOX) g_obs_buf[i] |= (1 << j);
+        if (v == BOX || v == BOOM) g_obs_buf[i] |= (1 << j);
     }
     memset(g_player_region, 0, sizeof(g_player_region));
     for (uint8_t i = 0; i < MAP_ROWS; i++) for (uint8_t j = 0; j < MAP_COLS; j++)
@@ -2454,7 +2454,7 @@ static void precompute_bomb_reachability(void)
                 uint8_t v = g_original_map[i][j];
                 if (v == WALL) {
                     g_obs_buf[i] |= (1 << j);
-                } else if ((v == BOX || v == BOMB) &&
+                } else if ((v == BOX || v == BOOM) &&
                            !(i == bomb_pos.x && j == bomb_pos.y)) {
                     g_obs_buf[i] |= (1 << j);
                 }
@@ -2736,14 +2736,14 @@ static bool search_multi_bomb_combination(DetonatePlan all_plans[], uint8_t plan
             }
         }
 
-    uint8_t nplans[MAX_BOMBS]; memset(nplans, 0, sizeof(nplans));
+    uint8_t nplans[MAX_BOOMS]; memset(nplans, 0, sizeof(nplans));
     for (uint8_t pi = 0; pi < plan_count; pi++) nplans[all_plans[pi].bomb_index]++;
 
-    DetonatePlan pb[MAX_BOMBS][MAX_PLANS_PER_BOMB];
-    uint8_t fi[MAX_BOMBS]; memset(fi, 0, sizeof(fi));
+    DetonatePlan pb[MAX_BOOMS][MAX_PLANS_PER_BOOM];
+    uint8_t fi[MAX_BOOMS]; memset(fi, 0, sizeof(fi));
     for (uint8_t pi = 0; pi < plan_count; pi++) {
         uint8_t bi = all_plans[pi].bomb_index;
-        if (fi[bi] < MAX_PLANS_PER_BOMB) pb[bi][fi[bi]++] = all_plans[pi];
+        if (fi[bi] < MAX_PLANS_PER_BOOM) pb[bi][fi[bi]++] = all_plans[pi];
     }
     for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
         sort_plans_by_benefit(pb[bi], fi[bi]);
@@ -2758,14 +2758,14 @@ static bool search_multi_bomb_combination(DetonatePlan all_plans[], uint8_t plan
                         { same = false; break; }
                 if (same) { dup = true; break; }
             }
-            if (!dup && keep < MAX_PLANS_PER_BOMB) pb[bi][keep++] = pb[bi][pi];
+            if (!dup && keep < MAX_PLANS_PER_BOOM) pb[bi][keep++] = pb[bi][pi];
         }
-        #define BOMB_TOP_K 12
-        if (keep > BOMB_TOP_K) keep = BOMB_TOP_K;
+        #define BOOM_TOP_K 12
+        if (keep > BOOM_TOP_K) keep = BOOM_TOP_K;
         fi[bi] = keep;
     }
 
-    uint8_t bl[MAX_BOMBS]; uint8_t blc = 0;
+    uint8_t bl[MAX_BOOMS]; uint8_t blc = 0;
     for (uint8_t bi = 0; bi < g_bomb_count; bi++)
         if (fi[bi] > 0) bl[blc++] = bi;
     if (blc < 2) return false;
@@ -2983,7 +2983,7 @@ static bool analyze_bomb_breakthrough(const DeadlockResult *deadlock, DetonatePl
     sort_plans_by_benefit(all_plans, all_plan_count);
 
     /* 单弹方案：resolves_deadlock 已在生成时计算，直接取第一个可行的 */
-    DetonatePlan best_plans[MAX_BOMBS];
+    DetonatePlan best_plans[MAX_BOOMS];
     uint8_t best_count = 0;
     int best_overall_cost = 999999;
 
@@ -3000,7 +3000,7 @@ static bool analyze_bomb_breakthrough(const DeadlockResult *deadlock, DetonatePl
 
     /* 单炸弹方案全部不可行 → 尝试多炸弹组合（需 ≥2 个炸弹才有意义） */
     if (best_count == 0 && g_bomb_count >= 2) {
-        DetonatePlan combo_plans[MAX_BOMBS]; uint8_t combo_count = 0; int combo_benefit = 0;
+        DetonatePlan combo_plans[MAX_BOOMS]; uint8_t combo_count = 0; int combo_benefit = 0;
         if (search_multi_bomb_combination(all_plans, all_plan_count, combo_plans, &combo_count, &combo_benefit)) {
             /* 若 combo 只包含一个方案 → 说明退化到单方案（已验证过，跳过） */
             if (combo_count == 1 && !verify_bomb_push_feasibility(&combo_plans[0])) {
@@ -3010,7 +3010,7 @@ static bool analyze_bomb_breakthrough(const DeadlockResult *deadlock, DetonatePl
                 bool all_pushable = true;
                 for (uint8_t ci = 0; ci < combo_count && all_pushable; ci++) {
                     /* 临时禁用组合中的其他炸弹——它们会在之前被引爆 */
-                    Point saved_others[MAX_BOMBS];
+                    Point saved_others[MAX_BOOMS];
                     for (uint8_t cj = 0; cj < combo_count; cj++) {
                         uint8_t bj = combo_plans[cj].bomb_index;
                         saved_others[cj] = g_initial_bombs[bj];
@@ -3047,7 +3047,7 @@ static bool analyze_bomb_breakthrough(const DeadlockResult *deadlock, DetonatePl
  */
 static uint8_t bfs_bomb_distances(Point player, const uint16_t walls[MAP_ROWS],
     const bool done[], uint8_t plan_count,
-    const DetonatePlan plans[], uint16_t dists[MAX_BOMBS]) {
+    const DetonatePlan plans[], uint16_t dists[MAX_BOOMS]) {
     for (uint8_t i = 0; i < plan_count; i++) dists[i] = INF;
     uint16_t obs[MAP_ROWS];
     memcpy(obs, walls, sizeof(uint16_t) * MAP_ROWS);
@@ -3099,7 +3099,7 @@ static uint8_t bfs_bomb_distances(Point player, const uint16_t walls[MAP_ROWS],
  */
 static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
     Point detonate_pos, Point player_start,
-    const uint16_t walls[MAP_ROWS], const bool active_bombs[MAX_BOMBS],
+    const uint16_t walls[MAP_ROWS], const bool active_bombs[MAX_BOOMS],
     BombPushPath *out_path) {
     memset(out_path, 0, sizeof(BombPushPath));
     if (pos_equal(bomb_pos, detonate_pos)) {
@@ -3130,7 +3130,7 @@ static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
  * @brief 执行单步推弹+引爆，更新玩家位置和墙体
  */
 static bool try_execute_step(const DetonatePlan *p, uint8_t step_idx,
-    const bool active_bombs[MAX_BOMBS], Point *player, uint16_t walls[MAP_ROWS],
+    const bool active_bombs[MAX_BOOMS], Point *player, uint16_t walls[MAP_ROWS],
     BombExecutionStep *out_st) {
     BombPushPath ppath;
     compute_one_bomb_push(p->bomb_initial_pos, p->bomb_index,
@@ -3168,7 +3168,7 @@ static void plan_bomb_execution_sequence(const DetonatePlan plans[],
     uint16_t walls[MAP_ROWS];
     memcpy(walls, g_static_walls, sizeof(uint16_t) * MAP_ROWS);
     Point player = g_initial_player;
-    bool done[MAX_BOMBS] = {false};
+    bool done[MAX_BOOMS] = {false};
     uint8_t step_idx = 0;
 
     while (step_idx < plan_count) {
@@ -3176,7 +3176,7 @@ static void plan_bomb_execution_sequence(const DetonatePlan plans[],
             uint8_t pi = 0;
             while (pi < plan_count && done[pi]) pi++;
             if (pi >= plan_count) break;
-            bool act_last[MAX_BOMBS];
+            bool act_last[MAX_BOOMS];
             for (uint8_t j = 0; j < g_bomb_count; j++) act_last[j] = true;
             for (uint8_t j = 0; j < plan_count; j++)
                 if (done[j]) act_last[plans[j].bomb_index] = false;
@@ -3184,9 +3184,9 @@ static void plan_bomb_execution_sequence(const DetonatePlan plans[],
                 { done[pi] = true; step_idx++; }
             break;
         }
-        uint16_t dists[MAX_BOMBS];
+        uint16_t dists[MAX_BOOMS];
         bfs_bomb_distances(player, walls, done, plan_count, plans, dists);
-        uint8_t order[MAX_BOMBS], order_cnt = 0;
+        uint8_t order[MAX_BOOMS], order_cnt = 0;
         for (uint8_t i = 0; i < plan_count; i++) {
             if (done[i] || dists[i] == INF) continue;
             uint8_t pos = order_cnt;
@@ -3194,7 +3194,7 @@ static void plan_bomb_execution_sequence(const DetonatePlan plans[],
             order[pos] = i; order_cnt++;
         }
         bool pushed = false;
-        bool act[MAX_BOMBS];
+        bool act[MAX_BOOMS];
         for (uint8_t j = 0; j < g_bomb_count; j++) act[j] = true;
         for (uint8_t j = 0; j < plan_count; j++)
             if (done[j]) act[plans[j].bomb_index] = false;
@@ -3208,17 +3208,17 @@ static void plan_bomb_execution_sequence(const DetonatePlan plans[],
     }
 
     if (step_idx < plan_count && plan_count >= 2) {
-        int order[MAX_BOMBS];
+        int order[MAX_BOOMS];
         for (int i = 0; i < (int)plan_count; i++) order[i] = i;
         uint16_t best_c = 0xFFFF; uint8_t best_n = 0;
-        BombExecutionStep best_s[MAX_BOMBS];
+        BombExecutionStep best_s[MAX_BOOMS];
         do {
             uint16_t w_try[MAP_ROWS]; memcpy(w_try, g_static_walls, sizeof(w_try));
-            Point p_try = g_initial_player; bool d_try[MAX_BOMBS] = {false};
-            BombExecutionStep t_s[MAX_BOMBS]; uint8_t t_n = 0; uint16_t t_c = 0;
+            Point p_try = g_initial_player; bool d_try[MAX_BOOMS] = {false};
+            BombExecutionStep t_s[MAX_BOOMS]; uint8_t t_n = 0; uint16_t t_c = 0;
             for (uint8_t si = 0; si < plan_count; si++) {
                 uint8_t pi = (uint8_t)order[si];
-                bool ab[MAX_BOMBS];
+                bool ab[MAX_BOOMS];
                 for (uint8_t j = 0; j < g_bomb_count; j++) ab[j] = true;
                 for (uint8_t j = 0; j < plan_count; j++)
                     if (d_try[j]) ab[plans[j].bomb_index] = false;
@@ -3333,7 +3333,7 @@ Path path_boom_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
     if (!deadlock.has_deadlock || g_bomb_count == 0) return g_path_out;
 
     uint8_t plan_count = 0; int best_benefit = 0;
-    DetonatePlan plans[MAX_BOMBS];
+    DetonatePlan plans[MAX_BOOMS];
     if (!analyze_bomb_breakthrough(&deadlock, plans, &plan_count, &best_benefit) || plan_count == 0)
         return g_path_out;
 
@@ -3390,7 +3390,7 @@ void map_boom_out(uint8_t out_map[MAP_ROWS][MAP_COLS])
                 out_map[i][j] = FLOOR;
 
             /* 已使用的炸弹 -> 空地 */
-            if (out_map[i][j] == BOMB) {
+            if (out_map[i][j] == BOOM) {
                 for (uint8_t b = 0; b < g_bomb_count; b++) {
                     if (g_initial_bombs[b].x == i && g_initial_bombs[b].y == j) {
                         if (g_boom_used_mask & (1 << b))
@@ -3437,7 +3437,7 @@ void reset_planning_system(void) {
     memset(g_static_walls,  0, sizeof(g_static_walls));
     memset(g_target_bitmap, 0, sizeof(g_target_bitmap));
     memset(g_initial_bombs, 0, sizeof(g_initial_bombs));
-    for (uint8_t i = 0; i < MAX_BOMBS; i++) {
+    for (uint8_t i = 0; i < MAX_BOOMS; i++) {
         g_initial_bombs[i].x = 0xFF;  /* 0xFF = 无效/已消失 */
         g_initial_bombs[i].y = 0xFF;
     }
