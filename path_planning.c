@@ -439,14 +439,17 @@ static uint8_t g_bfs_visited[12 * 16 * 12 * 16];
 static uint8_t g_dist_epoch = 1;
 static uint8_t g_dist_epoch_tag[MAP_ROWS][MAP_COLS];
 
-static bool g_vis1[MAP_ROWS][MAP_COLS];              /* 临时访问标记1 */
-static bool g_vis2[MAP_ROWS][MAP_COLS];              /* 临时访问标记2 */
+static uint8_t g_vis1[MAP_ROWS][MAP_COLS];           /* 临时访问标记1 */
+static uint8_t g_vis2[MAP_ROWS][MAP_COLS];           /* 临时访问标记2 */
 
 /* 区域掩码压缩：uint16_t[10][12]=240B */
 static uint16_t g_region_masks[MAX_ENCLOSED_REGIONS][MAP_ROWS];
 static EnclosedRegion g_enclosed_regions[MAX_ENCLOSED_REGIONS];
 static uint8_t g_enclosed_region_count = 0;
-static bool g_player_region[MAP_ROWS][MAP_COLS];     /* 玩家可达区域 */
+static uint8_t g_player_region[MAP_ROWS][MAP_COLS];   /* 玩家可达区域 */
+static uint8_t g_vis1_epoch = 1;
+static uint8_t g_vis2_epoch = 1;
+static uint8_t g_player_region_epoch = 1;
 
 /* 死锁待解决点 */
 static DeadlockProblemPoint g_problem_points[MAX_PROBLEM_POINTS];
@@ -459,7 +462,7 @@ static uint16_t g_bomb_reach_map[MAX_BOOMS][MAP_ROWS];
 
 /* 增量验证时临时保存 */
 static uint16_t g_saved_walls[MAP_ROWS];
-static bool g_saved_player_region[MAP_ROWS][MAP_COLS];
+static uint8_t g_saved_player_region[MAP_ROWS][MAP_COLS];
 
 /* 验证缓存：hash(walls)→resolved_mask */
 static uint32_t g_vcache_hash[VCACHE_SIZE];
@@ -1153,7 +1156,7 @@ static AStarResult solve_single_box_a_star(Point player, Point box, Point target
         }
     }
     if (goal_idx == -1) {
-        memset(hash_table, 0, sizeof(hash_table)); pq_size = 0; return result;
+        pq_size = 0; return result;
     }
 
     int len = 0;
@@ -1169,7 +1172,7 @@ static AStarResult solve_single_box_a_star(Point player, Point box, Point target
     result.cost = len;
     result.final_player_pos = hash_table[goal_idx].state.player;
     result.success = true;
-    memset(hash_table, 0, sizeof(hash_table)); pq_size = 0;
+    pq_size = 0;
     return result;
 }
 
@@ -1807,21 +1810,25 @@ static void compute_player_region_with_walls(const uint16_t walls[MAP_ROWS], boo
         if (v == BOX) g_obs_buf[i] |= (1 << j);
         if (v == BOOM && !ignore_bombs) g_obs_buf[i] |= (1 << j);
     }
-    memset(g_player_region, 0, sizeof(g_player_region));
+    g_player_region_epoch++;
+    if (g_player_region_epoch == 0) {
+        memset(g_player_region, 0, sizeof(g_player_region));
+        g_player_region_epoch = 1;
+    }
     for (uint8_t i = 0; i < MAP_ROWS; i++) for (uint8_t j = 0; j < MAP_COLS; j++)
-        if (walls[i] & (1 << j)) g_player_region[i][j] = true;
+        if (walls[i] & (1 << j)) g_player_region[i][j] = g_player_region_epoch;
     uint8_t head = 0, tail = 0;
-    g_player_region[g_initial_player.x][g_initial_player.y] = true;
+    g_player_region[g_initial_player.x][g_initial_player.y] = g_player_region_epoch;
     g_bfs_queue[tail++] = g_initial_player;
     while (head < tail) {
         Point curr = g_bfs_queue[head++];
         for (uint8_t d = 0; d < DIR_COUNT; d++) {
             Point next = {(uint8_t)(curr.x + DIRS[d][0]), (uint8_t)(curr.y + DIRS[d][1])};
             if (next.x >= MAP_ROWS || next.y >= MAP_COLS) continue;
-            if (g_player_region[next.x][next.y]) continue;
+            if (g_player_region[next.x][next.y] == g_player_region_epoch) continue;
             if (walls[next.x] & (1 << next.y)) continue;
             if (g_obs_buf[next.x] & (1 << next.y)) continue;
-            g_player_region[next.x][next.y] = true;
+            g_player_region[next.x][next.y] = g_player_region_epoch;
             g_bfs_queue[tail++] = next;
         }
     }
@@ -2084,21 +2091,25 @@ static void detect_and_generate_problems(void) {
         uint8_t v = g_original_map[i][j];
         if (v == BOX || v == BOOM) g_obs_buf[i] |= (1 << j);
     }
-    memset(g_player_region, 0, sizeof(g_player_region));
+    g_player_region_epoch++;
+    if (g_player_region_epoch == 0) {
+        memset(g_player_region, 0, sizeof(g_player_region));
+        g_player_region_epoch = 1;
+    }
     for (uint8_t i = 0; i < MAP_ROWS; i++) for (uint8_t j = 0; j < MAP_COLS; j++)
-        if (g_static_walls[i] & (1 << j)) g_player_region[i][j] = true;
+        if (g_static_walls[i] & (1 << j)) g_player_region[i][j] = g_player_region_epoch;
     uint8_t head = 0, tail = 0;
-    g_player_region[g_initial_player.x][g_initial_player.y] = true;
+    g_player_region[g_initial_player.x][g_initial_player.y] = g_player_region_epoch;
     g_bfs_queue[tail++] = g_initial_player;
     while (head < tail) {
         Point curr = g_bfs_queue[head++];
         for (uint8_t d = 0; d < DIR_COUNT; d++) {
             Point next = {(uint8_t)(curr.x + DIRS[d][0]), (uint8_t)(curr.y + DIRS[d][1])};
             if (next.x >= MAP_ROWS || next.y >= MAP_COLS) continue;
-            if (g_player_region[next.x][next.y]) continue;
+            if (g_player_region[next.x][next.y] == g_player_region_epoch) continue;
             if (g_static_walls[next.x] & (1 << next.y)) continue;
             if (g_obs_buf[next.x] & (1 << next.y)) continue;
-            g_player_region[next.x][next.y] = true;
+            g_player_region[next.x][next.y] = g_player_region_epoch;
             g_bfs_queue[tail++] = next;
         }
     }
@@ -2115,7 +2126,7 @@ static void detect_and_generate_problems(void) {
         for (uint8_t ri = 0; ri < MAP_ROWS && !player_can_reach; ri++) {
             uint16_t row = infl[ri];
             for (uint8_t rj = 0; rj < MAP_COLS; rj++)
-                if ((row & (1 << rj)) && g_player_region[ri][rj]) { player_can_reach = true; break; }
+                if ((row & (1 << rj)) && g_player_region[ri][rj] == g_player_region_epoch) { player_can_reach = true; break; }
         }
 
         DeadlockProblemPoint *pp = &g_problem_points[g_problem_count];
@@ -2166,7 +2177,7 @@ static void detect_and_generate_problems(void) {
                 for (uint8_t b = 0; b < g_problem_points[pi].target_count; b++)
                     if (g_problem_points[pi].target_indices[b] == ti) { covered = true; break; }
             if (covered) continue;
-            if (g_player_region[tp.x][tp.y]) continue;
+            if (g_player_region[tp.x][tp.y] == g_player_region_epoch) continue;
 
             uint16_t catchment[MAP_ROWS];
             compute_box_influence(tp, g_static_walls, catchment);
@@ -2356,7 +2367,7 @@ static uint8_t check_problems_resolved_incremental(const uint16_t modified_walls
                 for (uint8_t ri = 0; ri < MAP_ROWS && !reachable; ri++) {
                     uint16_t row = new_infl[ri] & ~modified_walls[ri];
                     for (uint8_t rj = 0; rj < MAP_COLS; rj++)
-                        if ((row & (1 << rj)) && g_player_region[ri][rj]) { reachable = true; break; }
+                        if ((row & (1 << rj)) && g_player_region[ri][rj] == g_player_region_epoch) { reachable = true; break; }
                 }
             }
             if (!reachable) resolved = false;
@@ -2432,7 +2443,11 @@ static void precompute_bomb_reachability(void)
 
     for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
         Point bomb_pos = g_initial_bombs[bi];
-        memset(g_vis1, 0, sizeof(g_vis1));
+        g_vis1_epoch++;
+        if (g_vis1_epoch == 0) {
+            memset(g_vis1, 0, sizeof(g_vis1));
+            g_vis1_epoch = 1;
+        }
         memset(g_obs_buf, 0, sizeof(g_obs_buf));
 
         /* 构建障碍物位图 */
@@ -2450,7 +2465,7 @@ static void precompute_bomb_reachability(void)
 
         /* BFS遍历可达区域 */
         uint8_t head = 0, tail = 0;
-        g_vis1[bomb_pos.x][bomb_pos.y] = true;
+        g_vis1[bomb_pos.x][bomb_pos.y] = g_vis1_epoch;
         g_bfs_queue[tail++] = bomb_pos;
 
         while (head < tail) {
@@ -2463,9 +2478,9 @@ static void precompute_bomb_reachability(void)
                     (uint8_t)(curr.y + DIRS[d][1])
                 };
                 if (next.x >= MAP_ROWS || next.y >= MAP_COLS) continue;
-                if (g_vis1[next.x][next.y]) continue;
+                if (g_vis1[next.x][next.y] == g_vis1_epoch) continue;
                 if (g_obs_buf[next.x] & (1 << next.y)) continue;
-                g_vis1[next.x][next.y] = true;
+                g_vis1[next.x][next.y] = g_vis1_epoch;
                 g_bfs_queue[tail++] = next;
             }
         }
@@ -3447,12 +3462,12 @@ void reset_planning_system(void) {
     memset(g_obs_buf,             0, sizeof(g_obs_buf));
     g_bfs_epoch = 1;  memset(g_bfs_visited, 0, sizeof(g_bfs_visited));
     g_dist_epoch = 1; memset(g_dist_epoch_tag, 0, sizeof(g_dist_epoch_tag));
-    memset(g_vis1, 0, sizeof(g_vis1));
-    memset(g_vis2, 0, sizeof(g_vis2));
+    g_vis1_epoch = 1;
+    g_vis2_epoch = 1;
     memset(g_region_masks,     0, sizeof(g_region_masks));
     memset(g_enclosed_regions, 0, sizeof(g_enclosed_regions));
     g_enclosed_region_count = 0;
-    memset(g_player_region, 0, sizeof(g_player_region));
+    g_player_region_epoch = 1;
     memset(g_problem_points,       0, sizeof(g_problem_points));
     g_problem_count = 0;
     memset(g_saved_problem_points, 0, sizeof(g_saved_problem_points));
