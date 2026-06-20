@@ -2714,6 +2714,88 @@ static void sort_plans_by_benefit(DetonatePlan plans[], uint8_t count)
 }
 
 /**
+ * @brief 递归枚举方案组合（剪枝 + 验证）
+ */
+static void try_multi_plans_recursive(
+    uint8_t depth, uint8_t max_depth,
+    const uint8_t bomb_idx[], const uint8_t bl[],
+    DetonatePlan pb[][MAX_PLANS_PER_BOOM], const uint8_t fi[],
+    uint8_t sel_plans[], int accum_benefit,
+    const uint8_t all_mask, int *best_benefit,
+    DetonatePlan result_plans[], uint8_t *result_count, uint8_t *found)
+{
+    if (*found) return;
+    if (depth == max_depth) {
+        uint16_t cw[MAP_ROWS];
+        memcpy(cw, g_static_walls, sizeof(cw));
+        for (uint8_t i = 0; i < max_depth; i++) {
+            uint8_t ba = bl[bomb_idx[i]];
+            DetonatePlan *p = &pb[ba][sel_plans[i]];
+            for (uint8_t k = 0; k < p->wall_count; k++) {
+                Point wp = p->walls_covered[k];
+                cw[wp.x] &= (uint16_t)~(1 << wp.y);
+            }
+        }
+        Point saved[MAX_BOOMS];
+        for (uint8_t i = 0; i < max_depth; i++) {
+            uint8_t ba = bl[bomb_idx[i]];
+            saved[i] = g_initial_bombs[ba];
+            g_initial_bombs[ba].x = 0xFF;
+        }
+        if (check_problems_resolved_cached(cw, g_initial_player) == all_mask) {
+            if (accum_benefit < *best_benefit) {
+                *best_benefit = accum_benefit;
+                *result_count = max_depth;
+                for (uint8_t i = 0; i < max_depth; i++)
+                    result_plans[i] = pb[bl[bomb_idx[i]]][sel_plans[i]];
+            }
+            *found = 1;
+        }
+        for (uint8_t i = 0; i < max_depth; i++)
+            g_initial_bombs[bl[bomb_idx[i]]] = saved[i];
+        return;
+    }
+    uint8_t bi = bomb_idx[depth];
+    uint8_t ba = bl[bi];
+    for (uint8_t pi = 0; pi < fi[ba]; pi++) {
+        int new_benefit = accum_benefit + pb[ba][pi].total_benefit;
+        if (new_benefit >= *best_benefit) break;
+        sel_plans[depth] = pi;
+        try_multi_plans_recursive(depth + 1, max_depth, bomb_idx, bl, pb, fi,
+            sel_plans, new_benefit, all_mask, best_benefit,
+            result_plans, result_count, found);
+    }
+}
+
+/**
+ * @brief 搜索 m 个炸弹的组合（表驱动，统一 2/3/4 弹搜索）
+ */
+static bool search_multi_combo(
+    uint8_t target_m, const uint8_t N, const uint8_t bl[],
+    DetonatePlan pb[][MAX_PLANS_PER_BOOM], const uint8_t fi[],
+    const uint8_t all_mask, int *best_benefit,
+    DetonatePlan result_plans[], uint8_t *result_count)
+{
+    uint8_t bomb_idx[MAX_BOOMS];
+    for (uint8_t i = 0; i < target_m; i++) bomb_idx[i] = i;
+    uint8_t sel_plans[MAX_BOOMS];
+    uint8_t found = 0;
+    while (!found) {
+        try_multi_plans_recursive(0, target_m, bomb_idx, bl, pb, fi,
+            sel_plans, 0, all_mask, best_benefit,
+            result_plans, result_count, &found);
+        if (found) return true;
+        int8_t k = (int8_t)target_m - 1;
+        while (k >= 0 && bomb_idx[k] == N - target_m + k) k--;
+        if (k < 0) break;
+        bomb_idx[k]++;
+        for (uint8_t j = (uint8_t)(k + 1); j < target_m; j++)
+            bomb_idx[j] = bomb_idx[j - 1] + 1;
+    }
+    return false;
+}
+
+/**
  * @brief 多炸弹组合搜索（2/3/4炸弹组合，倾向少用炸弹）
  */
 static bool search_multi_bomb_combination(DetonatePlan all_plans[], uint8_t plan_count,
@@ -2773,94 +2855,16 @@ static bool search_multi_bomb_combination(DetonatePlan all_plans[], uint8_t plan
     int best_benefit = 999999;
     const uint8_t N = blc;
 
-    /* 2炸弹组合 */
-    for (uint8_t ai = 0; ai < N; ai++) {
-    uint8_t ba = bl[ai];
-    for (uint8_t aj = ai + 1; aj < N; aj++) {
-    uint8_t bb = bl[aj];
-    for (uint8_t pa = 0; pa < fi[ba]; pa++) {
-        int ben_a = pb[ba][pa].total_benefit; if (ben_a >= best_benefit) break;
-    for (uint8_t pb_i = 0; pb_i < fi[bb]; pb_i++) {
-        int ben_sum = ben_a + pb[bb][pb_i].total_benefit; if (ben_sum >= best_benefit) break;
-        uint16_t cw[MAP_ROWS]; memcpy(cw, g_static_walls, sizeof(cw));
-        DetonatePlan *p;
-        p = &pb[ba][pa]; for (uint8_t k = 0; k < p->wall_count; k++) { Point wp = p->walls_covered[k]; cw[wp.x] &= (uint16_t)~(1 << wp.y); }
-        p = &pb[bb][pb_i]; for (uint8_t k = 0; k < p->wall_count; k++) { Point wp = p->walls_covered[k]; cw[wp.x] &= (uint16_t)~(1 << wp.y); }
-        { /* 临时禁用已使用的炸弹 */
-            Point sba = g_initial_bombs[ba], sbb = g_initial_bombs[bb];
-            g_initial_bombs[ba].x = 0xFF; g_initial_bombs[bb].x = 0xFF;
-            if (check_problems_resolved_cached(cw, g_initial_player) == all_mask) {
-                if (ben_sum < best_benefit) { best_benefit = ben_sum; *result_count = 2;
-                    result_plans[0] = pb[ba][pa]; result_plans[1] = pb[bb][pb_i]; }
-            }
-            g_initial_bombs[ba] = sba; g_initial_bombs[bb] = sbb;
-        }
-    }}}}
-    if (*result_count > 0) { *out_total_benefit = best_benefit; return true; }
-
-    /* 3炸弹组合 */
-    if (N >= 3) {
-    for (uint8_t ai = 0; ai < N; ai++) { uint8_t ba = bl[ai];
-    for (uint8_t aj = ai + 1; aj < N; aj++) { uint8_t bb = bl[aj];
-    for (uint8_t ak = aj + 1; ak < N; ak++) { uint8_t bc = bl[ak];
-    for (uint8_t pa = 0; pa < fi[ba]; pa++) {
-        int ben_a = pb[ba][pa].total_benefit; if (ben_a >= best_benefit) break;
-    for (uint8_t pb_i = 0; pb_i < fi[bb]; pb_i++) {
-        int ben_ab = ben_a + pb[bb][pb_i].total_benefit; if (ben_ab >= best_benefit) break;
-    for (uint8_t pc_i = 0; pc_i < fi[bc]; pc_i++) {
-        int ben_sum = ben_ab + pb[bc][pc_i].total_benefit; if (ben_sum >= best_benefit) break;
-        uint16_t cw[MAP_ROWS]; memcpy(cw, g_static_walls, sizeof(cw));
-        DetonatePlan *p;
-        p = &pb[ba][pa]; for (uint8_t k = 0; k < p->wall_count; k++) { Point wp = p->walls_covered[k]; cw[wp.x] &= (uint16_t)~(1 << wp.y); }
-        p = &pb[bb][pb_i]; for (uint8_t k = 0; k < p->wall_count; k++) { Point wp = p->walls_covered[k]; cw[wp.x] &= (uint16_t)~(1 << wp.y); }
-        p = &pb[bc][pc_i]; for (uint8_t k = 0; k < p->wall_count; k++) { Point wp = p->walls_covered[k]; cw[wp.x] &= (uint16_t)~(1 << wp.y); }
-        { /* 临时禁用已使用的炸弹 */
-            Point sba = g_initial_bombs[ba], sbb = g_initial_bombs[bb], sbc = g_initial_bombs[bc];
-            g_initial_bombs[ba].x = 0xFF; g_initial_bombs[bb].x = 0xFF; g_initial_bombs[bc].x = 0xFF;
-            if (check_problems_resolved_cached(cw, g_initial_player) == all_mask) {
-                if (ben_sum < best_benefit) { best_benefit = ben_sum; *result_count = 3;
-                    result_plans[0] = pb[ba][pa]; result_plans[1] = pb[bb][pb_i]; result_plans[2] = pb[bc][pc_i]; }
-            }
-            g_initial_bombs[ba] = sba; g_initial_bombs[bb] = sbb; g_initial_bombs[bc] = sbc;
-        }
-    }}}}}}}
-    if (*result_count > 0) { *out_total_benefit = best_benefit; return true; }
-
-    /* 4炸弹组合 */
-    if (N >= 4) {
-    for (uint8_t ai = 0; ai < N; ai++) { uint8_t ba = bl[ai];
-    for (uint8_t aj = ai + 1; aj < N; aj++) { uint8_t bb = bl[aj];
-    for (uint8_t ak = aj + 1; ak < N; ak++) { uint8_t bc = bl[ak];
-    for (uint8_t al = ak + 1; al < N; al++) { uint8_t bd = bl[al];
-    for (uint8_t pa = 0; pa < fi[ba]; pa++) {
-        int ben_a = pb[ba][pa].total_benefit; if (ben_a >= best_benefit) break;
-    for (uint8_t pb_i = 0; pb_i < fi[bb]; pb_i++) {
-        int ben_ab = ben_a + pb[bb][pb_i].total_benefit; if (ben_ab >= best_benefit) break;
-    for (uint8_t pc_i = 0; pc_i < fi[bc]; pc_i++) {
-        int ben_abc = ben_ab + pb[bc][pc_i].total_benefit; if (ben_abc >= best_benefit) break;
-    for (uint8_t pd_i = 0; pd_i < fi[bd]; pd_i++) {
-        int ben_sum = ben_abc + pb[bd][pd_i].total_benefit; if (ben_sum >= best_benefit) break;
-        uint16_t cw[MAP_ROWS]; memcpy(cw, g_static_walls, sizeof(cw));
-        DetonatePlan *p;
-        p = &pb[ba][pa]; for (uint8_t k = 0; k < p->wall_count; k++) { Point wp = p->walls_covered[k]; cw[wp.x] &= (uint16_t)~(1 << wp.y); }
-        p = &pb[bb][pb_i]; for (uint8_t k = 0; k < p->wall_count; k++) { Point wp = p->walls_covered[k]; cw[wp.x] &= (uint16_t)~(1 << wp.y); }
-        p = &pb[bc][pc_i]; for (uint8_t k = 0; k < p->wall_count; k++) { Point wp = p->walls_covered[k]; cw[wp.x] &= (uint16_t)~(1 << wp.y); }
-        p = &pb[bd][pd_i]; for (uint8_t k = 0; k < p->wall_count; k++) { Point wp = p->walls_covered[k]; cw[wp.x] &= (uint16_t)~(1 << wp.y); }
-        { /* 临时禁用已使用的炸弹 */
-            Point sba = g_initial_bombs[ba], sbb = g_initial_bombs[bb];
-            Point sbc = g_initial_bombs[bc], sbd = g_initial_bombs[bd];
-            g_initial_bombs[ba].x = 0xFF; g_initial_bombs[bb].x = 0xFF;
-            g_initial_bombs[bc].x = 0xFF; g_initial_bombs[bd].x = 0xFF;
-            if (check_problems_resolved_cached(cw, g_initial_player) == all_mask) {
-                if (ben_sum < best_benefit) { best_benefit = ben_sum; *result_count = 4;
-                    result_plans[0] = pb[ba][pa]; result_plans[1] = pb[bb][pb_i];
-                    result_plans[2] = pb[bc][pc_i]; result_plans[3] = pb[bd][pd_i]; }
-            }
-            g_initial_bombs[ba] = sba; g_initial_bombs[bb] = sbb;
-            g_initial_bombs[bc] = sbc; g_initial_bombs[bd] = sbd;
-        }
-    }}}}}}}}}
-    if (*result_count > 0) { *out_total_benefit = best_benefit; return true; }
+    /* 多炸弹组合（2/3/4弹，倾向少用炸弹） */
+    if (search_multi_combo(2, N, bl, pb, fi, all_mask, &best_benefit, result_plans, result_count)) {
+        *out_total_benefit = best_benefit; return true;
+    }
+    if (N >= 3 && search_multi_combo(3, N, bl, pb, fi, all_mask, &best_benefit, result_plans, result_count)) {
+        *out_total_benefit = best_benefit; return true;
+    }
+    if (N >= 4 && search_multi_combo(4, N, bl, pb, fi, all_mask, &best_benefit, result_plans, result_count)) {
+        *out_total_benefit = best_benefit; return true;
+    }
     return false;
 }
 
