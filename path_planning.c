@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <math.h>
 #include <string.h>
 #include <stdint.h>  
 #include <stdbool.h>
@@ -30,7 +29,6 @@
 
 /* ---- A* 相关常量 ---- */
 #define MAX_OPENSET          50000      /* 哈希表容量（推箱A*） */
-#define MAX_PERMUTATIONS     120        /* 排列数上限 */
 #define MAX_PQ_SIZE          10000      /* 优先队列容量 */
 #define MAX_SEARCH_CNT       50000      /* A*最大搜索步数 */
 #define SINGLE_STEP_MAX_PATH 500        /* 单步A*最大路径长度 */
@@ -48,7 +46,6 @@
 #define MAX_SIM_QUEUE        16384      /* 推箱模拟队列容量（压缩版） */
 
 /* ---- 死锁类型标记 ---- */
-#define DEADLOCK_NONE        0x00
 #define DEADLOCK_BOX         0x01
 #define DEADLOCK_ENCLOSED    0x04
 
@@ -236,7 +233,6 @@ typedef struct {
     uint8_t box_indices[MAX_BOXES]; uint8_t box_count;
     uint8_t target_indices[MAX_BOXES]; uint8_t target_count;
     uint16_t influence_mask[MAP_ROWS]; /* 箱子的影响域掩码（位图） */
-    char description[64];
 } DeadlockProblemPoint;
 
 /* 可炸墙 */
@@ -2141,13 +2137,11 @@ static void detect_and_generate_problems(void) {
                 Point tp = g_initial_targets[tj];
                 if (infl[tp.x] & (1 << tp.y)) pp->target_indices[pp->target_count++] = tj;
             }
-            snprintf(pp->description, sizeof(pp->description), "封闭区域#%d", pp->region_id);
         } else if (!has_target) {
             pp->type = PROBLEM_SEPARATED;
             pp->region_id = -1;
             pp->box_indices[0] = bi; pp->box_count = 1;
             memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
-            snprintf(pp->description, sizeof(pp->description), "箱子#%d 分隔死锁", bi);
             box_handled[bi] = true;
         } else {
             if (simulate_box_deadlock(bi, g_static_walls, g_initial_targets, g_target_count,
@@ -2156,7 +2150,6 @@ static void detect_and_generate_problems(void) {
                 pp->region_id = -1;
                 pp->box_indices[0] = bi; pp->box_count = 1;
                 memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
-                snprintf(pp->description, sizeof(pp->description), "箱子#%d 推箱死锁", bi);
                 box_handled[bi] = true;
             }
         }
@@ -2200,9 +2193,7 @@ static void detect_and_generate_problems(void) {
                     Point bp = g_initial_boxes[bj];
                     if (catchment[bp.x] & (1 << bp.y)) pp->box_indices[pp->box_count++] = bj;
                 }
-                snprintf(pp->description, sizeof(pp->description), "封闭区域#%d(含箱)", pp->region_id);
             } else {
-                snprintf(pp->description, sizeof(pp->description), "封闭区域#%d(纯目标)", pp->region_id);
             }
             g_problem_count++;
             if (g_problem_count >= MAX_PROBLEM_POINTS) break;
@@ -2247,8 +2238,6 @@ static void detect_and_generate_problems(void) {
                 uint16_t infl[MAP_ROWS];
                 compute_box_influence(tp, g_static_walls, infl);
                 memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
-                snprintf(pp->description, sizeof(pp->description),
-                         "目标#%d 无推入方向", ti);
                 g_problem_count++;
                 target_covered[ti] = true;
                 if (g_problem_count >= MAX_PROBLEM_POINTS) break;
@@ -2321,8 +2310,6 @@ static void detect_and_generate_problems(void) {
                 uint16_t infl[MAP_ROWS];
                 compute_box_influence(tp, g_static_walls, infl);
                 memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
-                snprintf(pp->description, sizeof(pp->description),
-                         "目标#%d 无箱子可达", ti);
                 g_problem_count++;
             }
         }
