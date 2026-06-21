@@ -6,52 +6,51 @@
  * =================================================================== */
 
 /* ---- 地图基本尺寸 ---- */
-#define MAP_ROWS             12                 /* 地图行数 */
-#define MAP_COLS             16                 /* 地图列数 */
-#define MAX_BOXES            5                  /* 最大箱子数量 */
-#define MAX_IDS              10                 /* 最大ID数量 */
-#define MAX_VISIT_STEPS      (2 * MAX_BOXES)    /* 最大访问步数 */
-#define MAX_PATH_LEN         500                /* 最大路径长度 */
-#define INF                  65535U             /* 无穷大 */
-#define DIR_COUNT            4                  /* 方向数量 */
+#define MAP_ROWS             12         /* 地图行数 */
+#define MAP_COLS             16         /* 地图列数 */
+#define MAX_BOXES            5          /* 最大箱子数量 */
+#define MAX_IDS              10         /* 最大ID编号数 */
+#define MAX_VISIT_STEPS      (2 * MAX_BOXES) /* 最大访问步骤数 */
+#define MAX_PATH_LEN         500        /* 最大路径长度 */
+#define INF                  65535U     /* 无穷大值 */
+#define DIR_COUNT            4          /* 方向数量 */
 
 /* 地图元素标识 */
 #define WALL                 1          /* 墙 */
-#define FLOOR                0          /* 地板 */
+#define FLOOR                0          /* 地面 */
 #define PLAYER               2          /* 玩家 */
 #define BOX                  3          /* 箱子 */
 #define TARGET               6          /* 目标 */
 #define BOOM                 7          /* 炸弹 */
 
 /* ---- A* 相关常量 ---- */
-#define MAX_OPENSET          50000      /* 哈希表最大容量(A*用) */
-#define MAX_PERMUTATIONS     120        /* 最大排列数 */
-#define MAX_PQ_SIZE          10000      /* 优先级队列大小 */
-#define MAX_SEARCH_CNT       50000      /* A*最大搜索次数 */
+#define MAX_OPENSET          50000      /* 哈希表容量（推箱A*） */
+#define MAX_PQ_SIZE          10000      /* 优先队列容量 */
+#define MAX_SEARCH_CNT       50000      /* A*最大搜索步数 */
 #define SINGLE_STEP_MAX_PATH 500        /* 单步A*最大路径长度 */
-#define TURN_WEIGHT          4          /* 转弯惩罚权重 */
-#define ROTATION_PENALTY     3          /* 非0度角度观察惩罚(0度=站在元素左边看向右边) */
-#define DIR_INVALID          255        /* 无效方向值 */
+#define TURN_WEIGHT          4          /* 转向惩罚代价 */
+#define ROTATION_PENALTY     3          /* 非0度角观察的旋转惩罚（0度=站在元素左侧看向右侧） */
+#define DIR_INVALID          255        /* 无效方向标记 */
+#define BOMB_INVALID         0xFF       /* 炸弹已消失/无效标记 */
 
-/* ---- 模式3炸弹破局相关常量 ---- */
+/* ---- 模式3（炸弹破局）容量上限 ---- */
 #define MAX_BOOMS            4          /* 最大炸弹数量 */
 #define MAX_BREAK_WALLS      100        /* 最大可炸墙数量 */
-#define MAX_DETONATE_POINTS  40         /* 最大引爆候选点 */
-#define MAX_PROBLEM_POINTS   10         /* 最大死锁问题点 */
+#define MAX_DETONATE_POINTS  40         /* 最大爆炸点候选数量 */
+#define MAX_PROBLEM_POINTS   10         /* 最大死锁问题点数量 */
 #define MAX_PLANS_PER_BOOM   50         /* 每炸弹最大方案数 */
-#define MAX_ENCLOSED_REGIONS 10         /* 最大封闭区域数 */
-#define MAX_SIM_QUEUE        16384      /* 推箱子模拟队列最大容量 */
+#define MAX_ENCLOSED_REGIONS 10         /* 最大封闭区域数量 */
+#define MAX_SIM_QUEUE        16384      /* 推箱模拟队列容量（压缩版） */
 
-/* ---- 死锁类型标识 ---- */
-#define DEADLOCK_NONE        0x00
+/* ---- 死锁类型标记 ---- */
 #define DEADLOCK_BOX         0x01
 #define DEADLOCK_ENCLOSED    0x04
 
-/* ---- 死锁问题点类型标识 ---- */
-#define PROBLEM_ENCLOSED            0x01    /* 封闭区域：玩家无法进入 */
-#define PROBLEM_SEPARATED           0x02    /* 隔离区域：影响区不包含目标 */
-#define PROBLEM_NEED_SIM            0x04    /* 需要仿真：单纯BFS无法确定 */
-#define PROBLEM_TARGET_UNREACHABLE  0x08    /* 目标不可达：箱子无法推到目标 */
+/* ---- 死锁待解决点类型标记 ---- */
+#define PROBLEM_ENCLOSED            0x01    /* 封闭区域：影响域∩玩家区=? */
+#define PROBLEM_SEPARATED           0x02    /* 分隔死锁：影响域∩目标=? */
+#define PROBLEM_NEED_SIM            0x04    /* 待验证：连通性OK，需推箱BFS确认 */
+#define PROBLEM_TARGET_UNREACHABLE  0x08    /* 目标不可达：无箱子能推到该目标 */
 
 /* 压缩状态编码：px:4 py:4 bx:4 by:4 = 16bit */
 #define ENCODE_STATE(px, py, bx, by) \
@@ -61,12 +60,13 @@
 #define DECODE_BX(s) ((uint8_t)(((s)>>4)  & 0xF))
 #define DECODE_BY(s) ((uint8_t)((s)       & 0xF))
 
-/* BFS visited 索引计算（用于推箱模拟状态去重） */
+/* BFS visited 索引（推箱模拟状态去重） */
 #define BFS_VISITED_INDEX(px, py, bx, by) \
-    (((uint16_t)(px) * 16 + (py)) * 192 + ((uint16_t)(bx) * 16 + (by)))
+    ((uint32_t)(((uint16_t)(px) * MAP_COLS + (py)) * (MAP_ROWS * MAP_COLS) + ((uint16_t)(bx) * MAP_COLS + (by))))
 
-/* 验证缓存大小 */
+/* 验证缓存容量 */
 #define VCACHE_SIZE 2048
+#define BOOM_TOP_K           12         /* 炸弹方案Top-K保留数 */
 
 /* 统一移动方向：上、下、左、右 */
 static const int8_t DIRS[DIR_COUNT][2] = {{-1,0},{1,0},{0,-1},{0,1}};
@@ -79,18 +79,18 @@ static const int8_t DIRS[DIR_COUNT][2] = {{-1,0},{1,0},{0,-1},{0,1}};
 
 /* 二维坐标 */
 typedef struct { 
-    uint8_t x;  /* 列坐标 */
-    uint8_t y;  /* 行坐标 */
+    uint8_t x;  /* 行 */
+    uint8_t y;  /* 列 */
 } Point;
 
 /* A* 路径节点（simple_astar 使用） */
 typedef struct {
     Point pos;          /* 位置 */
-    int8_t last_dir;    /* 上一次移动方向 (-1无效) */
+    int8_t last_dir;    /* 上一步移动方向 (-1无效) */
     int g_cost;         /* 实际代价 */
     int f_cost;         /* 估计总代价 f = g + h */
     int parent_idx;     /* 父节点索引 */
-    bool closed;        /* 是否已关闭 */
+    bool closed;        /* 是否已闭合 */
 } PathNode;
 
 /* simple_astar 最小堆节点 */
@@ -101,12 +101,12 @@ typedef struct {
 /* 箱子-目标配对 */
 typedef struct {
     uint8_t box_idx;        /* 箱子索引 */
-    uint8_t target_idx;     /* 目标索引 */
+    uint8_t target_idx;     /* 目标点索引 */
     Point box_pos;          /* 箱子位置 */
-    Point target_pos;       /* 目标位置 */
+    Point target_pos;       /* 目标点位置 */
 } BoxTargetPair;
 
-/* 解决方案序列（模式1/2使用） */
+/* 完整解决方案（模式1/2共用） */
 typedef struct {
     BoxTargetPair pairs[MAX_BOXES];     /* 配对列表 */
     uint8_t count;                      /* 配对数量 */
@@ -116,16 +116,15 @@ typedef struct {
     uint16_t full_path_len;             /* 路径长度 */
 } SolutionSequence;
 
-/* ---------- 2.2 推箱子 A* 相关结构 ---------- */
+/* ---------- 2.2 推箱 A* 相关结构 ---------- */
 
-/* 推箱子 A* 状态 */
+/* 推箱 A* 状态 */
 typedef struct {
     Point player;                       /* 玩家位置 */
     Point box;                          /* 箱子位置 */
     Point target;                       /* 目标位置 */
     uint16_t wall_bitmap[MAP_ROWS];     /* 墙位图 */
-    uint32_t walls_hash;                /* wall_bitmap预计算哈希 */
-    uint8_t last_dir;                   /* 上一方向 */
+    uint8_t last_dir;                   /* 上一步方向 */
 } State;
 
 /* 哈希表项 */
@@ -133,29 +132,29 @@ typedef struct {
     State state;        /* 状态 */
     uint16_t g;         /* 实际代价 */
     int32_t came_from;  /* 前驱状态哈希索引 */
-    uint16_t epoch;     /* epoch标记（替代used，0=未使用） */
+    uint8_t used;       /* 是否已使用 */
 } HashEntry;
 
-/* 优先级队列节点 */
+/* 优先队列节点 */
 typedef struct { 
     uint16_t f;         /* 估计总代价 */
     int32_t state_idx;  /* 哈希状态索引 */
 } PQNode;
 
-/* 推箱子 A* 结果 */
+/* 推箱 A* 结果 */
 typedef struct {
     int32_t cost;                           /* 总代价 */
     Point final_player_pos;                 /* 最终玩家位置 */
     bool success;                           /* 是否成功 */
-    Point path_points[SINGLE_STEP_MAX_PATH];/* 最短路径点 */
+    Point path_points[SINGLE_STEP_MAX_PATH];/* 玩家路径 */
     uint16_t path_len;                      /* 路径长度 */
 } AStarResult;
 
 /* ---------- 2.3 START 模式结构 ---------- */
 
-/* 接近结果（START 模式用） */
+/* 接近结果（START 模式） */
 typedef struct {
-    Point path[MAX_PATH_LEN];       /* 路径点数组 */
+    Point path[MAX_PATH_LEN];       /* 路径 */
     uint16_t path_len;              /* 路径长度 */
     Point elem_pos;                 /* 元素位置 */
     uint8_t elem_type;              /* 元素类型（BOX/TARGET） */
@@ -164,7 +163,7 @@ typedef struct {
     bool success;                   /* 是否成功 */
 } ApproachResult;
 
-/* 最短路径（START模式用） */
+/* 输出路径（START模式） */
 typedef struct {
     uint8_t x[MAX_PATH_LEN];        /* 路径 x 坐标（列） */
     uint8_t y[MAX_PATH_LEN];        /* 路径 y 坐标（行） */
@@ -173,16 +172,16 @@ typedef struct {
     uint8_t type;                   /* 元素类型 */
 } Path_Start;
 
-/* ---------- 2.4 模式1（非ID配对）结果结构 ---------- */
+/* ---------- 2.4 模式1（非ID推箱）输出结构 ---------- */
 
 typedef struct {
     uint8_t x[MAX_PATH_LEN];        /* 路径 x 坐标（列） */
     uint8_t y[MAX_PATH_LEN];        /* 路径 y 坐标（行） */
     uint16_t len;                   /* 路径长度 */
-    uint8_t is_push[MAX_PATH_LEN];  /* 是否推动动作 */
+    uint8_t is_push[MAX_PATH_LEN];  /* 是否为推动动作 */
 } Path;
 
-/* ---------- 2.5 模式2（ID配对）结构 ---------- */
+/* ---------- 2.5 模式2（ID推箱）结构 ---------- */
 
 /* 访问步骤 */
 typedef struct {
@@ -191,25 +190,25 @@ typedef struct {
     uint8_t original_idx;           /* 原始索引 */
     uint8_t direction;              /* 方向 */
     int16_t angle;                  /* 角度 */
-    Point path[MAX_PATH_LEN];       /* 路径点数组 */
+    Point path[MAX_PATH_LEN];       /* 路径 */
     uint16_t path_len;              /* 路径长度 */
     int8_t scanned_id;              /* 扫描ID */
     uint16_t step_cost;             /* 步骤代价 */
 } VisitStep;
 
-/* 观察路径结构 */
+/* 观察路径输出 */
 typedef struct {
     uint8_t x[MAX_PATH_LEN];        /* 路径 x 坐标（列） */
     uint8_t y[MAX_PATH_LEN];        /* 路径 y 坐标（行） */
     uint16_t len;                   /* 路径长度 */
-    int16_t angle[MAX_PATH_LEN];    /* 观察角度 */
-    uint8_t type[MAX_PATH_LEN];     /* 元素类型 */
-    bool is_look[MAX_PATH_LEN];     /* 是否需要扫描 */
+    int16_t angle[MAX_PATH_LEN];    /* 各点角度 */
+    uint8_t type[MAX_PATH_LEN];     /* 各点类型 */
+    bool is_look[MAX_PATH_LEN];     /* 是否需要扫码 */
 } Path_Look;
 
-/* ---------- 2.6 模式3炸弹破局数据结构 ---------- */
+/* ---------- 2.6 模式3（炸弹破局）数据结构 ---------- */
 
-/* 压缩推箱子模拟状态（从4字节->2字节） */
+/* 压缩的推箱模拟状态（原4字节→2字节） */
 typedef uint16_t SimState;
 
 /* 死锁检测结果 */
@@ -219,49 +218,48 @@ typedef struct {
     uint8_t enclosed_types[MAX_BOXES * 2]; bool has_deadlock;
 } DeadlockResult;
 
-/* 死锁问题点 */
+/* 死锁待解决点 */
 typedef struct {
-    uint8_t type; int8_t region_id;
+    uint8_t type; 
     uint8_t box_indices[MAX_BOXES]; uint8_t box_count;
     uint8_t target_indices[MAX_BOXES]; uint8_t target_count;
-    uint16_t influence_mask[MAP_ROWS]; /* 箱子的影响区域（位图） */
+    uint16_t influence_mask[MAP_ROWS]; /* 箱子的影响域掩码（位图） */
 } DeadlockProblemPoint;
 
 /* 可炸墙 */
 typedef struct {
-    Point wall_pos; uint8_t deadlock_type; int benefit_score;
+    Point wall_pos; int benefit_score;
 } BreakableWall;
 
-/* 炸弹方案 */
+/* 爆炸方案 */
 typedef struct {
     Point detonate_pos; Point walls_covered[9]; uint8_t wall_count;
     uint8_t bomb_index; Point bomb_initial_pos;
     uint16_t bomb_push_distance; int total_benefit;
-    bool resolves_deadlock; uint8_t resolved_mask;
-    uint8_t affected_mask;
+    bool resolves_deadlock; uint16_t resolved_mask;
 } DetonatePlan;
 
-/* 炸弹推送路径（为推炸弹最短路径） */
+/* 炸弹推送路径（纯玩家路径） */
 typedef struct {
-    Point path[MAX_PATH_LEN];           /* 最短路径点序列 */
-    uint16_t path_len;                  /* 路径长度（含起点） */
+    Point path[MAX_PATH_LEN];           /* 玩家路径点序列 */
+    uint16_t path_len;                  /* 路径长度（步数） */
     bool     path_valid;                /* 路径是否有效 */
 } BombPushPath;
 
-/* 一个炸弹执行步骤 */
+/* 一次炸弹执行步骤 */
 typedef struct {
     uint8_t  step_order;                /* 执行序号（0,1,2...） */
-    uint8_t  bomb_index;                /* 使用的炸弹索引 */
+    uint8_t  bomb_index;                /* 使用的炸弹编号 */
     Point    bomb_from;                 /* 炸弹起始位置 */
-    Point    detonate_at;               /* 引爆点（炸弹位置/墙位置 */
+    Point    detonate_at;               /* 爆炸点=炸弹目标（墙位） */
     Point    walls_removed[9];          /* 该步摧毁的墙 */
     uint8_t  walls_removed_count;       /* 摧毁墙数量 */
-    BombPushPath push_path;             /* 推炸弹最短路径 */
-    Point    player_before;             /* 该步骤开始前玩家位置 */
-    Point    player_after;              /* 该步骤结束后玩家位置 */
+    BombPushPath push_path;             /* 玩家推送路径 */
+    Point    player_before;             /* 该步开始前玩家位置 */
+    Point    player_after;              /* 该步结束后玩家位置 */
 } BombExecutionStep;
 
-/* 多炸弹执行计划 */
+/* 完整炸弹执行序列 */
 typedef struct {
     BombExecutionStep steps[MAX_BOOMS];
     uint8_t  step_count;
@@ -276,42 +274,42 @@ typedef struct {
 /* --- 3.1 地图解析 --- */
 static void parse_map_input(uint8_t map[MAP_ROWS][MAP_COLS]);
 
-/* --- 3.2 工具函数 --- */
+/* --- 3.2 辅助工具 --- */
 static inline bool pos_equal(Point a, Point b);
 static inline int get_smooth_idx(int x, int y, int dir);
 static inline uint16_t manhattan_distance(Point a, Point b);
 static bool is_wall_bit(const uint16_t walls[MAP_ROWS], Point p);
 static bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]);
 
-/* --- 3.3 纯 A* 寻路（不推箱） --- */
+/* --- 3.3 简单 A* 寻路（无推箱） --- */
 static uint16_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path);
 
-/* --- 3.4 BFS 距离/可达性 --- */
-static void bfs_compute_distances(Point start, uint16_t walls[MAP_ROWS]);
+/* --- 3.4 BFS 距离计算 --- */
+static void bfs_compute_distances(Point start, const uint16_t walls[MAP_ROWS]);
 static void bfs_compute_reachability(Point start, const uint16_t obstacles[MAP_ROWS]);
 
-/* --- 3.5 推箱子 A* 函数 --- */
+/* --- 3.5 推箱 A* 核心 --- */
 static uint32_t hash_state(const State *s);
-static uint8_t state_equal(const State *a, const State *b);
+static bool state_equal(const State *a, const State *b);
 static int32_t hash_lookup_insert(const State *s, uint16_t g, int32_t from, uint8_t insert);
 static void pq_push(PQNode node);
 static PQNode pq_pop(void);
 static uint8_t heuristic(const State *s);
-static uint8_t is_goal(const State *s);
+static bool is_goal(const State *s);
 static void get_successors(const State *cur, State *res, uint8_t *cnt);
 static AStarResult solve_single_box_a_star(Point player, Point box, Point target,
-                                        uint16_t dynamic_walls[MAP_ROWS]);
-/* --- 3.6 模式1贪心配对与回溯验证 --- */
+                                           uint16_t dynamic_walls[MAP_ROWS]);
+/* --- 3.6 模式1：贪心配对与回溯验证 --- */
 static void generate_greedy_pairing(SolutionSequence* sol);
 static bool backtrack_validate(SolutionSequence* sol);
 static void validate_solution(SolutionSequence* sol);
 
-/* --- 3.7 START模式：最近接近点与路径提取 --- */
+/* --- 3.7 START模式：最近元素接近与路径提取 --- */
 static ApproachResult* find_nearest_approach(uint8_t map[MAP_ROWS][MAP_COLS]);
 static void extract_start_turn_points(ApproachResult* res);
 static void extract_turn_points(Path* p);
 
-/* --- 3.8 模式2/ID学习推理 --- */
+/* --- 3.8 模式2：ID学习与推理 --- */
 static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]);
 static void id_record(int id);
 static bool next_permutation(int *arr, int n);
@@ -320,26 +318,26 @@ static void extract_look_turn_points(VisitStep* plan);
 static SolutionSequence* build_solution_from_id_pairing(void);
 static Path path_id_calculate(SolutionSequence* sol);
 
-/* --- 3.9 模式3炸弹破局分析 --- */
+/* --- 3.9 模式3：炸弹破局分析 --- */
 static uint32_t hash_walls(const uint16_t walls[MAP_ROWS]);
 static void compute_player_region_with_walls(const uint16_t walls[MAP_ROWS], bool ignore_bombs);
 static void compute_player_region(void);
-static uint16_t compute_box_influence(Point box, const uint16_t walls[MAP_ROWS],
-                                    uint16_t influence_mask[MAP_ROWS]);
+static void compute_box_influence(Point box, const uint16_t walls[MAP_ROWS],
+                                      uint16_t influence_mask[MAP_ROWS]);
 static bool influence_contains_target(const uint16_t influence[MAP_ROWS]);
 static bool box_can_reach_any_target(Point box, const uint16_t walls[MAP_ROWS],
-                                    const Point targets[], uint8_t target_count);
+                                     const Point targets[], uint8_t target_count);
 static bool simulate_box_deadlock(uint8_t box_idx, const uint16_t obstacles[MAP_ROWS],
-                                const Point targets[], uint8_t target_count,
-                                const uint16_t walls[MAP_ROWS],
-                                Point start_player, Point start_box);
+                                   const Point targets[], uint8_t target_count,
+                                   const uint16_t walls[MAP_ROWS],
+                                   Point start_player, Point start_box);
 static bool simulate_box_to_target(uint8_t box_idx, Point target,
                                     const uint16_t walls[MAP_ROWS],
                                     Point start_player, Point start_box);
 static void detect_and_generate_problems(void);
 static DeadlockResult detect_all_deadlocks(uint8_t map[MAP_ROWS][MAP_COLS]);
-static uint8_t check_problems_resolved_incremental(const uint16_t modified_walls[MAP_ROWS], Point player_pos);
-static uint8_t check_problems_resolved_cached(const uint16_t modified_walls[MAP_ROWS], Point player_pos);
+static uint16_t check_problems_resolved_incremental(const uint16_t modified_walls[MAP_ROWS], Point player_pos);
+static uint16_t check_problems_resolved_cached(const uint16_t modified_walls[MAP_ROWS], Point player_pos);
 static bool is_breakable_wall(Point pos);
 static void precompute_bomb_reachability(void);
 static bool is_valid_detonation_point(Point pos);
@@ -361,21 +359,21 @@ static bool analyze_bomb_breakthrough(const DeadlockResult *deadlock,
                                        DetonatePlan out_plans[], uint8_t *out_plan_count,
                                        int *out_best_benefit);
 static uint8_t bfs_bomb_distances(Point player, const uint16_t walls[MAP_ROWS],
-                                const bool done[], uint8_t plan_count,
-                                const DetonatePlan plans[], uint16_t dists[MAX_BOOMS]);
+                                   const bool done[], uint8_t plan_count,
+                                   const DetonatePlan plans[], uint16_t dists[MAX_BOOMS]);
 static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
-                                Point detonate_pos, Point player_start,
-                                const uint16_t walls[MAP_ROWS],
-                                const bool active_bombs[MAX_BOOMS],
+                                   Point detonate_pos, Point player_start,
+                                   const uint16_t walls[MAP_ROWS],
+                                   const bool active_bombs[MAX_BOOMS],
                                    BombPushPath *out_path);
 static bool try_execute_step(const DetonatePlan *p, uint8_t step_idx,
-                            const bool active_bombs[MAX_BOOMS],
+                              const bool active_bombs[MAX_BOOMS],
                               Point *player, uint16_t walls[MAP_ROWS],
                               BombExecutionStep *out_st);
 static void plan_bomb_execution_sequence(const DetonatePlan plans[], uint8_t plan_count,
                                           BombExecutionPlan *out_exec);
 
-/* --- 3.10 对外接口 --- */
+/* --- 3.10 顶层外部接口 --- */
 Path_Start path_start_calculation(uint8_t map[MAP_ROWS][MAP_COLS]);
 Path path_calculation(uint8_t box_x[MAP_ROWS][MAP_COLS]);
 Path_Look path_look_calculation(uint8_t box_x[MAP_ROWS][MAP_COLS]);
