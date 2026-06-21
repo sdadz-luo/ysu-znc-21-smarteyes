@@ -752,7 +752,7 @@ static void bfs_compute_reachability(Point start, const uint16_t obstacles[MAP_R
             if (obstacles[next.x] & (1 << next.y)) continue;
             if (g_dist_epoch_tag[next.x][next.y] == g_dist_epoch) continue;
             g_dist_epoch_tag[next.x][next.y] = g_dist_epoch;
-            g_bfs_queue[tail++] = next;
+            if (tail < MAP_ROWS * MAP_COLS) g_bfs_queue[tail++] = next;
         }
     }
 }
@@ -764,25 +764,32 @@ static void bfs_compute_reachability(Point start, const uint16_t obstacles[MAP_R
  */
 static void extract_turn_points(Path* p) {
     if (p->len == 0) return;
-    uint8_t widx = 0;
+    uint16_t widx = 0;
     g_temp_x[0] = p->x[0]; g_temp_y[0] = p->y[0]; g_temp_push[0] = p->is_push[0];
     widx = 1;
-    for (uint8_t i = 1; i < p->len - 1; i++) {
+    for (uint16_t i = 1; i < p->len - 1; i++) {
         int8_t dx1 = (int8_t)(p->x[i] - p->x[i-1]);
         int8_t dy1 = (int8_t)(p->y[i] - p->y[i-1]);
         int8_t dx2 = (int8_t)(p->x[i+1] - p->x[i]);
         int8_t dy2 = (int8_t)(p->y[i+1] - p->y[i]);
         if (dx1 != dx2 || dy1 != dy2) {
-            g_temp_x[widx] = p->x[i]; g_temp_y[widx] = p->y[i];
-            g_temp_push[widx] = p->is_push[i]; widx++;
+            if (widx < MAX_PATH_LEN) {
+                g_temp_x[widx] = p->x[i]; g_temp_y[widx] = p->y[i];
+                g_temp_push[widx] = p->is_push[i];
+            }
+            widx++;
         }
     }
-    g_temp_x[widx] = p->x[p->len - 1]; g_temp_y[widx] = p->y[p->len - 1];
-    g_temp_push[widx] = p->is_push[p->len - 1]; widx++;
-    for (uint8_t i = 0; i < widx; i++) {
+    if (widx < MAX_PATH_LEN) {
+        g_temp_x[widx] = p->x[p->len - 1]; g_temp_y[widx] = p->y[p->len - 1];
+        g_temp_push[widx] = p->is_push[p->len - 1];
+    }
+    widx++;
+    uint16_t copy_n = (widx < MAX_PATH_LEN) ? widx : MAX_PATH_LEN;
+    for (uint16_t i = 0; i < copy_n; i++) {
         p->x[i] = g_temp_x[i]; p->y[i] = g_temp_y[i]; p->is_push[i] = g_temp_push[i];
     }
-    p->len = widx - 1;
+    p->len = (widx > 0) ? (uint16_t)(widx - 1) : 0;
 }
 
 /* ---------- 5.9 模式3专用工具函数 ---------- */
@@ -1219,23 +1226,30 @@ static ApproachResult* find_nearest_approach(uint8_t map[MAP_ROWS][MAP_COLS]) {
  */
 static void extract_start_turn_points(ApproachResult* res) {
     if (res->path_len == 0) { g_path_start_out.len = 0; return; }
-    uint8_t widx = 0;
+    uint16_t widx = 0;
     g_temp_x[0] = res->path[0].y; g_temp_y[0] = res->path[0].x; widx = 1;
-    for (uint8_t i = 1; i < res->path_len - 1; i++) {
+    for (uint16_t i = 1; i < res->path_len - 1; i++) {
         int8_t dx1 = (int8_t)(res->path[i].y   - res->path[i-1].y);
         int8_t dy1 = (int8_t)(res->path[i].x   - res->path[i-1].x);
         int8_t dx2 = (int8_t)(res->path[i+1].y - res->path[i].y);
         int8_t dy2 = (int8_t)(res->path[i+1].x - res->path[i].x);
         if (dx1 != dx2 || dy1 != dy2) {
-            g_temp_x[widx] = res->path[i].y; g_temp_y[widx] = res->path[i].x; widx++;
+            if (widx < MAX_PATH_LEN) {
+                g_temp_x[widx] = res->path[i].y; g_temp_y[widx] = res->path[i].x;
+            }
+            widx++;
         }
     }
-    g_temp_x[widx] = res->path[res->path_len - 1].y;
-    g_temp_y[widx] = res->path[res->path_len - 1].x; widx++;
-    for (uint8_t i = 0; i < widx; i++) {
+    if (widx < MAX_PATH_LEN) {
+        g_temp_x[widx] = res->path[res->path_len - 1].y;
+        g_temp_y[widx] = res->path[res->path_len - 1].x;
+    }
+    widx++;
+    uint16_t copy_n = (widx < MAX_PATH_LEN) ? widx : MAX_PATH_LEN;
+    for (uint16_t i = 0; i < copy_n; i++) {
         g_path_start_out.x[i] = g_temp_x[i]; g_path_start_out.y[i] = g_temp_y[i];
     }
-    g_path_start_out.len = widx;
+    g_path_start_out.len = (widx < MAX_PATH_LEN) ? widx : MAX_PATH_LEN;
     g_path_start_out.type = res->elem_type;
     g_path_start_out.angle = res->angle;
 }
@@ -3472,16 +3486,16 @@ void reset_planning_system(void) {
 /* 当前使用的测试地图 */
 static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,6,0,0,0,0,0,1,1,1,1,1,1,0,1},
-    {1,1,3,1,1,1,1,1,1,1,6,0,0,1,0,1},
-    {1,0,0,0,0,0,1,1,1,1,6,1,0,1,0,1},
-    {1,0,0,0,0,0,0,0,0,3,0,1,0,1,0,1}, 
-    {1,0,2,0,0,0,0,0,0,0,0,3,0,1,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,1,0,0,0,1,0,0,1,0,0,0,0,6,1},
+    {1,0,0,0,1,0,0,1,0,1,1,1,1,1,0,1},
+    {1,0,0,0,1,1,3,0,6,0,0,0,0,0,0,1},
+    {1,0,0,6,0,1,0,0,0,0,0,0,1,0,0,1},
+    {1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1},
+    {1,0,0,3,0,1,0,0,0,0,0,3,0,0,0,1},
+    {1,0,3,0,0,1,1,1,1,1,1,1,1,0,0,1},
+    {1,0,0,0,0,1,6,0,0,0,0,0,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
@@ -3493,7 +3507,7 @@ static uint8_t g_map_test_bomb_complex[MAP_ROWS][MAP_COLS] = {
     {1,1,0,1,1,1,3,1,6,1,0,0,0,0,0,1},
     {1,1,1,6,0,1,0,1,1,1,0,0,1,0,0,1},
     {1,0,0,1,1,1,0,0,7,0,0,0,0,0,0,1},
-    {1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,2,0,1,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,0,7,0,0,0,0,0,0,0,7,1,1,0,0,1},
     {1,0,0,3,0,1,0,0,0,0,1,3,1,0,0,1},
     {1,0,3,0,0,1,1,1,1,1,1,1,1,0,0,1},
