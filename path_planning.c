@@ -66,10 +66,11 @@
 
 /* BFS visited 索引（推箱模拟状态去重） */
 #define BFS_VISITED_INDEX(px, py, bx, by) \
-    (((uint16_t)(px) * 16 + (py)) * 192 + ((uint16_t)(bx) * 16 + (by)))
+    ((uint32_t)(((uint16_t)(px) * MAP_COLS + (py)) * (MAP_ROWS * MAP_COLS) + ((uint16_t)(bx) * MAP_COLS + (by))))
 
 /* 验证缓存容量 */
 #define VCACHE_SIZE 2048
+#define BOOM_TOP_K           12         /* 炸弹方案Top-K保留数 */
 
 /* 统一移动方向：上、下、左、右 */
 static const int8_t DIRS[DIR_COUNT][2] = {{-1,0},{1,0},{0,-1},{0,1}};
@@ -288,17 +289,17 @@ static bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]);
 static uint16_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path);
 
 /* --- 3.4 BFS 距离计算 --- */
-static void bfs_compute_distances(Point start, uint16_t walls[MAP_ROWS]);
+static void bfs_compute_distances(Point start, const uint16_t walls[MAP_ROWS]);
 static void bfs_compute_reachability(Point start, const uint16_t obstacles[MAP_ROWS]);
 
 /* --- 3.5 推箱 A* 核心 --- */
 static uint32_t hash_state(const State *s);
-static uint8_t state_equal(const State *a, const State *b);
+static bool state_equal(const State *a, const State *b);
 static int32_t hash_lookup_insert(const State *s, uint16_t g, int32_t from, uint8_t insert);
 static void pq_push(PQNode node);
 static PQNode pq_pop(void);
 static uint8_t heuristic(const State *s);
-static uint8_t is_goal(const State *s);
+static bool is_goal(const State *s);
 static void get_successors(const State *cur, State *res, uint8_t *cnt);
 static AStarResult solve_single_box_a_star(Point player, Point box, Point target,
                                            uint16_t dynamic_walls[MAP_ROWS]);
@@ -427,7 +428,7 @@ static uint16_t g_obs_buf[MAP_ROWS];                 /* 障碍物缓冲区 */
 
 /* 推箱模拟BFS访问标记（epoch技术避免memset） */
 static uint8_t g_bfs_epoch = 1;
-static uint8_t g_bfs_visited[12 * 16 * 12 * 16];
+static uint8_t g_bfs_visited[MAP_ROWS * MAP_COLS * MAP_ROWS * MAP_COLS];
 static uint8_t g_dist_epoch = 1;
 static uint8_t g_dist_epoch_tag[MAP_ROWS][MAP_COLS];
 
@@ -580,25 +581,25 @@ static bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]) {
  */
 static uint32_t hash_state(const State *s) {
     uint32_t h = 5381;
-    h = (h << 5 ^ h) ^ s->player.x;
-    h = (h << 5 ^ h) ^ s->player.y;
-    h = (h << 5 ^ h) ^ s->box.x;
-    h = (h << 5 ^ h) ^ s->box.y;
-    h = (h << 5 ^ h) ^ s->last_dir;
-    for (int i = 0; i < MAP_ROWS; i++) h = (h << 5 ^ h) ^ s->wall_bitmap[i];
+    h = ((h << 5) + h) ^ (uint32_t)s->player.x;
+    h = ((h << 5) + h) ^ (uint32_t)s->player.y;
+    h = ((h << 5) + h) ^ (uint32_t)s->box.x;
+    h = ((h << 5) + h) ^ (uint32_t)s->box.y;
+    h = ((h << 5) + h) ^ (uint32_t)s->last_dir;
+    for (int i = 0; i < MAP_ROWS; i++) h = ((h << 5) + h) ^ (uint32_t)s->wall_bitmap[i];
     return h % MAX_OPENSET;
 }
 
 /**
  * @brief 判断两个状态是否相等
  */
-static uint8_t state_equal(const State *a, const State *b) {
-    if (!pos_equal(a->player, b->player)) return 0;
-    if (!pos_equal(a->box, b->box)) return 0;
-    if (a->last_dir != b->last_dir) return 0;
+static bool state_equal(const State *a, const State *b) {
+    if (!pos_equal(a->player, b->player)) return false;
+    if (!pos_equal(a->box, b->box)) return false;
+    if (a->last_dir != b->last_dir) return false;
     for (int i = 0; i < MAP_ROWS; i++)
-        if (a->wall_bitmap[i] != b->wall_bitmap[i]) return 0;
-    return 1;
+        if (a->wall_bitmap[i] != b->wall_bitmap[i]) return false;
+    return true;
 }
 
 /**
@@ -673,13 +674,10 @@ static uint8_t heuristic(const State *s) {
 /**
  * @brief 判断是否达到目标状态（箱子到达目标位置）
  */
-static uint8_t is_goal(const State *s) {
+static bool is_goal(const State *s) {
     return pos_equal(s->box, s->target);
 }
 
-/**
- * @brief 获取当前状态的后继状态列表（含普通移动和推箱）
- */
 /**
  * @brief 生成推箱A*的后继状态
  * 
@@ -716,7 +714,7 @@ static void get_successors(const State *cur, State *res, uint8_t *cnt) {
 /**
  * @brief 从起点BFS计算到地图所有格子的距离
  */
-static void bfs_compute_distances(Point start, uint16_t walls[MAP_ROWS]) {
+static void bfs_compute_distances(Point start, const uint16_t walls[MAP_ROWS]) {
     for (int i = 0; i < MAP_ROWS; i++)
         for (int j = 0; j < MAP_COLS; j++)
             g_dist_map[i][j] = INF;
@@ -1251,8 +1249,7 @@ static void extract_start_turn_points(ApproachResult* res) {
  *
  * @param sol 输出配对方案
  */
-static void generate_greedy_pairing(SolutionSequence* sol)
-{
+static void generate_greedy_pairing(SolutionSequence* sol) {
     sol->count = g_box_count;
     sol->is_valid = false;
     sol->total_cost = 0;
@@ -2407,8 +2404,7 @@ static uint16_t check_problems_resolved_cached(const uint16_t modified_walls[MAP
  * 对每个炸弹执行一次BFS，结果存入位图实现 O(1) 查询。
  * 障碍物：墙 + 其他箱子 + 其他炸弹（自身炸弹位置可通行）。
  */
-static void precompute_bomb_reachability(void)
-{
+static void precompute_bomb_reachability(void) {
     memset(g_bomb_reach_map, 0, sizeof(g_bomb_reach_map));
 
     for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
@@ -2481,8 +2477,7 @@ static void find_detonation_points_for_wall(Point target_wall, Point out_points[
  * @param out_count   输出墙数量
  */
 static void find_walls_for_enclosed(const uint16_t region_mask[MAP_ROWS],
-    BreakableWall out_walls[], uint8_t *out_count)
-{
+    BreakableWall out_walls[], uint8_t *out_count) {
     *out_count = 0;
 
     for (uint8_t i = 0; i < MAP_ROWS; i++) {
@@ -2678,8 +2673,7 @@ static void generate_plans_for_walls(const BreakableWall breakable_walls[], uint
 /**
  * @brief 按收益排序方案（插入排序，小值优先）
  */
-static void sort_plans_by_benefit(DetonatePlan plans[], uint8_t count)
-{
+static void sort_plans_by_benefit(DetonatePlan plans[], uint8_t count) {
     for (uint8_t i = 1; i < count; i++) {
         DetonatePlan key = plans[i];
         int8_t j = (int8_t)(i - 1);
@@ -2700,8 +2694,7 @@ static void try_multi_plans_recursive(
     DetonatePlan pb[][MAX_PLANS_PER_BOOM], const uint8_t fi[],
     uint8_t sel_plans[], int accum_benefit,
     const uint16_t all_mask, int *best_benefit,
-    DetonatePlan result_plans[], uint8_t *result_count, uint8_t *found)
-{
+    DetonatePlan result_plans[], uint8_t *result_count, uint8_t *found) {
     if (*found) return;
     if (depth == max_depth) {
         uint16_t cw[MAP_ROWS];
@@ -2752,8 +2745,7 @@ static bool search_multi_combo(
     uint8_t target_m, const uint8_t N, const uint8_t bl[],
     DetonatePlan pb[][MAX_PLANS_PER_BOOM], const uint8_t fi[],
     const uint16_t all_mask, int *best_benefit,
-    DetonatePlan result_plans[], uint8_t *result_count)
-{
+    DetonatePlan result_plans[], uint8_t *result_count) {
     uint8_t bomb_idx[MAX_BOOMS];
     for (uint8_t i = 0; i < target_m; i++) bomb_idx[i] = i;
     uint8_t sel_plans[MAX_BOOMS];
@@ -2820,7 +2812,6 @@ static bool search_multi_bomb_combination(DetonatePlan all_plans[], uint8_t plan
             }
             if (!dup && keep < MAX_PLANS_PER_BOOM) pb[bi][keep++] = pb[bi][pi];
         }
-        #define BOOM_TOP_K 12
         if (keep > BOOM_TOP_K) keep = BOOM_TOP_K;
         fi[bi] = keep;
     }
@@ -2855,8 +2846,7 @@ static bool search_multi_bomb_combination(DetonatePlan all_plans[], uint8_t plan
  * @param plan 爆炸方案
  * @return true 炸弹可被推到引爆点
  */
-static bool verify_bomb_push_feasibility(const DetonatePlan *plan)
-{
+static bool verify_bomb_push_feasibility(const DetonatePlan *plan) {
     uint16_t obs[MAP_ROWS];
     memcpy(obs, g_static_walls, sizeof(obs));
 
@@ -3359,8 +3349,7 @@ Path path_boom_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
  *
  * @param out_map 输出 12x16 地图数组
  */
-void map_boom_out(uint8_t out_map[MAP_ROWS][MAP_COLS])
-{
+void map_boom_out(uint8_t out_map[MAP_ROWS][MAP_COLS]) {
     memcpy(out_map, g_original_map, sizeof(uint8_t) * MAP_ROWS * MAP_COLS);
 
     for (uint8_t i = 0; i < MAP_ROWS; i++) {
