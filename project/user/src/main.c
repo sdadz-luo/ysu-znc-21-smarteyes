@@ -109,7 +109,6 @@ void PIT_IRQHandler(void){
         encoder_get(); // 读取编码器数据
         imu_get();     // 读取 IMU 数据
         distance(yaw); // 航迹推算
-        imu_distance();
 
         // 2. 位置环 PID 计算
         if (time % 2 == 0 && (car_state == Run || car_state == GameOver)){
@@ -124,6 +123,7 @@ void PIT_IRQHandler(void){
             float yaw_error = yaw_target - yaw;
             if (yaw_error > 180.0f)       yaw_error -= 360.0f;
             else if (yaw_error < -180.0f) yaw_error += 360.0f;
+
             pid_target(&pid_yaw, yaw + yaw_error);
             vz = pid_location(&pid_yaw, yaw); 
         } 

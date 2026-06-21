@@ -8,6 +8,5 @@ extern float x_imu, y_imu;      // IMU 积分位置 (cm)
 void encoder_init(void);        // 初始化编码器硬件接口
 void encoder_get(void);         // 读取编码器数据
 void distance(float yaw);       // 编码器里程计坐标计算
-void imu_distance(void);        // IMU 加速度二次积分坐标计算
 
 #endif

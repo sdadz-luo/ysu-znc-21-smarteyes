@@ -41,6 +41,8 @@
 #include "string.h"
 #include "stdlib.h"
 #include "stdbool.h"
+#include "math.h"
+#include "string.h"
 
 //===================================================芯片 SDK 底层===================================================
 #include "fsl_common.h"
@@ -127,8 +129,6 @@
 
 //===================================================用户自定义文件===================================================
 
-#include "math.h"
-#include "string.h"
 #include "tft180.h"
 #include "encoder.h"
 #include "imu963.h"

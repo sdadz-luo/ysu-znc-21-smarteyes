@@ -1,9 +1,5 @@
 #include "encoder.h"
 #include "zf_common_headfile.h"
-#include <math.h>
-
-// 引用 imu963.c 中的全局变量 (加速度 cm/s, 航向角 度)
-extern float acc_x, acc_y, acc_z;
 
 // ================= 硬件引脚定义 =================
 // 左前轮 (FL)
@@ -32,21 +28,14 @@ extern float acc_x, acc_y, acc_z;
 #define GEAR_ENCODER    30              // 编码器齿轮齿数
 #define GEAR_WHEEL      70              // 轮子大齿轮齿数
 #define B               (GEAR_ENCODER / (float)GEAR_WHEEL)  // = 30/70 = 3/7
-#define C               (2 * PI * 3)                        // 轮子周长 (2 * PI * 半径3.0cm)
+#define C               (2.0f * PI * 3.0f)                        // 轮子周长 (2 * PI * 半径3.0cm)
 
 // ================= 滤波与算法参数 =================
 #define ENC_FILTER_ALPHA        0.8f    // 编码器一阶低通滤波系数
 #define ENC_FILTER_BETA         0.2f    // 编码器一阶低通滤波历史权重 (1 - alpha)
-#define IMU_ACC_ALPHA           0.1f    // IMU 加速度二级低通滤波系数
-#define IMU_ACC_BETA            0.9f    // IMU 加速度二级低通滤波历史权重 (1 - alpha)
-#define IMU_COMPLEMENTARY_ALPHA 0.5f    // IMU-编码器互补滤波融合系数
-#define ZUPT_THRESHOLD          5.0f    // 零速更新检测阈值 (脉冲/周期)
-#define ACC_DEAD_ZONE           1.0f    // 加速度死区阈值 (cm/s?)
-#define YAW_AXIS_THRESHOLD      3.0f    // 航向角接近坐标轴判定阈值 (度)
 
 // ================= 全局变量 =================
 float x_enc = 0, y_enc = 0;             // 编码器全局累积位移 (单位: cm)
-float x_imu = 0, y_imu = 0;             // IMU 积分全局位置 (单位: cm)
 static float dc = C / (B * N);          // 脉冲→厘米转换系数 (cm/脉冲)
 static float dc_dt = 0;                 // 预计算: dc / dt, 用于编码器速度换算 (在 encoder_init 中初始化)
 
@@ -155,74 +144,7 @@ void distance(float yaw){
     float world_x = shift_x * cos_yaw + shift_y * sin_yaw;
     float world_y = -shift_x * sin_yaw + shift_y * cos_yaw;
 
-    // 航向接近 X/Y 轴时使用纵向校正系数，否则交换校正系数
-    float cx, cy;
-    if (fabsf(yaw) <= YAW_AXIS_THRESHOLD || fabsf(yaw - 180.0f) <= YAW_AXIS_THRESHOLD) {
-        cx = corr_x_enc;
-        cy = corr_y_enc;
-    } else {
-        cx = corr_y_enc;
-        cy = corr_x_enc;
-    }
-    x_enc += world_x * cx;
-    y_enc += world_y * cy;
+    x_enc += world_x * corr_x_enc;
+    y_enc += world_y * corr_y_enc;
 
-}
-
-/**
- * @brief IMU 加速度二次积分里程计
- * 基于 IMU 加速度计数据进行二次积分以计算世界坐标系下的位移。
- * 采用编码器辅助的零速更新（ZUPT）和互补滤波策略，以抑制麦克纳姆轮振动引起的漂移。
- * @note 依赖外部变量 acc_x, acc_y (来自 imu963.c)。
- */
-void imu_distance(void) {
-    static const float dt = 0.005f;           // 5ms 积分周期 (与 imu_get 一致)
-    static float vel_x_imu = 0, vel_y_imu = 0; // IMU 积分速度 (cm/s)
-
-    // ========== 1. 静止检测（编码器辅助零速更新 ZUPT）==========
-    float abs_FL = fabsf(encoder_data_FL_enc);
-    float abs_FR = fabsf(encoder_data_FR_enc);
-    float abs_BL = fabsf(encoder_data_BL_enc);
-    float abs_BR = fabsf(encoder_data_BR_enc);
-    float enc_max = abs_FL;
-    if (abs_FR > enc_max) enc_max = abs_FR;
-    if (abs_BL > enc_max) enc_max = abs_BL;
-    if (abs_BR > enc_max) enc_max = abs_BR;
-    if (enc_max < ZUPT_THRESHOLD) {
-        vel_x_imu = 0;
-        vel_y_imu = 0;
-        return;
-    }
-
-    // ========== 2. 二级低通滤波（专门抑制麦克纳姆轮 30-80Hz 振动）==========
-    static float acc_x_lp2 = 0, acc_y_lp2 = 0;
-    acc_x_lp2 = acc_x * IMU_ACC_ALPHA + acc_x_lp2 * IMU_ACC_BETA;  // fc ≈ 3.4 Hz
-    acc_y_lp2 = acc_y * IMU_ACC_ALPHA + acc_y_lp2 * IMU_ACC_BETA;
-
-    // ========== 3. 加速度死区 ==========
-    float acc_w_x = acc_x_lp2;
-    float acc_w_y = acc_y_lp2;
-    if (fabsf(acc_w_x) < ACC_DEAD_ZONE) acc_w_x = 0;
-    if (fabsf(acc_w_y) < ACC_DEAD_ZONE) acc_w_y = 0;
-
-    // ========== 4. 速度积分（欧拉积分，无衰减）==========
-    vel_x_imu += acc_w_x * dt;
-    vel_y_imu += acc_w_y * dt;
-
-    // ========== 5. 编码器-IMU 互补滤波（用编码器速度抑制振动漂移）==========
-    // 编码器不受振动干扰, 以 50%/周期的速率融合 IMU 速度
-    // 时间常数 ≈ 1s: IMU 保留快速瞬态响应, 编码器提供长期基准
-    float vel_enc_x = encoder_data_FL_enc + encoder_data_FR_enc
-                    + encoder_data_BL_enc + encoder_data_BR_enc;
-    float vel_enc_y = encoder_data_FL_enc - encoder_data_FR_enc
-                    - encoder_data_BL_enc + encoder_data_BR_enc;
-    vel_enc_x = vel_enc_x * 0.25f * dc_dt;  // 编码器 X 速度 (cm/s)
-    vel_enc_y = vel_enc_y * 0.25f * dc_dt;  // 编码器 Y 速度 (cm/s)
-
-    vel_x_imu = vel_x_imu * IMU_COMPLEMENTARY_ALPHA + vel_enc_x * IMU_COMPLEMENTARY_ALPHA;
-    vel_y_imu = vel_y_imu * IMU_COMPLEMENTARY_ALPHA + vel_enc_y * IMU_COMPLEMENTARY_ALPHA;
-
-    // ========== 6. 位置积分 ==========
-    x_imu += vel_x_imu * dt * corr_x_enc;
-    y_imu += vel_y_imu * dt * corr_y_enc;
 }
