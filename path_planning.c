@@ -40,7 +40,7 @@
 /* ---- 模式3（炸弹破局）容量上限 ---- */
 #define MAX_BOOMS            4          /* 最大炸弹数量 */
 #define MAX_BREAK_WALLS      100        /* 最大可炸墙数量 */
-#define MAX_DETONATE_POINTS  40         /* 最大爆炸点候选数量 */
+#define MAX_DETONATE_POINTS  50         /* 最大爆炸点候选数量 */
 #define MAX_PROBLEM_POINTS   10         /* 最大死锁问题点数量 */
 #define MAX_PLANS_PER_BOOM   50         /* 每炸弹最大方案数 */
 #define MAX_ENCLOSED_REGIONS 10         /* 最大封闭区域数量 */
@@ -2633,6 +2633,7 @@ static void generate_plans_for_walls(const BreakableWall breakable_walls[], uint
                         out_plans[dupe_idx].resolved_mask = resolved_mask;
                     } continue;
                 }
+                if (*out_plan_count >= MAX_DETONATE_POINTS) return;
                 DetonatePlan *plan = &out_plans[*out_plan_count];
                 plan->detonate_pos = dp; plan->bomb_index = bi; plan->bomb_initial_pos = bomb_pos;
                 plan->bomb_push_distance = push_dist; plan->wall_count = covered_count;
@@ -3487,16 +3488,16 @@ static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
 /* 模式3 含炸弹的测试地图 */
 static uint8_t g_map_test_bomb_complex[MAP_ROWS][MAP_COLS] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,6,0,0,0,0,0,1,1,1,1,1,1,0,1},
-    {1,1,3,1,1,1,1,1,1,1,6,1,0,0,0,1},
-    {1,0,0,0,0,0,1,1,1,1,1,1,0,0,0,1},
-    {1,0,0,0,0,0,0,0,1,1,6,1,0,0,0,1}, 
-    {1,0,2,0,0,0,0,0,1,1,1,1,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,3,3,0,0,0,7,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,1,0,0,0,1,0,0,1,0,0,0,0,6,1},
+    {1,0,0,0,1,0,0,1,0,1,1,1,1,1,0,1},
+    {1,1,0,1,1,1,3,1,6,1,0,0,0,0,0,1},
+    {1,1,1,6,0,1,0,1,1,1,0,0,1,0,0,1},
+    {1,0,0,1,1,1,0,0,7,0,0,0,0,0,0,1},
+    {1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,7,0,0,0,0,0,0,0,7,1,1,0,0,1},
+    {1,0,0,3,0,1,0,0,0,0,1,3,1,0,0,1},
+    {1,0,3,0,0,1,1,1,1,1,1,1,1,0,0,1},
+    {1,0,0,0,0,1,6,0,0,0,0,0,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
