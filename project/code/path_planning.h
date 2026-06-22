@@ -36,7 +36,7 @@
 /* ---- 模式3（炸弹破局）容量上限 ---- */
 #define MAX_BOOMS            4          /* 最大炸弹数量 */
 #define MAX_BREAK_WALLS      100        /* 最大可炸墙数量 */
-#define MAX_DETONATE_POINTS  40         /* 最大爆炸点候选数量 */
+#define MAX_DETONATE_POINTS  50         /* 最大爆炸点候选数量 */
 #define MAX_PROBLEM_POINTS   10         /* 最大死锁问题点数量 */
 #define MAX_PLANS_PER_BOOM   50         /* 每炸弹最大方案数 */
 #define MAX_ENCLOSED_REGIONS 10         /* 最大封闭区域数量 */
