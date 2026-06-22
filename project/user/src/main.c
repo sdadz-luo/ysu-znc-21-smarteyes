@@ -10,7 +10,8 @@
 
 // ================= 状态机定义 =================
 typedef enum {
-    NoGame,     // 地图识别/定位初始化
+    NoGame,     // 空闲/未开始
+    GameMap,    // 地图识别/定位初始化
     Waiting,    // 等待中 (路径规划完成等待执行)
     Look,       // 观察/识别ID (摄像头识别车位ID)
     Run,        // 运动状态 (执行路径跟踪)
@@ -40,11 +41,10 @@ extern pid pid_FL, pid_FR, pid_BL, pid_BR; 										// 四个轮子的速度环 PID
 extern pid pid_gyro,pid_yaw,pid_x, pid_y;          							    // 角速度环，角度环, X/Y位置环 PID
 
 // ================= 全局变量 =================
-static uint8_t time = 0;             											// 时间计数器 (每 10ms 加1)
+static int time = 0;             												// 时间计数器 (每 10ms 加1)
 static float vx = 0, vy = 0, vz = 0; 											// 底盘合成速度
 static volatile float x_target = 10, y_target = 130; 							// 目标位置坐标
 static float x_cam = 0, y_cam = 0, x_cam_last = 0, y_cam_last = 0; 				// 摄像头检测到的车位坐标及上次值
-static int x_StartEnd = 0,y_StartEnd = 0;
 static uint8_t has_2 = 0, has_3 = 0, has_6 = 0;
 static uint8_t map_has_car = 0;
 static volatile float yaw_target = 0; 						                	// 目标角度
@@ -63,6 +63,7 @@ static uint8_t look_flag = 0;        // 观察模式标志
 static uint8_t id_flag = 0;          // 识别模式标志
 static uint8_t boom_flag = 0;        // 炸弹破局标志 
 static uint8_t yaw_flag = 0;         // 角度调整标志
+static uint8_t StoID_flag = 0;       // 从 start 模式切换为id模式
 static uint8_t grid[MAP_ROWS][MAP_COLS] = {0};
 
 int main(void){
@@ -205,20 +206,24 @@ static void state_judgment(void){
     switch (car_state){
 
         case NoGame:{
-            vx = 0;vy = 0;
             // 检测是否进入开始区域
             if (x_cam >= 0 && x_cam <= 2.5 * x_cam_uint && y_cam >= 5 * y_cam_uint && y_cam <= 7 * y_cam_uint){
                 system_delay_ms(300);
                 // 根据摄像头坐标初始化车辆位置
                 x_enc = (x_cam / x_cam_uint) * x_enc_uint;
                 y_enc = (y_cam / y_cam_uint) * y_enc_uint;
-
-                x_target = (origin_x_enc + 0.5) * x_enc_uint;
-                y_target = (origin_y_enc + 0.5) * y_enc_uint;
-                car_state = Run;
+                car_state = GameMap;
                 return;
             }
             break;
+        }
+        
+        case GameMap:{
+            // 设置初始目标位置
+            x_target = (origin_x_enc + 0.5) * x_enc_uint;
+            y_target = (origin_y_enc + 0.5) * y_enc_uint;
+            car_state = Run;
+            return;
         }
         
         case Look:{
@@ -343,12 +348,13 @@ static void process_normal_path(const Path *path, float end_x, float end_y){
             game_over_flag = 1;
             car_state = GameOver;
             return;
-        }else{
+        }
+    }
+    if (step <= path->len) {
         x_target = (path->x[step] + 0.5f) * x_enc_uint;
         y_target = (path->y[step] + 0.5f) * y_enc_uint;
         car_state = Run;
         return;
-        }
     }
 }
 
@@ -396,30 +402,31 @@ static void path_process(void){
                 grid[path_start_car.y[0]][path_start_car.x[0]] = 0;
                 grid[path_start_car.y[path_start_car.len - 1]][path_start_car.x[path_start_car.len - 1]] = 2;
                 look_flag = 1;
-                x_StartEnd = path_start_car.x[path_start_car.len - 1],y_StartEnd = path_start_car.y[path_start_car.len - 1];
+                if (yaw_target == 0) StoID_flag = 1;
                 // 起始路径走完，转入 Look 状态识别ID
                 car_state = Look;
                 return;
-            }else{
+            }
+        }
+
+        if(step < path_start_car.len){
             x_target = (path_start_car.x[step] + 0.5f) * x_enc_uint;
             y_target = (path_start_car.y[step] + 0.5f) * y_enc_uint;
             car_state = Run;
             return;
         }
-        }
     }else if (game_mode == 2 && !map_process_flag && path_look_car.len > 0){
         if ((fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) || yaw_flag == 1) { 
-            yaw_flag = 0;        
-            if (step == 0){
-                if (x_StartEnd == path_look_car.x[1] && y_StartEnd == path_look_car.y[1]){
-                    step = 1;
-                    car_state = Look;
-                    return;
-                }else {
-                    yaw_target = 0;
-                    while (fabsf(yaw) > 1) 1;
-                }
-            }   
+            yaw_flag = 0;           
+            if (StoID_flag == 1){
+                StoID_flag = 0;
+                id_input(id);
+                id = -1;
+                step = 2;
+                x_target = (path_look_car.x[step] + 0.5f) * x_enc_uint;
+                y_target = (path_look_car.y[step] + 0.5f) * y_enc_uint;
+                return;
+            }
             if (path_look_car.is_look[step] == 1 && step < path_look_car.len){
                 vx = 0;vy = 0;
                 yaw_target = path_look_car.angle[step]; // 设置观察角度
@@ -428,7 +435,6 @@ static void path_process(void){
                 car_state = Look;
                 return;
             }else step++;
-
             if (step >= path_look_car.len) {
                 game_mode = 3; // 切换到模式3
                 id_flag = 1; // 设置ID识别标志
@@ -436,7 +442,9 @@ static void path_process(void){
                 car_state = Waiting;
                 return;
             }
-        }else{
+        }
+
+        if(step < path_look_car.len){
             x_target = (path_look_car.x[step] + 0.5f) * x_enc_uint;
             y_target = (path_look_car.y[step] + 0.5f) * y_enc_uint;
             car_state = Run;
@@ -457,13 +465,16 @@ static void path_process(void){
                 game_mode = 0;
                 car_state = Waiting;
                 return;
-            }else{
+            }
+        }
+
+        // 更新下一个目标点
+        if(step <= path_boom_car.len){
             // 路径点坐标转换为实际坐标 (+0.5 是为了定位到格子中心)
             x_target = (path_boom_car.x[step] + 0.5f) * x_enc_uint;
             y_target = (path_boom_car.y[step] + 0.5f) * y_enc_uint;
             car_state = Run;
             return;
-        }
         }
     }
 }
@@ -482,21 +493,21 @@ static void cam2_process(void){
             cam_uart2_write(type);
             while (id == -1) id = cam_uart2_read();
         } else {
-            if (id == 10){
-                yaw_target = 0;
-                if (fabsf(yaw) <= 1){ 
-                    cam1_uart_send(yaw_target); // 发送目标角度
-                    step = 0;
+            yaw_target = 0;
+            if (yaw_target == 0 && fabsf(yaw) <= 1){
+                cam1_uart_send(yaw_target); // 发送目标角度
+                step = 0;
+                if (id == 10){ 
                     game_mode = 1;      // 切换到正常行驶模式
                     id = -1;
                     car_state = Waiting;
                     return;
+                }else{
+                    game_mode = 2;      // 切换到ID识别模式
+                    if (StoID_flag != 1) id = -1;
+                    car_state = Waiting;
+                    return;
                 }
-            }else{
-                cam1_uart_send(yaw_target); // 发送目标角度
-                step = 0;
-                game_mode = 2;      // 切换到ID识别模式
-                car_state = Waiting;
             }
         }
     } else if (game_mode == 2) {
