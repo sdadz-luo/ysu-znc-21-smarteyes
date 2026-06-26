@@ -2702,6 +2702,15 @@ static void generate_plans_for_walls_on(const BreakableWall breakable_walls[], u
                     if (can_explosion_cover_wall(dp, breakable_walls[wj].wall_pos))
                         covered_walls[covered_count++] = breakable_walls[wj].wall_pos;
                 if (covered_count == 0) continue;
+                /* 统计爆炸范围内实际摧毁的总墙数（含非边界墙） */
+                uint8_t total_walls_destroyed = 0;
+                for (int8_t dx = -1; dx <= 1; dx++)
+                    for (int8_t dy = -1; dy <= 1; dy++) {
+                        uint8_t wx = (uint8_t)((int)dp.x + dx), wy = (uint8_t)((int)dp.y + dy);
+                        if (wx >= MAP_ROWS || wy >= MAP_COLS) continue;
+                        if (wx == 0 || wx == MAP_ROWS - 1 || wy == 0 || wy == MAP_COLS - 1) continue;
+                        if (is_wall_bit(walls, (Point){wx, wy})) total_walls_destroyed++;
+                    }
                 uint16_t sim_walls[MAP_ROWS];
                 memcpy(sim_walls, walls, sizeof(uint16_t) * MAP_ROWS);
                 for (uint8_t k = 0; k < covered_count; k++) {
@@ -2780,7 +2789,8 @@ static void generate_plans_for_walls_on(const BreakableWall breakable_walls[], u
                 }
                 DetonatePlan *plan = &out_plans[*out_plan_count];
                 plan->detonate_pos = dp; plan->bomb_index = bi; plan->bomb_initial_pos = bomb_pos;
-                plan->bomb_push_distance = push_dist; plan->wall_count = covered_count;
+                plan->bomb_push_distance = push_dist;
+                plan->wall_count = total_walls_destroyed;  /* 实际摧毁总墙数（含边界墙和非边界墙） */
                 memcpy(plan->walls_covered, covered_walls, covered_count * sizeof(Point));
                 plan->total_benefit = total_benefit; plan->resolves_deadlock = resolves;
                 plan->resolved_mask = resolved_mask;
@@ -3351,7 +3361,9 @@ static bool iterative_bomb_breakthrough(const DeadlockResult *deadlock,
             break; /* 无解 */
         }
 
-        /* ★ 用 BFS 真实距离评估每个候选方案 */
+        /* ★ 综合评价：行走距离 + 推弹距离 - 解决死锁的奖励
+           用 resolved_mask 直接计数解决了几个死锁问题
+           无方向假设，适用于任意地图 */
         int best_idx = -1;
         int best_cost = 999999;
         for (uint8_t i = 0; i < cand_count; i++) {
@@ -3393,13 +3405,13 @@ static bool iterative_bomb_breakthrough(const DeadlockResult *deadlock,
             uint16_t walk_dist = simple_astar(cur_player, approach_pos, cur_walls, walk_path);
             if (walk_dist == 0) continue;
 
-            uint16_t push_dist = cp->bomb_push_distance;
-            /* ★ 深度加权：同一行上 col 越小（越靠左炸得越深）cost 越低 */
-            int col_bonus = (int)(walk_dist + push_dist) + (int)cp->detonate_pos.y * 2;
-            int total = col_bonus;
+            /* 综合代价 = 行走距离 + 推弹距离 - 摧毁墙数×5
+               炸掉墙越多 = 朝目标推进越多 = 代价越低
+               无方向假设，适用于任意地图走向 */
+            int total = (int)walk_dist + (int)cp->bomb_push_distance - (int)cp->wall_count * 5;
 
             if (total < best_cost) {
-                best_cost = (uint16_t)total;
+                best_cost = total;
                 best_idx = (int)i;
             }
         }
@@ -3924,16 +3936,16 @@ static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
 /* 模式3 含炸弹的测试地图 */
 static uint8_t g_map_test_bomb_complex[MAP_ROWS][MAP_COLS] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,3,3,3,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,7,0,0,0,0,0,1},
-    {1,6,1,1,1,1,0,0,0,0,0,2,0,0,0,1},
-    {1,6,1,1,1,1,0,0,0,7,0,0,0,0,0,1},
-    {1,6,1,1,1,1,0,0,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,7,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1},
+    {1,1,1,1,1,1,6,6,6,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,7,7,7,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,3,3,3,0,0,1},
+    {1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
