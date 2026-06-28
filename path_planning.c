@@ -607,6 +607,51 @@ static bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]) {
     return (up && left) || (up && right) || (down && left) || (down && right);
 }
 
+/**
+ * @brief 检测角落死锁是否为"软死锁"——被未推动箱子堵住（可先推挡路箱解除）
+ *
+ * 硬死锁 = 堵路来源均为静态墙 → 永久放弃
+ * 软死锁 = 某方向堵路来源是另一个未推动的箱子 → 推走挡路箱后本箱不再死锁
+ *
+ * @param box        待检测箱子位置
+ * @param walls      当前障碍物位图（含其他箱子的位置）
+ * @param solved     哪些箱子已解决
+ * @param out_blocker_idx  输出：挡路箱子的 box_idx
+ * @return true=软死锁（out_blocker_idx 有效），false=硬死锁或无死锁
+ */
+static bool is_soft_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS],
+    const bool solved[MAX_BOXES], uint8_t *out_blocker_idx) {
+    bool up    = is_wall_bit(walls, (Point){box.x - 1, box.y});
+    bool down  = is_wall_bit(walls, (Point){box.x + 1, box.y});
+    bool left  = is_wall_bit(walls, (Point){box.x, box.y - 1});
+    bool right = is_wall_bit(walls, (Point){box.x, box.y + 1});
+
+    if (!((up && left) || (up && right) || (down && left) || (down && right)))
+        return false;
+
+    Point neighbors[4] = {
+        {box.x - 1, box.y}, {box.x + 1, box.y},
+        {box.x, box.y - 1}, {box.x, box.y + 1}
+    };
+    bool blocked[4] = {up, down, left, right};
+
+    for (int d = 0; d < 4; d++) {
+        if (!blocked[d]) continue;
+        uint8_t nx = neighbors[d].x, ny = neighbors[d].y;
+        if (nx >= MAP_ROWS || ny >= MAP_COLS) continue;
+        /* 静态墙 → 跳过，检查是否为未推箱子 */
+        if (g_static_walls[nx] & (1 << ny)) continue;
+        for (uint8_t bi = 0; bi < g_box_count; bi++) {
+            if (solved[bi]) continue;
+            if (g_initial_boxes[bi].x == nx && g_initial_boxes[bi].y == ny) {
+                *out_blocker_idx = bi;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /* ---------- 5.4 哈希表操作（推箱A*状态去重） ---------- */
 
 /**
@@ -1439,6 +1484,11 @@ static bool backtrack_validate(SolutionSequence* sol) {
         Point cur_box = sol->pairs[try_idx].box_pos;
         Point cur_target = sol->pairs[try_idx].target_pos;
 
+        printf("[回溯] 尝试 箱%d (%d,%d)→靶%d (%d,%d)  玩家(%d,%d)\n",
+            try_idx, cur_box.x, cur_box.y,
+            sol->pairs[try_idx].target_idx, cur_target.x, cur_target.y,
+            g_current_player_pos.x, g_current_player_pos.y);
+
         memcpy(g_current_walls, g_static_walls, sizeof(g_current_walls));
         /* 构建障碍物：其他箱子 + 会吸收当前箱子的非配对靶位
            模式1：所有靶位都吸收 → 阻挡全部非配对靶位
@@ -1458,11 +1508,250 @@ static bool backtrack_validate(SolutionSequence* sol) {
             }
         }
 
-        if (!pos_equal(cur_box, cur_target) && is_corner_deadlock(cur_box, g_current_walls))
-            continue;
+        if (!pos_equal(cur_box, cur_target) && is_corner_deadlock(cur_box, g_current_walls)) {
+            uint8_t blocker_idx;
+            if (is_soft_corner_deadlock(cur_box, g_current_walls, g_solved, &blocker_idx)) {
+                /* ── 软死锁：挡路的是未推箱子 → 尝试推开一格让路 ── */
+                printf("  ? 软死锁，挡路箱=%d → 尝试推开一格\n", blocker_idx);
+
+                /* 找到挡路箱在当前 sol 中的配对下标 */
+                int8_t blocker_pair = -1;
+                for (uint8_t m = 0; m < sol->count; m++)
+                    if (sol->pairs[m].box_idx == blocker_idx) { blocker_pair = (int8_t)m; break; }
+                if (blocker_pair < 0 || g_solved[blocker_pair]) {
+                    printf("  ? 挡路箱已解决或未配对\n");
+                    continue;
+                }
+
+                Point bbox = sol->pairs[blocker_pair].box_pos;
+
+                /* ── 保存状态 ── */
+                Point saved_player2 = g_current_player_pos;
+                int saved_cost2 = g_total_cost;
+                uint16_t saved_len2 = g_fullpath_len;
+                Point old_blocker_pos = bbox;
+                Point current_blocker = bbox;
+
+                /*
+                 * 迭代推开挡路箱：每次推一格，直到本箱死锁解除或无路可走。
+                 * 最多迭代 MAX_ITER_PUSH 次，防止无限循环。
+                 */
+                bool deadlock_broken = false;
+                int push_count = 0;
+                #define MAX_ITER_PUSH 10
+
+                while (!deadlock_broken && push_count < MAX_ITER_PUSH) {
+                    /* 在 current_blocker 周围找最佳可推方向 */
+                    bool found = false;
+                    Point best_dir = {0, 0}, best_dest = {0, 0};
+                    uint16_t best_dist = INF;
+
+                    for (int d = 0; d < DIR_COUNT; d++) {
+                        int8_t dx = DIRS[d][0], dy = DIRS[d][1];
+                        uint8_t nx = (uint8_t)(current_blocker.x + dx), ny = (uint8_t)(current_blocker.y + dy);
+                        if (nx >= MAP_ROWS || ny >= MAP_COLS) continue;
+                        if (g_static_walls[nx] & (1 << ny)) continue;
+                        /* 不能推回旧位置（防止来回振荡） */
+                        if (push_count > 0 && nx == old_blocker_pos.x && ny == old_blocker_pos.y) continue;
+                        /* 目标格不能有其他箱子 */
+                        bool occupied = false;
+                        for (uint8_t m = 0; m < g_remaining_cnt && !occupied; m++) {
+                            uint8_t pi = g_remaining[m];
+                            if ((int8_t)pi == blocker_pair || g_solved[pi]) continue;
+                            if (sol->pairs[pi].box_pos.x == nx && sol->pairs[pi].box_pos.y == ny)
+                                occupied = true;
+                        }
+                        if (occupied) continue;
+                        if (nx == cur_box.x && ny == cur_box.y) continue;
+                        /* ★ 不能把挡路箱推到死锁位置 */
+                        {
+                            uint16_t check_walls[MAP_ROWS];
+                            memcpy(check_walls, g_static_walls, sizeof(check_walls));
+                            for (uint8_t m = 0; m < g_remaining_cnt; m++) {
+                                uint8_t pi = g_remaining[m];
+                                if ((int8_t)pi == blocker_pair || g_solved[pi]) continue;
+                                Point obs = sol->pairs[pi].box_pos;
+                                if (obs.x == current_blocker.x && obs.y == current_blocker.y) continue;
+                                check_walls[obs.x] |= (1 << obs.y);
+                            }
+                            Point dest = {nx, ny};
+                            if (!pos_equal(dest, sol->pairs[blocker_pair].target_pos) &&
+                                is_corner_deadlock(dest, check_walls)) continue;
+                        }
+                        /* 玩家推箱站位 */
+                        uint8_t px = (uint8_t)(current_blocker.x - dx), py = (uint8_t)(current_blocker.y - dy);
+                        if (px >= MAP_ROWS || py >= MAP_COLS) continue;
+                        if (g_static_walls[px] & (1 << py)) continue;
+                        bool pbox = false;
+                        if (px == cur_box.x && py == cur_box.y) pbox = true;
+                        for (uint8_t m = 0; m < g_remaining_cnt && !pbox; m++) {
+                            uint8_t pi = g_remaining[m];
+                            if (g_solved[pi]) continue;
+                            if (sol->pairs[pi].box_pos.x == px && sol->pairs[pi].box_pos.y == py)
+                                pbox = true;
+                        }
+                        if (pbox) continue;
+                        uint16_t dist = g_dist_map[px][py];
+                        if (dist == INF) continue;
+                        if (dist < best_dist) {
+                            best_dist = dist;
+                            best_dir.x = (uint8_t)dx; best_dir.y = (uint8_t)dy;
+                            best_dest.x = nx; best_dest.y = ny;
+                            found = true;
+                        }
+                    }
+
+                    if (!found) {
+                        printf("  ? 挡路箱第%d步无路可走\n", push_count + 1);
+                        break;
+                    }
+                    printf("  ? 推挡路箱第%d步 (%d,%d)→(%d,%d)\n",
+                        push_count + 1, current_blocker.x, current_blocker.y,
+                        best_dest.x, best_dest.y);
+
+                    /* 构建挡路箱障碍物（排除挡路箱自身） */
+                    uint16_t blocker_walls[MAP_ROWS];
+                    memcpy(blocker_walls, g_static_walls, sizeof(blocker_walls));
+                    {
+                        int8_t bid = g_box_id_map[blocker_idx];
+                        for (uint8_t m = 0; m < g_remaining_cnt; m++) {
+                            uint8_t pi = g_remaining[m];
+                            if ((int8_t)pi == blocker_pair || g_solved[pi]) continue;
+                            Point obs = sol->pairs[pi].box_pos;
+                            blocker_walls[obs.x] |= (1 << obs.y);
+                            if (g_mode1_strict ||
+                                (bid != -1 && g_target_id_map[sol->pairs[pi].target_idx] == bid)) {
+                                Point tp = sol->pairs[pi].target_pos;
+                                blocker_walls[tp.x] |= (1 << tp.y);
+                            }
+                        }
+                    }
+
+                    AStarResult push_ar = solve_single_box_a_star(
+                        g_current_player_pos, current_blocker, best_dest, blocker_walls);
+                    if (!push_ar.success) {
+                        printf("  ? 挡路箱第%d步 A* 失败\n", push_count + 1);
+                        break;
+                    }
+
+                    /* 执行这一步推动 */
+                    sol->pairs[blocker_pair].box_pos = best_dest;
+                    g_current_player_pos = push_ar.final_player_pos;
+                    g_total_cost += push_ar.cost;
+                    {
+                        uint16_t si = 0;
+                        if (g_fullpath_len > 0 &&
+                            pos_equal(g_fullpath[g_fullpath_len-1], push_ar.path_points[0]))
+                            si = 1;
+                        uint16_t add = (uint16_t)(push_ar.path_len - si);
+                        if (g_fullpath_len + add <= MAX_PATH_LEN)
+                            for (uint16_t i = si; i < push_ar.path_len; i++)
+                                g_fullpath[g_fullpath_len++] = push_ar.path_points[i];
+                    }
+
+                    current_blocker = best_dest;
+                    push_count++;
+
+                    /* 重建本箱障碍物，检查死锁是否解除 */
+                    memcpy(g_current_walls, g_static_walls, sizeof(g_current_walls));
+                    {
+                        int8_t my_id2 = g_box_id_map[sol->pairs[try_idx].box_idx];
+                        for (uint8_t m = 0; m < g_remaining_cnt; m++) {
+                            uint8_t pi = g_remaining[m];
+                            if (pi == try_idx || g_solved[pi]) continue;
+                            Point obs = sol->pairs[pi].box_pos;
+                            g_current_walls[obs.x] |= (1 << obs.y);
+                            if (g_mode1_strict ||
+                                (my_id2 != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id2)) {
+                                Point tp = sol->pairs[pi].target_pos;
+                                g_current_walls[tp.x] |= (1 << tp.y);
+                            }
+                        }
+                    }
+
+                    deadlock_broken = (!pos_equal(cur_box, cur_target) &&
+                        !is_corner_deadlock(cur_box, g_current_walls));
+                    printf("  → 第%d步后本箱死锁: %s\n",
+                        push_count, deadlock_broken ? "已解除" : "仍死锁");
+                }
+                #undef MAX_ITER_PUSH
+
+                if (deadlock_broken) {
+                    g_backtrack_ar = solve_single_box_a_star(
+                        g_current_player_pos, cur_box, cur_target, g_current_walls);
+                    if (g_backtrack_ar.success) {
+                        printf("  ? 本箱重试 A* 成功 cost=%d\n", g_backtrack_ar.cost);
+                        /* 事后验证本箱 */
+                        {
+                            int8_t mid = g_box_id_map[sol->pairs[try_idx].box_idx];
+                            uint16_t forbid[MAP_ROWS] = {0};
+                            for (uint8_t m = 0; m < sol->count; m++) {
+                                if (m == try_idx || g_solved[m]) continue;
+                                uint8_t ti = sol->pairs[m].target_idx;
+                                if (g_mode1_strict ||
+                                    (mid != -1 && g_target_id_map[ti] == mid))
+                                    forbid[sol->pairs[m].target_pos.x] |= (1 << sol->pairs[m].target_pos.y);
+                            }
+                            Point sim = cur_box; bool valid = true;
+                            for (uint16_t i = 0; i < g_backtrack_ar.path_len && valid; i++) {
+                                if (pos_equal(g_backtrack_ar.path_points[i], sim)) {
+                                    if (i > 0) {
+                                        int8_t dx = (int8_t)(g_backtrack_ar.path_points[i].x - g_backtrack_ar.path_points[i-1].x);
+                                        int8_t dy = (int8_t)(g_backtrack_ar.path_points[i].y - g_backtrack_ar.path_points[i-1].y);
+                                        sim.x = (uint8_t)(sim.x + dx); sim.y = (uint8_t)(sim.y + dy);
+                                        if (!pos_equal(sim, cur_target) && (forbid[sim.x] & (1 << sim.y)))
+                                            valid = false;
+                                    }
+                                }
+                            }
+                            if (valid) {
+                                g_solved[try_idx] = true;
+                                g_solve_order[g_order_idx++] = try_idx;
+                                g_current_player_pos = g_backtrack_ar.final_player_pos;
+                                g_total_cost += g_backtrack_ar.cost;
+                                {
+                                    uint16_t si = 0;
+                                    if (g_fullpath_len > 0 &&
+                                        pos_equal(g_fullpath[g_fullpath_len-1], g_backtrack_ar.path_points[0]))
+                                        si = 1;
+                                    uint16_t add = (uint16_t)(g_backtrack_ar.path_len - si);
+                                    if (g_fullpath_len + add <= MAX_PATH_LEN)
+                                        for (uint16_t i = si; i < g_backtrack_ar.path_len; i++)
+                                            g_fullpath[g_fullpath_len++] = g_backtrack_ar.path_points[i];
+                                }
+                                printf("  → 递归验证剩余...\n");
+                                if (backtrack_validate(sol)) return true;
+                                /* 回溯本箱 */
+                                g_solved[try_idx] = false;
+                                g_order_idx--;
+                                g_total_cost -= g_backtrack_ar.cost;
+                                g_fullpath_len -= (uint16_t)(g_backtrack_ar.path_len -
+                                    (g_fullpath_len > 0 && pos_equal(g_fullpath[g_fullpath_len-1], g_backtrack_ar.path_points[0]) ? 1 : 0));
+                            }
+                        }
+                    } else {
+                        printf("  ? 本箱重试 A* 仍失败\n");
+                    }
+                }
+
+                /* 恢复挡路箱位置和状态 */
+                sol->pairs[blocker_pair].box_pos = old_blocker_pos;
+                g_current_player_pos = saved_player2;
+                g_total_cost = saved_cost2;
+                g_fullpath_len = saved_len2;
+                continue;
+            } else {
+                printf("  ? 硬死锁（墙堵路）\n");
+                continue;
+            }
+        }
 
         g_backtrack_ar = solve_single_box_a_star(g_current_player_pos, cur_box, cur_target, g_current_walls);
-        if (!g_backtrack_ar.success) continue;
+        if (!g_backtrack_ar.success) {
+            printf("  ? A* 找不到推箱路径 (cost=%d)\n", g_backtrack_ar.cost);
+            continue;
+        }
+        printf("  ? A* 成功 cost=%d path_len=%u\n", g_backtrack_ar.cost, g_backtrack_ar.path_len);
 
         /* 事后验证：箱子不穿越会吸收它的非配对靶位（位图 O(1) 查表）
            模式1：所有靶位都吸收 → 检查全部非配对靶位
@@ -1493,7 +1782,10 @@ static bool backtrack_validate(SolutionSequence* sol) {
                     }
                 }
             }
-            if (!box_path_valid) continue;
+            if (!box_path_valid) {
+                printf("  ? 箱子路径穿越禁止靶位\n");
+                continue;
+            }
         }
 
         g_solved[try_idx] = true;
@@ -1514,7 +1806,9 @@ static bool backtrack_validate(SolutionSequence* sol) {
                 g_fullpath[g_fullpath_len++] = g_backtrack_ar.path_points[i];
         }
 
+        printf("  → 递归验证剩余 %d 个箱子...\n", g_remaining_cnt - 1);
         if (backtrack_validate(sol)) return true;
+        printf("  ← 递归失败，回溯\n");
 
         g_solved[try_idx] = false;
         g_order_idx--;
@@ -1608,21 +1902,21 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
         tcp = ba;
     }
 
-    /* 第二阶段：生成访问计划（排除最后一个） */
+    /* 第二阶段：目标观测 n-1 个箱子和 n-1 个靶位。
+     * 不预先排除任何元素，靠推箱开路尽量达成。推箱失败则接受部分结果。 */
     bool vb[MAX_BOXES] = {false}, vt[MAX_BOXES] = {false};
-    if (last_box >= 0)    vb[last_box] = true;
-    if (last_target >= 0) vt[last_target] = true;
+    int need_box = (g_box_count > 0) ? g_box_count - 1 : 0;
+    int need_tgt = (g_target_count > 0) ? g_target_count - 1 : 0;
 
     Point cp = g_initial_player;
     g_visit_count = 0;
-    int to_visit = 0;
-    for (int i = 0; i < g_box_count; i++)    if (!vb[i]) to_visit++;
-    for (int i = 0; i < g_target_count; i++) if (!vt[i]) to_visit++;
+    int observed_box = 0, observed_tgt = 0;
 
-    while (g_visit_count < to_visit) {
+    while (observed_box < need_box || observed_tgt < need_tgt) {
         bfs_compute_distances(cp, walls);
         uint16_t md = INF;
         int bei = -1; uint8_t bt = 0; Point ba = {0,0};
+        if (observed_box < need_box) {
         for (int i = 0; i < g_box_count; i++) {
             if (vb[i]) continue;
             for (int d = 0; d < DIR_COUNT; d++) {
@@ -1634,6 +1928,8 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
                 if (eff < md) { md = eff; bei = i; bt = 0; ba = ap; }
             }
         }
+        } /* observed_box < need_box */
+        if (observed_tgt < need_tgt) {
         for (int i = 0; i < g_target_count; i++) {
             if (vt[i]) continue;
             Point tp = g_initial_targets[i];
@@ -1646,7 +1942,173 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
                 if (eff < md) { md = eff; bei = i; bt = 1; ba = ap; }
             }
         }
-        if (bei == -1) break;
+        } /* observed_tgt < need_tgt */
+        if (bei == -1) {
+            bool pushed = false;
+            int rescue_attempts = 0;
+            #define MAX_RESCUE 20
+
+            while (!pushed && rescue_attempts < MAX_RESCUE) {
+                rescue_attempts++;
+                uint16_t walls_no_box[MAP_ROWS];
+                memcpy(walls_no_box, g_static_walls, sizeof(walls_no_box));
+                bfs_compute_distances(cp, walls_no_box);
+                bool any_hidden = false;
+                for (int i = 0; i < g_box_count && !any_hidden; i++) {
+                    if (vb[i]) continue;
+                    Point bp = g_initial_boxes[i];
+                    for (int d = 0; d < DIR_COUNT && !any_hidden; d++) {
+                        Point ap = {bp.x + DIRS[d][0], bp.y + DIRS[d][1]};
+                        if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
+                        if (g_static_walls[ap.x] & (1 << ap.y)) continue;
+                        if (g_dist_map[ap.x][ap.y] < INF) any_hidden = true;
+                    }
+                }
+                for (int i = 0; i < g_target_count && !any_hidden; i++) {
+                    if (vt[i]) continue;
+                    Point tp = g_initial_targets[i];
+                    for (int d = 0; d < DIR_COUNT && !any_hidden; d++) {
+                        Point ap = {tp.x + DIRS[d][0], tp.y + DIRS[d][1]};
+                        if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
+                        if (g_static_walls[ap.x] & (1 << ap.y)) continue;
+                        if (g_dist_map[ap.x][ap.y] < INF) any_hidden = true;
+                    }
+                }
+                if (!any_hidden) break;
+
+                bfs_compute_distances(cp, walls);
+                /* ★ 选最相关的箱子：离剩余元素最近的（用无障碍BFS距离） */
+                int best_bi = -1;
+                uint16_t best_relevance = INF;
+                for (int bi = 0; bi < g_box_count; bi++) {
+                    Point bp = g_initial_boxes[bi];
+                    bool can_push = false;
+                    for (int d = 0; d < DIR_COUNT && !can_push; d++) {
+                        Point ap = {bp.x + DIRS[d][0], bp.y + DIRS[d][1]};
+                        if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
+                        if (g_dist_map[ap.x][ap.y] < INF) can_push = true;
+                    }
+                    if (!can_push) continue;
+                    /* 用 any_hidden 阶段的 BFS 计算箱子到剩余元素的距离 */
+                    uint16_t rel = INF;
+                    for (int i = 0; i < g_box_count; i++) {
+                        if (vb[i]) continue;
+                        Point tbp = g_initial_boxes[i];
+                        uint16_t d = manhattan_distance(bp, tbp);
+                        if (d < rel) rel = d;
+                    }
+                    for (int i = 0; i < g_target_count; i++) {
+                        if (vt[i]) continue;
+                        Point tp = g_initial_targets[i];
+                        uint16_t d = manhattan_distance(bp, tp);
+                        if (d < rel) rel = d;
+                    }
+                    if (rel < best_relevance) { best_relevance = rel; best_bi = bi; }
+                }
+                if (best_bi < 0) { if (!pushed) break; continue; }
+                {
+                    int bi = best_bi;
+                    Point bp = g_initial_boxes[bi];
+
+                    /* ★ 推一格，检查是否打开通路；推后让外层重新扫描 */
+                    {
+                        bool found_dir = false;
+                        int8_t best_dx = 0, best_dy = 0;
+                        uint8_t best_nx = 0, best_ny = 0, best_px = 0, best_py = 0;
+                        uint16_t best_dist = INF;
+                        /* 防振荡：记录最近推过的位置 */
+                        static Point last_from[MAX_BOXES];
+                        static bool last_init = false;
+                        if (!last_init) { for (int li = 0; li < MAX_BOXES; li++) last_from[li] = (Point){0xFF,0xFF}; last_init = true; }
+
+                        for (int d = 0; d < DIR_COUNT; d++) {
+                            int8_t dx = DIRS[d][0], dy = DIRS[d][1];
+                            uint8_t nx = (uint8_t)(bp.x + dx), ny = (uint8_t)(bp.y + dy);
+                            if (nx >= MAP_ROWS || ny >= MAP_COLS) continue;
+                            if (walls[nx] & (1 << ny)) continue;
+                            /* 禁止推回上次推来的位置 */
+                            if (pos_equal((Point){nx, ny}, last_from[bi])) continue;
+                            uint8_t px = (uint8_t)(bp.x - dx), py = (uint8_t)(bp.y - dy);
+                            if (px >= MAP_ROWS || py >= MAP_COLS) continue;
+                            if (walls[px] & (1 << py)) continue;
+                            if (g_dist_map[px][py] == INF) continue;
+                            { uint16_t cw[MAP_ROWS]; memcpy(cw, walls, sizeof(cw));
+                              cw[bp.x] &= (uint16_t)~(1 << bp.y);
+                              if (is_corner_deadlock((Point){nx, ny}, cw)) continue; }
+                            if (g_dist_map[px][py] < best_dist) {
+                                best_dist = g_dist_map[px][py];
+                                best_dx = dx; best_dy = dy;
+                                best_nx = nx; best_ny = ny;
+                                best_px = px; best_py = py;
+                                found_dir = true;
+                            }
+                        }
+                        if (!found_dir) continue;
+
+                        printf("  [ID学习] 推开箱子 (%d,%d)->(%d,%d)\n",
+                            bp.x, bp.y, best_nx, best_ny);
+
+                        /* 记录推箱路径 */
+                        {
+                            Point saved_cp2 = cp;
+                            VisitStep *ps = &g_visit_plan[g_visit_count];
+                            ps->pos = bp;
+                            ps->original_idx = (uint8_t)bi;
+                            ps->type = 0;
+                            Point push_stand = {best_px, best_py};
+                            uint16_t walk_len = simple_astar(saved_cp2, push_stand, walls, ps->path);
+                            if (walk_len == 0 && !pos_equal(saved_cp2, push_stand)) {
+                                ps->path[0] = bp; ps->path_len = 1;
+                            } else {
+                                if (walk_len < MAX_PATH_LEN) {
+                                    ps->path[walk_len] = bp;
+                                    ps->path_len = (uint16_t)(walk_len + 1);
+                                } else { ps->path_len = walk_len; }
+                            }
+                            ps->step_cost = ps->path_len;
+                            ps->angle = 0; ps->direction = DIR_INVALID;
+                            g_visit_count++;
+                        }
+                        /* 记录推前位置，防振荡 */
+                        last_from[bi] = bp;
+                        /* 执行推箱 */
+                        walls[bp.x] &= (uint16_t)~(1 << bp.y);
+                        walls[best_nx] |= (1 << best_ny);
+                        g_initial_boxes[bi].x = best_nx;
+                        g_initial_boxes[bi].y = best_ny;
+                        cp = bp;
+
+                        /* 检查是否打开通路 */
+                        bfs_compute_distances(cp, walls);
+                        bool helps = false;
+                        for (int i = 0; i < g_box_count && !helps; i++) {
+                            if (vb[i]) continue;
+                            Point tbp = g_initial_boxes[i];
+                            for (int dd = 0; dd < DIR_COUNT && !helps; dd++) {
+                                Point ap = {tbp.x + DIRS[dd][0], tbp.y + DIRS[dd][1]};
+                                if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
+                                if (walls[ap.x] & (1 << ap.y)) continue;
+                                if (g_dist_map[ap.x][ap.y] < INF) helps = true;
+                            }
+                        }
+                        for (int i = 0; i < g_target_count && !helps; i++) {
+                            if (vt[i]) continue;
+                            Point tp = g_initial_targets[i];
+                            for (int dd = 0; dd < DIR_COUNT && !helps; dd++) {
+                                Point ap = {tp.x + DIRS[dd][0], tp.y + DIRS[dd][1]};
+                                if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
+                                if (walls[ap.x] & (1 << ap.y)) continue;
+                                if (g_dist_map[ap.x][ap.y] < INF) helps = true;
+                            }
+                        }
+                        if (helps) pushed = true;
+                    }
+                }
+            }
+            #undef MAX_RESCUE
+            if (!pushed) break;
+            continue;
+        }
 
         VisitStep* step = &g_visit_plan[g_visit_count];
         step->pos = ba;
@@ -1656,6 +2118,23 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
         memcpy(tw, walls, sizeof(tw));
         tw[ba.x] &= ~(1 << ba.y);
         step->path_len = simple_astar(cp, ba, tw, step->path);
+        if (step->path_len == 0 && !pos_equal(cp, ba)) {
+            step->path_len = 0;
+        } else if (step->path_len == 0 && pos_equal(cp, ba)) {
+            /* 已在接近位置 → 从前一个 visit 终点补全路径 */
+            Point from = cp;
+            if (g_visit_count > 0) {
+                VisitStep *prev_step = &g_visit_plan[g_visit_count - 1];
+                if (prev_step->path_len > 0)
+                    from = prev_step->path[prev_step->path_len - 1];
+            }
+            uint16_t ftw[MAP_ROWS]; memcpy(ftw, walls, sizeof(ftw));
+            ftw[ba.x] &= ~(1 << ba.y);
+            step->path_len = simple_astar(from, ba, ftw, step->path);
+            if (step->path_len == 0) {
+                step->path[0] = ba; step->path_len = 1;
+            }
+        }
         step->step_cost = step->path_len;
         Point ep = (step->type == BOX) ? g_initial_boxes[bei] : g_initial_targets[bei];
         int8_t dxep = (int8_t)(ep.x - ba.x);
@@ -1666,7 +2145,8 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
         else if (dyep == -1) step->direction = 2;
         else if (dyep == 1)  step->direction = 3;
         else                 step->direction = DIR_INVALID;
-        if (bt == 0) vb[bei] = true; else vt[bei] = true;
+        if (bt == 0) { vb[bei] = true; observed_box++; }
+        else         { vt[bei] = true; observed_tgt++; }
         g_visit_count++;
         cp = ba;
     }
@@ -1797,14 +2277,60 @@ static void extract_look_turn_points(VisitStep* plan) {
     for (int i = 0; i < g_visit_count; i++) {
         if (plan[i].path_len == 0) continue;
         Point prev = (li > 0) ? (Point){g_path_look_out.y[li-1], g_path_look_out.x[li-1]} : plan[i].path[0];
+        /* 若路径只有1点但与 prev 不连续 → 补全间隙（推箱后瞬移导致） */
+        if (plan[i].path_len == 1 && !pos_equal(prev, plan[i].path[0])) {
+            Point gap_path[MAX_PATH_LEN];
+            uint16_t gap_walls[MAP_ROWS];
+            memcpy(gap_walls, g_static_walls, sizeof(gap_walls));
+            uint16_t gap_len = simple_astar(prev, plan[i].path[0], gap_walls, gap_path);
+            if (gap_len > 0) {
+                /* 从 gap 提取转向点（不含终点） */
+                Point gp = prev;
+                for (uint16_t gi = 0; gi < gap_len; gi++) {
+                    Point gc = gap_path[gi];
+                    if (gi < gap_len - 1) {
+                        Point gn = gap_path[gi + 1];
+                        int8_t dx1 = (int8_t)(gc.x - gp.x), dy1 = (int8_t)(gc.y - gp.y);
+                        int8_t dx2 = (int8_t)(gn.x - gc.x), dy2 = (int8_t)(gn.y - gc.y);
+                        if ((dx1 != dx2 || dy1 != dy2) &&
+                            !(li > 0 && g_path_look_out.y[li-1] == gc.x && g_path_look_out.x[li-1] == gc.y)) {
+                            if (li >= MAX_PATH_LEN) break;
+                            g_path_look_out.x[li] = gc.y; g_path_look_out.y[li] = gc.x;
+                            g_path_look_out.angle[li] = 0; g_path_look_out.type[li] = 0;
+                            g_path_look_out.is_look[li] = 0; li++;
+                        }
+                    }
+                    gp = gc;
+                }
+            }
+            /* 记录观测/推箱终点（去重：同位置保留 is_look=1） */
+            if (li < MAX_PATH_LEN) {
+                Point ep = plan[i].path[0];
+                if (li > 0 && g_path_look_out.y[li-1] == ep.x && g_path_look_out.x[li-1] == ep.y) {
+                    if (plan[i].type != 0) { g_path_look_out.is_look[li-1] = 1; g_path_look_out.type[li-1] = plan[i].type; }
+                } else {
+                    g_path_look_out.x[li] = ep.y;
+                    g_path_look_out.y[li] = ep.x;
+                    g_path_look_out.angle[li] = plan[i].angle;
+                    g_path_look_out.type[li] = plan[i].type;
+                    g_path_look_out.is_look[li] = (plan[i].type == 0) ? 0 : 1; li++;
+                }
+            }
+            continue;
+        }
         for (int j = 0; j < plan[i].path_len; j++) {
             Point cur = plan[i].path[j];
             if (j == plan[i].path_len - 1) {
                 if (li >= MAX_PATH_LEN) break;
-                g_path_look_out.x[li] = cur.y; g_path_look_out.y[li] = cur.x;
-                g_path_look_out.angle[li] = plan[i].angle;
-                g_path_look_out.type[li] = plan[i].type;
-                g_path_look_out.is_look[li] = 1; li++;
+                /* 去重：同位置保留 is_look=1 */
+                if (li > 0 && g_path_look_out.y[li-1] == cur.x && g_path_look_out.x[li-1] == cur.y) {
+                    if (plan[i].type != 0) { g_path_look_out.is_look[li-1] = 1; g_path_look_out.type[li-1] = plan[i].type; }
+                } else {
+                    g_path_look_out.x[li] = cur.y; g_path_look_out.y[li] = cur.x;
+                    g_path_look_out.angle[li] = plan[i].angle;
+                    g_path_look_out.type[li] = plan[i].type;
+                    g_path_look_out.is_look[li] = (plan[i].type == 0) ? 0 : 1; li++;
+                }
             } else {
                 Point nxt = plan[i].path[j+1];
                 int8_t dx1 = (int8_t)(cur.x - prev.x), dy1 = (int8_t)(cur.y - prev.y);
@@ -1817,6 +2343,33 @@ static void extract_look_turn_points(VisitStep* plan) {
             }
             prev = cur;
         }
+    }
+    /* 后处理：压缩连续同向推箱点（type=0 且中间点可省略） */
+    if (li >= 3) {
+        int wi = 1; /* 写指针 */
+        for (int ri = 2; ri < li; ri++) {
+            /* 检查 ri-1 是否可压缩：type=0, is_look=0, 且三点共线 */
+            if (g_path_look_out.is_look[ri-1] == 0 && g_path_look_out.type[ri-1] == 0) {
+                int8_t dx1 = (int8_t)(g_path_look_out.x[ri-1] - g_path_look_out.x[ri-2]);
+                int8_t dy1 = (int8_t)(g_path_look_out.y[ri-1] - g_path_look_out.y[ri-2]);
+                int8_t dx2 = (int8_t)(g_path_look_out.x[ri] - g_path_look_out.x[ri-1]);
+                int8_t dy2 = (int8_t)(g_path_look_out.y[ri] - g_path_look_out.y[ri-1]);
+                if (dx1 == dx2 && dy1 == dy2) continue; /* 中间点可省略 */
+            }
+            g_path_look_out.x[wi] = g_path_look_out.x[ri-1];
+            g_path_look_out.y[wi] = g_path_look_out.y[ri-1];
+            g_path_look_out.angle[wi] = g_path_look_out.angle[ri-1];
+            g_path_look_out.type[wi] = g_path_look_out.type[ri-1];
+            g_path_look_out.is_look[wi] = g_path_look_out.is_look[ri-1];
+            wi++;
+        }
+        /* 最后一个点 */
+        g_path_look_out.x[wi] = g_path_look_out.x[li-1];
+        g_path_look_out.y[wi] = g_path_look_out.y[li-1];
+        g_path_look_out.angle[wi] = g_path_look_out.angle[li-1];
+        g_path_look_out.type[wi] = g_path_look_out.type[li-1];
+        g_path_look_out.is_look[wi] = g_path_look_out.is_look[li-1];
+        li = wi + 1;
     }
     g_path_look_out.len = (uint16_t)li;
 }
@@ -4177,14 +4730,49 @@ Path_Start path_start_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
 Path path_calculation(uint8_t box_x[MAP_ROWS][MAP_COLS]) {
     memset(&g_path_out, 0, sizeof(Path));
     parse_map_input(box_x);
+
+    /* ── DEBUG: 地图解析结果 ── */
+    FILE *dbg = fopen("debug_log.txt", "a");
+    fprintf(dbg, "\n===== [DEBUG] 地图解析 =====\n");
+    fprintf(dbg, "玩家: (%d,%d)\n", g_initial_player.x, g_initial_player.y);
+    fprintf(dbg, "箱子: %d 个\n", g_box_count);
+    for (uint8_t bi = 0; bi < g_box_count; bi++)
+        fprintf(dbg, "  箱%d: (%d,%d)\n", bi, g_initial_boxes[bi].x, g_initial_boxes[bi].y);
+    fprintf(dbg, "目标: %d 个\n", g_target_count);
+    for (uint8_t ti = 0; ti < g_target_count; ti++)
+        fprintf(dbg, "  靶%d: (%d,%d)\n", ti, g_initial_targets[ti].x, g_initial_targets[ti].y);
+    fprintf(dbg, "炸弹: %d 个\n", g_bomb_count);
+    fprintf(dbg, "=============================\n");
+
     /* 模式一中炸弹视为墙（不可通行） */
     for (uint8_t b = 0; b < g_bomb_count; b++)
         g_static_walls[g_initial_bombs[b].x] |= (1 << g_initial_bombs[b].y);
     SolutionSequence sol;
     generate_greedy_pairing(&sol);
+
+    /* ── DEBUG: 贪心配对结果 ── */
+    fprintf(dbg, "===== [DEBUG] 贪心配对 =====\n");
+    for (uint8_t p = 0; p < sol.count; p++) {
+        fprintf(dbg, "  箱%d(%d,%d) → 靶%d(%d,%d)\n",
+            sol.pairs[p].box_idx,
+            sol.pairs[p].box_pos.x, sol.pairs[p].box_pos.y,
+            sol.pairs[p].target_idx,
+            sol.pairs[p].target_pos.x, sol.pairs[p].target_pos.y);
+    }
+    fprintf(dbg, "============================\n\n");
+
     g_mode1_strict = true;   /* 模式1：非配对靶位阻挡箱子 */
     validate_solution(&sol);
     g_mode1_strict = false;
+
+    /* ── DEBUG: 验证结果 ── */
+    fprintf(dbg, "===== [DEBUG] 验证结果 =====\n");
+    fprintf(dbg, "有效: %s, 路径长度: %u\n",
+        sol.is_valid ? "是" : "否", sol.full_path_len);
+    if (!sol.is_valid)
+        fprintf(dbg, "*** 失败：回溯验证未找到可行的推箱顺序 ***\n");
+    fprintf(dbg, "============================\n");
+    fclose(dbg);
     if (sol.is_valid && sol.full_path_len > 0) {
         uint16_t len = (sol.full_path_len > MAX_PATH_LEN) ? MAX_PATH_LEN : sol.full_path_len;
         g_path_out.len = len;
@@ -4212,6 +4800,9 @@ Path_Look path_look_calculation(uint8_t box_x[MAP_ROWS][MAP_COLS]) {
  * @brief 记录用户输入的ID（ID模式交互回调）
  */
 void id_input(int id) {
+    /* 跳过推箱步（type=0），找到下一个实际观测步 */
+    while (g_current_step < g_visit_count && g_visit_plan[g_current_step].type == 0)
+        g_current_step++;
     if (g_current_step < g_visit_count) {
         id_record(id);
         g_current_step++;
@@ -4430,12 +5021,12 @@ static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
     {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1},
     {1,0,0,6,0,0,0,1,0,0,0,0,0,0,0,1},
-    {1,0,0,6,0,0,0,1,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,1,0,0,3,0,0,0,0,1},
     {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,3,3,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,3,3,0,0,6,0,0,0,0,1},
     {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1},
     {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1},
-    {1,0,0,2,0,0,0,1,0,0,0,0,0,0,0,1},
+    {1,0,0,2,0,0,0,1,0,6,0,0,0,0,0,1},
     {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1},
     {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
@@ -4444,16 +5035,16 @@ static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
 /* 模式3 含炸弹的测试地图 */
 static uint8_t g_map_test_bomb_complex[MAP_ROWS][MAP_COLS] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,6,6,6,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,7,7,7,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,3,3,3,0,0,1},
-    {1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1},
+    {1,0,0,6,0,0,0,1,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,1,0,0,3,0,0,0,0,1},
+    {1,0,0,0,0,0,0,1,0,1,1,1,0,0,0,1},
+    {1,0,0,0,0,0,3,3,0,1,6,1,0,0,0,1},
+    {1,0,0,0,0,0,0,1,0,7,1,1,0,0,0,1},
+    {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1},
+    {1,0,0,2,0,0,0,1,0,6,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
