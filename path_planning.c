@@ -485,6 +485,9 @@ static AStarResult g_backtrack_ar;                                /* backtrack_v
 static uint8_t g_bomb_saved_map[MAP_ROWS][MAP_COLS];              /* iterative_bomb_breakthrough 地图回退 */
 static uint8_t g_bomb_visited[MAP_ROWS][MAP_COLS];                /* compute_player_bomb_walls */
 
+/* 优化：UNR问题"箱子→目标"可达性缓存（墙只减不增，成功过的箱子不必重算A*） */
+static int8_t g_unr_reach_cache[MAX_PROBLEM_POINTS];             /* -1=未探明, >=0=该箱子可达目标 */
+
 /* ---------- 4.6 推箱验证全局状态 ---------- */
 static bool g_mode1_strict = false;                  /* 模式1严格模式：靶位阻挡箱子 */
 static bool g_solved[MAX_BOXES];                     /* 箱子是否已解决 */
@@ -2733,14 +2736,31 @@ static uint16_t check_problems_resolved_incremental(const uint16_t modified_wall
         }
         if (pp->type & PROBLEM_TARGET_UNREACHABLE) {
             /* 目标不可达：验证是否有箱子能推到该目标 */
+            /* ★ 优化：墙只减不增，上次成功的箱子本次仍可达 → 跳过A*扫描 */
             uint8_t ti = pp->target_indices[0];
             Point tp = g_initial_targets[ti];
             bool any_box_reaches = false;
-            for (uint8_t bi = 0; bi < g_box_count; bi++) {
-                Point bp = g_initial_boxes[bi];
-                if (simulate_box_to_target(bi, tp, modified_walls,
+            int8_t cached = g_unr_reach_cache[pi];
+            if (cached >= 0 && (uint8_t)cached < g_box_count) {
+                /* 快速路径：只检查上次成功的箱子 */
+                Point bp = g_initial_boxes[(uint8_t)cached];
+                if (simulate_box_to_target((uint8_t)cached, tp, modified_walls,
                                             player_pos, bp)) {
-                    any_box_reaches = true; break;
+                    any_box_reaches = true;
+                } else {
+                    /* 缓存失效（箱子被移走等极端情况），回退全扫描 */
+                    cached = -1;
+                }
+            }
+            if (!any_box_reaches) {
+                for (uint8_t bi = 0; bi < g_box_count; bi++) {
+                    Point bp = g_initial_boxes[bi];
+                    if (simulate_box_to_target(bi, tp, modified_walls,
+                                                player_pos, bp)) {
+                        any_box_reaches = true;
+                        g_unr_reach_cache[pi] = (int8_t)bi;  /* 记住成功的箱子 */
+                        break;
+                    }
                 }
             }
             if (!any_box_reaches) resolved = false;
@@ -3541,6 +3561,7 @@ static bool iterative_bomb_breakthrough(const DeadlockResult *deadlock,
     /* 清空验证缓存（迭代过程中墙位图变化，缓存可能误命中） */
     memset(g_vcache_hash, 0, sizeof(g_vcache_hash));
     memset(g_vcache_mask, 0, sizeof(g_vcache_mask));
+    memset(g_unr_reach_cache, -1, sizeof(g_unr_reach_cache));   /* UNR箱子缓存重置 */
 
     memcpy(g_saved_problem_points, g_problem_points, sizeof(DeadlockProblemPoint) * g_problem_count);
     g_saved_problem_count = g_problem_count;
@@ -4348,6 +4369,22 @@ void reset_planning_system(void) {
     memset(g_saved_player_region,  0, sizeof(g_saved_player_region));
     memset(g_vcache_hash, 0, sizeof(g_vcache_hash));
     memset(g_vcache_mask, 0, sizeof(g_vcache_mask));
+
+    /* ── 炸弹模式复用缓冲区（阶段一～三）── */
+    memset(g_bomb_pb,        0, sizeof(g_bomb_pb));
+    memset(g_bomb_t_s,       0, sizeof(g_bomb_t_s));
+    memset(g_bomb_best_s,    0, sizeof(g_bomb_best_s));
+    memset(g_bomb_candidates,0, sizeof(g_bomb_candidates));
+    memset(g_bomb_all_plans, 0, sizeof(g_bomb_all_plans));
+    memset(g_bomb_walls,     0, sizeof(g_bomb_walls));
+    memset(&g_bomb_ppath,    0, sizeof(g_bomb_ppath));
+    memset(&g_bomb_ar,       0, sizeof(g_bomb_ar));
+    memset(&g_backtrack_ar,  0, sizeof(g_backtrack_ar));
+    memset(g_bomb_saved_map, 0, sizeof(g_bomb_saved_map));
+    memset(g_bomb_visited,   0, sizeof(g_bomb_visited));
+
+    /* ── UNR 箱子可达性缓存 ── */
+    memset(g_unr_reach_cache, -1, sizeof(g_unr_reach_cache));
 
     /* ---- 4.6 推箱验证全局状态 ---- */
     memset(g_solved,   0, sizeof(g_solved));
