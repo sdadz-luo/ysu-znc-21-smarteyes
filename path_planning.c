@@ -1953,29 +1953,55 @@ static void compute_player_bomb_walls(uint16_t bomb_walls[MAP_ROWS]) {
 static uint8_t find_enclosing_walls(const uint16_t influence[MAP_ROWS],
     const uint16_t bomb_walls[MAP_ROWS], Point out_walls[], uint8_t max_walls) {
     uint8_t count = 0;
+
+    /* 预计算"真·外侧"：从玩家区域出发，把影响域当墙，能到达的格子才是外侧 */
+    uint16_t exterior[MAP_ROWS];
+    memset(exterior, 0, sizeof(exterior));
+    {
+        uint8_t head = 0, tail = 0;
+        for (uint8_t r = 0; r < MAP_ROWS; r++)
+            for (uint8_t c = 0; c < MAP_COLS; c++)
+                if (g_player_region[r][c] == g_player_region_epoch &&
+                    !is_wall_bit(g_static_walls, (Point){r,c}) &&
+                    !(influence[r] & (1 << c))) {
+                    exterior[r] |= (1 << c);
+                    g_bfs_queue[tail++] = (Point){r, c};
+                }
+        while (head < tail) {
+            Point cur = g_bfs_queue[head++];
+            for (uint8_t d = 0; d < DIR_COUNT; d++) {
+                Point nb = {(uint8_t)(cur.x + DIRS[d][0]), (uint8_t)(cur.y + DIRS[d][1])};
+                if (nb.x >= MAP_ROWS || nb.y >= MAP_COLS) continue;
+                if (exterior[nb.x] & (1 << nb.y)) continue;
+                if (is_wall_bit(g_static_walls, nb)) continue;
+                if (influence[nb.x] & (1 << nb.y)) continue;  /* 影响域当墙 */
+                exterior[nb.x] |= (1 << nb.y);
+                g_bfs_queue[tail++] = nb;
+            }
+        }
+    }
+
     /* 遍历影响域每个格子，检查其4邻域 */
     for (uint8_t r = 1; r < MAP_ROWS - 1; r++) {
         uint16_t row = influence[r];
         if (row == 0) continue;
         for (uint8_t c = 1; c < MAP_COLS - 1; c++) {
-            if (!(row & (1 << c))) continue;  /* 不在影响域内 */
+            if (!(row & (1 << c))) continue;
             for (uint8_t d = 0; d < DIR_COUNT && count < max_walls; d++) {
                 Point nb = {(uint8_t)(r + DIRS[d][0]), (uint8_t)(c + DIRS[d][1])};
                 if (nb.x >= MAP_ROWS || nb.y >= MAP_COLS) continue;
-                /* 邻居是墙，且在 bomb_walls 中已被清除（即可炸墙且玩家可达） */
                 if (!is_wall_bit(g_static_walls, nb)) continue;
-                if (is_wall_bit(bomb_walls, nb)) continue;   /* 未清除，玩家炸不到 */
-                if (!is_breakable_wall(nb)) continue;        /* 不可炸（如地图边界） */
-                /* 必须至少有一侧在影响域外（否则只是内部墙，不是围住墙） */
+                if (is_wall_bit(bomb_walls, nb)) continue;
+                if (!is_breakable_wall(nb)) continue;
+                /* 必须至少一侧在真·外侧（不穿影响域可达玩家） */
                 bool has_outside = false;
                 for (uint8_t wd = 0; wd < DIR_COUNT && !has_outside; wd++) {
                     Point wn = {(uint8_t)(nb.x + DIRS[wd][0]), (uint8_t)(nb.y + DIRS[wd][1])};
-                    if (wn.x >= MAP_ROWS || wn.y >= MAP_COLS) { has_outside = true; continue; }
-                    if (is_wall_bit(g_static_walls, wn)) continue; /* 邻居是墙，不算"外" */
-                    if (!(influence[wn.x] & (1 << wn.y))) has_outside = true; /* 地板且不在影响域 */
+                    if (wn.x >= MAP_ROWS || wn.y >= MAP_COLS) continue;
+                    if (is_wall_bit(g_static_walls, wn)) continue;
+                    if (exterior[wn.x] & (1 << wn.y)) has_outside = true;
                 }
-                if (!has_outside) continue;  /* 四面都在影响域内 → 内部墙，跳过 */
-                /* 去重 */
+                if (!has_outside) continue;
                 bool dup = false;
                 for (uint8_t k = 0; k < count; k++)
                     if (pos_equal(out_walls[k], nb)) { dup = true; break; }
@@ -4366,16 +4392,16 @@ static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
 /* 模式3 含炸弹的测试地图 */
 static uint8_t g_map_test_bomb_complex[MAP_ROWS][MAP_COLS] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,3,3,3,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,7,0,0,0,0,0,1},
-    {1,6,1,1,1,1,1,1,0,0,0,2,0,0,0,1},
-    {1,6,1,1,1,1,1,1,0,7,0,0,0,0,0,1},
-    {1,6,1,1,1,1,1,1,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,7,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,7,0,1},
+    {1,0,0,1,1,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,6,1,0,0,0,0,0,6,6,0,0,0,1},
+    {1,0,0,0,0,0,7,0,0,0,0,0,0,0,0,1},
+    {1,2,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,1,1,0,0,0,0,0,1,1,0,0,0,1},
+    {1,0,0,1,3,0,0,0,0,0,3,1,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
 };
 
