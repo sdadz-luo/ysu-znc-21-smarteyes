@@ -348,13 +348,12 @@ static void process_normal_path(const Path *path, float end_x, float end_y){
             game_over_flag = 1;
             car_state = GameOver;
             return;
+        }else{
+            x_target = (path->x[step] + 0.5f) * x_enc_uint;
+            y_target = (path->y[step] + 0.5f) * y_enc_uint;
+            car_state = Run;
+            return;
         }
-    }
-    if (step <= path->len) {
-        x_target = (path->x[step] + 0.5f) * x_enc_uint;
-        y_target = (path->y[step] + 0.5f) * y_enc_uint;
-        car_state = Run;
-        return;
     }
 }
 
@@ -406,14 +405,12 @@ static void path_process(void){
                 // 起始路径走完，转入 Look 状态识别ID
                 car_state = Look;
                 return;
+            }else{
+                x_target = (path_start_car.x[step] + 0.5f) * x_enc_uint;
+                y_target = (path_start_car.y[step] + 0.5f) * y_enc_uint;
+                car_state = Run;
+                return;
             }
-        }
-
-        if(step < path_start_car.len){
-            x_target = (path_start_car.x[step] + 0.5f) * x_enc_uint;
-            y_target = (path_start_car.y[step] + 0.5f) * y_enc_uint;
-            car_state = Run;
-            return;
         }
     }else if (game_mode == 2 && !map_process_flag && path_look_car.len > 0){
         if ((fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) || yaw_flag == 1) { 
@@ -441,14 +438,12 @@ static void path_process(void){
                 step = 0;
                 car_state = Waiting;
                 return;
+            }else{
+                x_target = (path_look_car.x[step] + 0.5f) * x_enc_uint;
+                y_target = (path_look_car.y[step] + 0.5f) * y_enc_uint;
+                car_state = Run;
+                return;
             }
-        }
-
-        if(step < path_look_car.len){
-            x_target = (path_look_car.x[step] + 0.5f) * x_enc_uint;
-            y_target = (path_look_car.y[step] + 0.5f) * y_enc_uint;
-            car_state = Run;
-            return;
         }
     }else if (game_mode == 3 && !map_process_flag && path_car.len > 0){
         process_normal_path(&path_car, 0.5, 6);
@@ -465,16 +460,13 @@ static void path_process(void){
                 game_mode = 0;
                 car_state = Waiting;
                 return;
+            }else{
+                // 路径点坐标转换为实际坐标 (+0.5 是为了定位到格子中心)
+                x_target = (path_boom_car.x[step] + 0.5f) * x_enc_uint;
+                y_target = (path_boom_car.y[step] + 0.5f) * y_enc_uint;
+                car_state = Run;
+                return;
             }
-        }
-
-        // 更新下一个目标点
-        if(step <= path_boom_car.len){
-            // 路径点坐标转换为实际坐标 (+0.5 是为了定位到格子中心)
-            x_target = (path_boom_car.x[step] + 0.5f) * x_enc_uint;
-            y_target = (path_boom_car.y[step] + 0.5f) * y_enc_uint;
-            car_state = Run;
-            return;
         }
     }
 }

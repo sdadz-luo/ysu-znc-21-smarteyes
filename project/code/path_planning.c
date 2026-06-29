@@ -9,7 +9,7 @@
 __attribute__((section(".bss.SDRAM_CACHE"))) static HashEntry hash_table[MAX_OPENSET];           /* A*哈希表 */
 __attribute__((section(".bss.SDRAM_CACHE"))) static PQNode pq[MAX_PQ_SIZE];                      /* A*优先队列 */
 static uint32_t pq_size = 0;                        /* 优先队列大小 */
-static State g_succ_buf[8];                         /* 后继状态缓冲区 */
+__attribute__((section(".bss.SDRAM_CACHE"))) static State g_succ_buf[8];                         /* 后继状态缓冲区 */
 __attribute__((section(".bss.SDRAM_CACHE"))) static PathNode path_nodes[MAP_ROWS * MAP_COLS * 5];/* A*路径节点池 */
 
 /* ---------- 4.2 simple_astar 最小堆 ---------- */
@@ -18,7 +18,8 @@ static uint32_t s_heap_size = 0;                         /* 堆大小 */
 
 /* ---------- 4.3 共享临时缓冲区 ---------- */
 static uint16_t g_bfs_walls[MAP_ROWS];              /* BFS墙位图 */
-static Point g_bfs_queue[MAP_ROWS * MAP_COLS];      /* BFS/泛洪队列 */
+static uint16_t g_sim_walls[MAP_ROWS];              /* 方案模拟墙位图（复用） */
+__attribute__((section(".bss.SDRAM_CACHE"))) static Point g_bfs_queue[MAP_ROWS * MAP_COLS];      /* BFS/泛洪队列 */
 static Point g_temp_path[MAX_PATH_LEN];              /* 临时路径 */
 static uint8_t g_temp_x[MAX_PATH_LEN];               /* 临时x坐标 */
 static uint8_t g_temp_y[MAX_PATH_LEN];               /* 临时y坐标 */
@@ -42,7 +43,7 @@ static uint16_t g_obs_buf[MAP_ROWS];                 /* 障碍物缓冲区 */
 
 /* 推箱模拟BFS访问标记（epoch技术避免memset） */
 static uint8_t g_bfs_epoch = 1;
-static uint8_t g_bfs_visited[MAP_ROWS * MAP_COLS * MAP_ROWS * MAP_COLS];
+__attribute__((section(".bss.SDRAM_CACHE"))) static uint8_t g_bfs_visited[MAP_ROWS * MAP_COLS * MAP_ROWS * MAP_COLS];
 static uint8_t g_dist_epoch = 1;
 static uint8_t g_dist_epoch_tag[MAP_ROWS][MAP_COLS];
 
@@ -51,6 +52,7 @@ static uint8_t g_vis1[MAP_ROWS][MAP_COLS];           /* 临时访问标记1 */
 static uint8_t g_player_region[MAP_ROWS][MAP_COLS];   /* 玩家可达区域 */
 static uint8_t g_vis1_epoch = 1;
 static uint8_t g_player_region_epoch = 1;
+static uint8_t g_hash_epoch = 1;                       /* 推箱A*哈希表epoch */
 
 /* 死锁待解决点 */
 __attribute__((section(".bss.SDRAM_CACHE"))) static DeadlockProblemPoint g_problem_points[MAX_PROBLEM_POINTS];
@@ -68,6 +70,26 @@ static uint8_t g_saved_player_region[MAP_ROWS][MAP_COLS];
 /* 验证缓存：hash(walls)→resolved_mask */
 static uint32_t g_vcache_hash[VCACHE_SIZE];
 static uint16_t g_vcache_mask[VCACHE_SIZE];
+
+/* ── 炸弹模式复用全局缓冲区（减少栈压）── */
+__attribute__((section(".bss.SDRAM_CACHE"))) static DetonatePlan g_bomb_pb[MAX_BOOMS][MAX_PLANS_PER_BOOM];     /* search_multi_bomb_combination */
+__attribute__((section(".bss.SDRAM_CACHE"))) static BombExecutionStep g_bomb_t_s[MAX_BOOMS];                   /* plan_bomb_execution_sequence */
+__attribute__((section(".bss.SDRAM_CACHE"))) static BombExecutionStep g_bomb_best_s[MAX_BOOMS];                /* plan_bomb_execution_sequence */
+__attribute__((section(".bss.SDRAM_CACHE"))) static DetonatePlan g_bomb_candidates[MAX_DETONATE_POINTS];       /* iterative_bomb_breakthrough */
+__attribute__((section(".bss.SDRAM_CACHE"))) static DetonatePlan g_bomb_all_plans[MAX_DETONATE_POINTS];        /* fallback */
+__attribute__((section(".bss.SDRAM_CACHE"))) static BreakableWall g_bomb_walls[MAX_BREAK_WALLS];               /* 通用墙收集 */
+
+/* 阶段二：炸弹推送路径 & A* 结果复用 */
+__attribute__((section(".bss.SDRAM_CACHE"))) static BombPushPath g_bomb_ppath;                                 /* try_execute_step */
+__attribute__((section(".bss.SDRAM_CACHE"))) static AStarResult g_bomb_ar;                                     /* compute_one_bomb_push / verify */
+
+/* 阶段三：回溯验证 & 地图保存复用 */
+__attribute__((section(".bss.SDRAM_CACHE"))) static AStarResult g_backtrack_ar;                                /* backtrack_validate (递归) */
+static uint8_t g_bomb_saved_map[MAP_ROWS][MAP_COLS];              /* iterative_bomb_breakthrough 地图回退 */
+static uint8_t g_bomb_visited[MAP_ROWS][MAP_COLS];                /* compute_player_bomb_walls */
+
+/* 优化：UNR问题"箱子→目标"可达性缓存（墙只减不增，成功过的箱子不必重算A*） */
+static int8_t g_unr_reach_cache[MAX_PROBLEM_POINTS];             /* -1=未探明, >=0=该箱子可达目标 */
 
 /* ---------- 4.6 推箱验证全局状态 ---------- */
 static bool g_mode1_strict = false;                  /* 模式1严格模式：靶位阻挡箱子 */
@@ -89,18 +111,17 @@ static Path_Look g_path_look_out = {0};              /* ID模式输出 */
 
 /* ---------- 4.8 ID模式状态 ---------- */
 static uint16_t g_dist_map[MAP_ROWS][MAP_COLS];      /* BFS距离图 */
-static VisitStep g_visit_plan[MAX_VISIT_STEPS];       /* 访问计划 */
+__attribute__((section(".bss.SDRAM_CACHE"))) static VisitStep g_visit_plan[MAX_VISIT_STEPS];       /* 访问计划 */
 static uint8_t g_visit_count = 0;                    /* 访问计数 */
 static uint8_t g_current_step = 0;                   /* 当前步骤 */
 static int8_t g_id_pairing[MAX_IDS];                  /* ID配对表 */
 static int8_t g_box_id_map[MAX_BOXES];                /* 箱子ID映射 */
 static int8_t g_target_id_map[MAX_BOXES];             /* 目标ID映射 */
-static SolutionSequence g_id_based_sol;               /* ID方案 */
+__attribute__((section(".bss.SDRAM_CACHE"))) static SolutionSequence g_id_based_sol;               /* ID方案 */
 
 /* ---------- 4.9 模式3最终地图 ---------- */
 static uint16_t g_boom_final_walls[MAP_ROWS];        /* 引爆后最终墙位图 */
 static uint8_t  g_boom_used_mask;                    /* 已使用炸弹位掩码 */
-
 
 /* ===================================================================
  * 第5部分：工具函数
@@ -188,6 +209,51 @@ static bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]) {
     return (up && left) || (up && right) || (down && left) || (down && right);
 }
 
+/**
+ * @brief 检测角落死锁是否为"软死锁"——被未推动箱子堵住（可先推挡路箱解除）
+ *
+ * 硬死锁 = 堵路来源均为静态墙 → 永久放弃
+ * 软死锁 = 某方向堵路来源是另一个未推动的箱子 → 推走挡路箱后本箱不再死锁
+ *
+ * @param box        待检测箱子位置
+ * @param walls      当前障碍物位图（含其他箱子的位置）
+ * @param solved     哪些箱子已解决
+ * @param out_blocker_idx  输出：挡路箱子的 box_idx
+ * @return true=软死锁（out_blocker_idx 有效），false=硬死锁或无死锁
+ */
+static bool is_soft_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS],
+    const bool solved[MAX_BOXES], uint8_t *out_blocker_idx) {
+    bool up    = is_wall_bit(walls, (Point){box.x - 1, box.y});
+    bool down  = is_wall_bit(walls, (Point){box.x + 1, box.y});
+    bool left  = is_wall_bit(walls, (Point){box.x, box.y - 1});
+    bool right = is_wall_bit(walls, (Point){box.x, box.y + 1});
+
+    if (!((up && left) || (up && right) || (down && left) || (down && right)))
+        return false;
+
+    Point neighbors[4] = {
+        {box.x - 1, box.y}, {box.x + 1, box.y},
+        {box.x, box.y - 1}, {box.x, box.y + 1}
+    };
+    bool blocked[4] = {up, down, left, right};
+
+    for (int d = 0; d < 4; d++) {
+        if (!blocked[d]) continue;
+        uint8_t nx = neighbors[d].x, ny = neighbors[d].y;
+        if (nx >= MAP_ROWS || ny >= MAP_COLS) continue;
+        /* 静态墙 → 跳过，检查是否为未推箱子 */
+        if (g_static_walls[nx] & (1 << ny)) continue;
+        for (uint8_t bi = 0; bi < g_box_count; bi++) {
+            if (solved[bi]) continue;
+            if (g_initial_boxes[bi].x == nx && g_initial_boxes[bi].y == ny) {
+                *out_blocker_idx = bi;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /* ---------- 5.4 哈希表操作（推箱A*状态去重） ---------- */
 
 /**
@@ -200,7 +266,6 @@ static uint32_t hash_state(const State *s) {
     h = ((h << 5) + h) ^ (uint32_t)s->box.x;
     h = ((h << 5) + h) ^ (uint32_t)s->box.y;
     h = ((h << 5) + h) ^ (uint32_t)s->last_dir;
-    for (int i = 0; i < MAP_ROWS; i++) h = ((h << 5) + h) ^ (uint32_t)s->wall_bitmap[i];
     return h % MAX_OPENSET;
 }
 
@@ -224,18 +289,18 @@ static int32_t hash_lookup_insert(const State *s, uint16_t g, int32_t from, uint
     uint32_t h = hash_state(s);
     uint32_t idx = h;
     uint32_t probe_cnt = 0;
-    while (hash_table[idx].used && probe_cnt < MAX_OPENSET) {
+    while (hash_table[idx].used == g_hash_epoch && probe_cnt < MAX_OPENSET) {
         probe_cnt++;
         if (state_equal(&hash_table[idx].state, s)) return (int32_t)idx;
         idx = (idx + 1) % MAX_OPENSET;
         if (idx == h) return -2;
     }
     if (!insert) return -1;
-    if (!hash_table[idx].used) {
-        hash_table[idx].used = 1;
+    if (hash_table[idx].used != g_hash_epoch) {
+        hash_table[idx].used = g_hash_epoch;
         hash_table[idx].state = *s;
         hash_table[idx].g = g;
-        hash_table[idx].came_from = from;
+        hash_table[idx].came_from = (uint16_t)from;
         return (int32_t)idx;
     }
     return -2;
@@ -329,9 +394,7 @@ static void get_successors(const State *cur, State *res, uint8_t *cnt) {
  * @brief 从起点BFS计算到地图所有格子的距离
  */
 static void bfs_compute_distances(Point start, const uint16_t walls[MAP_ROWS]) {
-    for (int i = 0; i < MAP_ROWS; i++)
-        for (int j = 0; j < MAP_COLS; j++)
-            g_dist_map[i][j] = INF;
+    memset(g_dist_map, 0xFF, sizeof(g_dist_map)); /* INF=0xFFFF */
     int head = 0, tail = 0;
     g_dist_map[start.x][start.y] = 0;
     g_bfs_queue[tail++] = start;
@@ -419,29 +482,31 @@ static uint32_t hash_walls(const uint16_t walls[MAP_ROWS]) {
 }
 
 /**
- * @brief 判断可炸墙（非边界、至少有一个非墙邻格）
+ * @brief 判断可炸墙（自定义墙位图版）
+ * @param pos   墙位置
+ * @param walls 自定义墙位图
  */
-static bool is_breakable_wall(Point pos) {
-    if (!is_wall_bit(g_static_walls, pos)) return false;
+static bool is_breakable_wall_on(Point pos, const uint16_t walls[MAP_ROWS]) {
+    if (!is_wall_bit(walls, pos)) return false;
     if (pos.x == 0 || pos.x == MAP_ROWS - 1 || pos.y == 0 || pos.y == MAP_COLS - 1) return false;
     for (uint8_t d = 0; d < DIR_COUNT; d++) {
         Point adj = {(uint8_t)(pos.x + DIRS[d][0]), (uint8_t)(pos.y + DIRS[d][1])};
         if (adj.x >= MAP_ROWS || adj.y >= MAP_COLS) continue;
-        if (!is_wall_bit(g_static_walls, adj)) return true;
+        if (!is_wall_bit(walls, adj)) return true;
     }
     return false;
 }
 
 /**
- * @brief 爆炸点有效性检查
+ * @brief 爆炸点有效性检查（自定义墙位图版）
  */
-static bool is_valid_detonation_point(Point pos) {
+static bool is_valid_detonation_point_on(Point pos, const uint16_t walls[MAP_ROWS]) {
     if (pos.x >= MAP_ROWS || pos.y >= MAP_COLS) return false;
-    if (!is_breakable_wall(pos)) return false;
+    if (!is_breakable_wall_on(pos, walls)) return false;
     for (uint8_t d = 0; d < DIR_COUNT; d++) {
         Point adj = {(uint8_t)(pos.x + DIRS[d][0]), (uint8_t)(pos.y + DIRS[d][1])};
         if (adj.x >= MAP_ROWS || adj.y >= MAP_COLS) continue;
-        if (is_wall_bit(g_static_walls, adj)) continue;
+        if (is_wall_bit(walls, adj)) continue;
         return true;
     }
     return false;
@@ -457,26 +522,22 @@ static inline bool can_explosion_cover_wall(Point detonate_pos, Point target_wal
 }
 
 /**
- * @brief 估算推炸弹距离（BFS最短路径，考虑墙壁/箱子/其他炸弹）
- * 
- * BFS 计算炸弹从当前位置到引爆点的最短行走距离。
- * 障碍物：静态墙 + 所有箱子 + 其他炸弹。
- * 引爆点临时清除（炸弹需要推进去）。
- * 
- * @return BFS最短距离；不可达返回 INF
+ * @brief 估算推炸弹距离（自定义墙位图/活跃炸弹版）
  */
-static uint16_t estimate_bomb_push_distance(Point bomb_pos, Point detonate_pos, Point player_pos) {
+static uint16_t estimate_bomb_push_distance_on(Point bomb_pos, Point detonate_pos,
+    Point player_pos, const uint16_t walls[MAP_ROWS], const bool active_bombs[MAX_BOOMS]) {
     if (bomb_pos.x == detonate_pos.x && bomb_pos.y == detonate_pos.y) return 0;
 
-    /* 构建玩家BFS障碍物：墙 + 箱子 + 所有炸弹 */
     uint16_t player_obs[MAP_ROWS];
-    memcpy(player_obs, g_static_walls, sizeof(player_obs));
+    memcpy(player_obs, walls, sizeof(player_obs));
     for (uint8_t i = 0; i < g_box_count; i++)
         player_obs[g_initial_boxes[i].x] |= (1 << g_initial_boxes[i].y);
-    for (uint8_t i = 0; i < g_bomb_count; i++)
+    for (uint8_t i = 0; i < g_bomb_count; i++) {
+        if (active_bombs && !active_bombs[i]) continue;
+        if (g_initial_bombs[i].x == BOMB_INVALID) continue;
         player_obs[g_initial_bombs[i].x] |= (1 << g_initial_bombs[i].y);
+    }
 
-    /* 玩家到炸弹邻格的最短距离 */
     uint16_t player_dist = INF;
     {
         g_dist_epoch++;
@@ -490,7 +551,6 @@ static uint16_t estimate_bomb_push_distance(Point bomb_pos, Point detonate_pos, 
         while (head < tail) {
             Point cur = g_bfs_queue[head++];
             uint16_t cd = g_dist_map[cur.x][cur.y];
-            /* 检查是否到达炸弹邻格 */
             for (uint8_t d = 0; d < DIR_COUNT; d++) {
                 if (cur.x == (uint8_t)(bomb_pos.x + DIRS[d][0]) &&
                     cur.y == (uint8_t)(bomb_pos.y + DIRS[d][1])) {
@@ -511,19 +571,18 @@ static uint16_t estimate_bomb_push_distance(Point bomb_pos, Point detonate_pos, 
     }
     if (player_dist == INF) return INF;
 
-    /* 构建炸弹BFS障碍物：墙 + 箱子 + 其他炸弹（排除自身） */
     uint16_t obs[MAP_ROWS];
-    memcpy(obs, g_static_walls, sizeof(obs));
+    memcpy(obs, walls, sizeof(obs));
     for (uint8_t i = 0; i < g_box_count; i++)
         obs[g_initial_boxes[i].x] |= (1 << g_initial_boxes[i].y);
     for (uint8_t i = 0; i < g_bomb_count; i++) {
         if (g_initial_bombs[i].x == bomb_pos.x && g_initial_bombs[i].y == bomb_pos.y) continue;
+        if (active_bombs && !active_bombs[i]) continue;
+        if (g_initial_bombs[i].x == BOMB_INVALID) continue;
         obs[g_initial_bombs[i].x] |= (1 << g_initial_bombs[i].y);
     }
-    /* 引爆点是墙格，但炸弹需要推进去，临时清除 */
     obs[detonate_pos.x] &= (uint16_t)~(1 << detonate_pos.y);
 
-    /* BFS 炸弹到引爆点 */
     g_dist_epoch++;
     if (g_dist_epoch == 0) { memset(g_dist_epoch_tag, 0, sizeof(g_dist_epoch_tag)); g_dist_epoch = 1; }
 
@@ -537,7 +596,6 @@ static uint16_t estimate_bomb_push_distance(Point bomb_pos, Point detonate_pos, 
         Point cur = g_bfs_queue[head++];
         if (cur.x == detonate_pos.x && cur.y == detonate_pos.y)
             { bomb_dist = g_dist_map[cur.x][cur.y]; break; }
-
         uint16_t cd = g_dist_map[cur.x][cur.y];
         for (uint8_t d = 0; d < DIR_COUNT; d++) {
             Point nxt = {(uint8_t)(cur.x + DIRS[d][0]), (uint8_t)(cur.y + DIRS[d][1])};
@@ -552,6 +610,16 @@ static uint16_t estimate_bomb_push_distance(Point bomb_pos, Point detonate_pos, 
     if (bomb_dist == INF) return INF;
     return (uint16_t)(player_dist + bomb_dist);
 }
+
+/**
+ * @brief 估算推炸弹距离（自定义墙位图版）
+ * 
+ * BFS 计算炸弹从当前位置到引爆点的最短行走距离。
+ * 障碍物：静态墙 + 所有箱子 + 其他炸弹。
+ * 引爆点临时清除（炸弹需要推进去）。
+ * 
+ * @return BFS最短距离；不可达返回 INF
+ */
 
 /**
  * @brief 根据接近位置与元素的相对偏移计算观察角度
@@ -712,9 +780,15 @@ static AStarResult solve_single_box_a_star(Point player, Point box, Point target
     result.cost = -1;
     result.final_player_pos = player;
 
-    memset(hash_table, 0, sizeof(hash_table));
     memset(pq, 0, sizeof(pq));
     pq_size = 0;
+
+    /* 增量哈希：推进epoch，如回绕则全量清零 */
+    g_hash_epoch++;
+    if (g_hash_epoch == 0) {
+        memset(hash_table, 0, sizeof(hash_table));
+        g_hash_epoch = 1;
+    }
 
     State start;
     memset(&start, 0, sizeof(State));
@@ -761,7 +835,7 @@ static AStarResult solve_single_box_a_star(Point player, Point box, Point target
 
     int len = 0;
     int32_t idx = goal_idx;
-    while (idx != -1 && len < MAX_PATH_LEN) {
+    while (idx != (int32_t)UINT16_MAX && len < MAX_PATH_LEN) {
         g_temp_path[len].x = hash_table[idx].state.player.x;
         g_temp_path[len].y = hash_table[idx].state.player.y;
         len++; idx = hash_table[idx].came_from;
@@ -938,9 +1012,7 @@ static bool backtrack_validate(SolutionSequence* sol) {
             Point p = sol->pairs[g_remaining[i]].box_pos;
             g_bfs_walls[p.x] |= (1 << p.y);
         }
-        for (int i = 0; i < MAP_ROWS; i++)
-            for (int j = 0; j < MAP_COLS; j++)
-                g_dist_map[i][j] = INF;
+        memset(g_dist_map, 0xFF, sizeof(g_dist_map));
         int head = 0, tail = 0;
         g_dist_map[g_current_player_pos.x][g_current_player_pos.y] = 0;
         g_bfs_queue[tail++] = g_current_player_pos;
@@ -983,8 +1055,8 @@ static bool backtrack_validate(SolutionSequence* sol) {
 
         memcpy(g_current_walls, g_static_walls, sizeof(g_current_walls));
         /* 构建障碍物：其他箱子 + 会吸收当前箱子的非配对靶位
-           模式1：所有靶位都吸收 → 阻挡全部非配对靶位
-           模式2：仅同ID靶位吸收 → 仅阻挡同ID的非配对靶位 */
+            模式1：所有靶位都吸收 → 阻挡全部非配对靶位
+            模式2：仅同ID靶位吸收 → 仅阻挡同ID的非配对靶位 */
         {
             int8_t my_id = g_box_id_map[sol->pairs[try_idx].box_idx];
             for (uint8_t m = 0; m < g_remaining_cnt; m++) {
@@ -1000,15 +1072,237 @@ static bool backtrack_validate(SolutionSequence* sol) {
             }
         }
 
-        if (!pos_equal(cur_box, cur_target) && is_corner_deadlock(cur_box, g_current_walls))
-            continue;
+        if (!pos_equal(cur_box, cur_target) && is_corner_deadlock(cur_box, g_current_walls)) {
+            uint8_t blocker_idx;
+            if (is_soft_corner_deadlock(cur_box, g_current_walls, g_solved, &blocker_idx)) {
+                /* ── 软死锁：挡路的是未推箱子 → 尝试推开一格让路 ── */
+                /* 找到挡路箱在当前 sol 中的配对下标 */
+                int8_t blocker_pair = -1;
+                for (uint8_t m = 0; m < sol->count; m++)
+                    if (sol->pairs[m].box_idx == blocker_idx) { blocker_pair = (int8_t)m; break; }
+                if (blocker_pair < 0 || g_solved[blocker_pair]) {
+                    continue;
+                }
 
-        AStarResult res = solve_single_box_a_star(g_current_player_pos, cur_box, cur_target, g_current_walls);
-        if (!res.success) continue;
+                Point bbox = sol->pairs[blocker_pair].box_pos;
+
+                /* ── 保存状态 ── */
+                Point saved_player2 = g_current_player_pos;
+                int saved_cost2 = g_total_cost;
+                uint16_t saved_len2 = g_fullpath_len;
+                Point old_blocker_pos = bbox;
+                Point current_blocker = bbox;
+
+                /*
+                 * 迭代推开挡路箱：每次推一格，直到本箱死锁解除或无路可走。
+                 * 最多迭代 MAX_ITER_PUSH 次，防止无限循环。
+                 */
+                bool deadlock_broken = false;
+                int push_count = 0;
+                #define MAX_ITER_PUSH 10
+
+                while (!deadlock_broken && push_count < MAX_ITER_PUSH) {
+                    /* 在 current_blocker 周围找最佳可推方向 */
+                    bool found = false;
+                    Point best_dir = {0, 0}, best_dest = {0, 0};
+                    uint16_t best_dist = INF;
+
+                    for (int d = 0; d < DIR_COUNT; d++) {
+                        int8_t dx = DIRS[d][0], dy = DIRS[d][1];
+                        uint8_t nx = (uint8_t)(current_blocker.x + dx), ny = (uint8_t)(current_blocker.y + dy);
+                        if (nx >= MAP_ROWS || ny >= MAP_COLS) continue;
+                        if (g_static_walls[nx] & (1 << ny)) continue;
+                        /* 不能推回旧位置（防止来回振荡） */
+                        if (push_count > 0 && nx == old_blocker_pos.x && ny == old_blocker_pos.y) continue;
+                        /* 目标格不能有其他箱子 */
+                        bool occupied = false;
+                        for (uint8_t m = 0; m < g_remaining_cnt && !occupied; m++) {
+                            uint8_t pi = g_remaining[m];
+                            if ((int8_t)pi == blocker_pair || g_solved[pi]) continue;
+                            if (sol->pairs[pi].box_pos.x == nx && sol->pairs[pi].box_pos.y == ny)
+                                occupied = true;
+                        }
+                        if (occupied) continue;
+                        if (nx == cur_box.x && ny == cur_box.y) continue;
+                        /* ★ 不能把挡路箱推到死锁位置 */
+                        {
+                            uint16_t check_walls[MAP_ROWS];
+                            memcpy(check_walls, g_static_walls, sizeof(check_walls));
+                            for (uint8_t m = 0; m < g_remaining_cnt; m++) {
+                                uint8_t pi = g_remaining[m];
+                                if ((int8_t)pi == blocker_pair || g_solved[pi]) continue;
+                                Point obs = sol->pairs[pi].box_pos;
+                                if (obs.x == current_blocker.x && obs.y == current_blocker.y) continue;
+                                check_walls[obs.x] |= (1 << obs.y);
+                            }
+                            Point dest = {nx, ny};
+                            if (!pos_equal(dest, sol->pairs[blocker_pair].target_pos) &&
+                                is_corner_deadlock(dest, check_walls)) continue;
+                        }
+                        /* 玩家推箱站位 */
+                        uint8_t px = (uint8_t)(current_blocker.x - dx), py = (uint8_t)(current_blocker.y - dy);
+                        if (px >= MAP_ROWS || py >= MAP_COLS) continue;
+                        if (g_static_walls[px] & (1 << py)) continue;
+                        bool pbox = false;
+                        if (px == cur_box.x && py == cur_box.y) pbox = true;
+                        for (uint8_t m = 0; m < g_remaining_cnt && !pbox; m++) {
+                            uint8_t pi = g_remaining[m];
+                            if (g_solved[pi]) continue;
+                            if (sol->pairs[pi].box_pos.x == px && sol->pairs[pi].box_pos.y == py)
+                                pbox = true;
+                        }
+                        if (pbox) continue;
+                        uint16_t dist = g_dist_map[px][py];
+                        if (dist == INF) continue;
+                        if (dist < best_dist) {
+                            best_dist = dist;
+                            best_dir.x = (uint8_t)dx; best_dir.y = (uint8_t)dy;
+                            best_dest.x = nx; best_dest.y = ny;
+                            found = true;
+                        }
+                    }
+
+                    if (!found) {
+                        break;
+                    }
+
+                    /* 构建挡路箱障碍物（排除挡路箱自身） */
+                    uint16_t blocker_walls[MAP_ROWS];
+                    memcpy(blocker_walls, g_static_walls, sizeof(blocker_walls));
+                    {
+                        int8_t bid = g_box_id_map[blocker_idx];
+                        for (uint8_t m = 0; m < g_remaining_cnt; m++) {
+                            uint8_t pi = g_remaining[m];
+                            if ((int8_t)pi == blocker_pair || g_solved[pi]) continue;
+                            Point obs = sol->pairs[pi].box_pos;
+                            blocker_walls[obs.x] |= (1 << obs.y);
+                            if (g_mode1_strict ||
+                                (bid != -1 && g_target_id_map[sol->pairs[pi].target_idx] == bid)) {
+                                Point tp = sol->pairs[pi].target_pos;
+                                blocker_walls[tp.x] |= (1 << tp.y);
+                            }
+                        }
+                    }
+
+                    AStarResult push_ar = solve_single_box_a_star(
+                        g_current_player_pos, current_blocker, best_dest, blocker_walls);
+                    if (!push_ar.success) {
+                        break;
+                    }
+
+                    /* 执行这一步推动 */
+                    sol->pairs[blocker_pair].box_pos = best_dest;
+                    g_current_player_pos = push_ar.final_player_pos;
+                    g_total_cost += push_ar.cost;
+                    {
+                        uint16_t si = 0;
+                        if (g_fullpath_len > 0 &&
+                            pos_equal(g_fullpath[g_fullpath_len-1], push_ar.path_points[0]))
+                            si = 1;
+                        uint16_t add = (uint16_t)(push_ar.path_len - si);
+                        if (g_fullpath_len + add <= MAX_PATH_LEN)
+                            for (uint16_t i = si; i < push_ar.path_len; i++)
+                                g_fullpath[g_fullpath_len++] = push_ar.path_points[i];
+                    }
+
+                    current_blocker = best_dest;
+                    push_count++;
+
+                    /* 重建本箱障碍物，检查死锁是否解除 */
+                    memcpy(g_current_walls, g_static_walls, sizeof(g_current_walls));
+                    {
+                        int8_t my_id2 = g_box_id_map[sol->pairs[try_idx].box_idx];
+                        for (uint8_t m = 0; m < g_remaining_cnt; m++) {
+                            uint8_t pi = g_remaining[m];
+                            if (pi == try_idx || g_solved[pi]) continue;
+                            Point obs = sol->pairs[pi].box_pos;
+                            g_current_walls[obs.x] |= (1 << obs.y);
+                            if (g_mode1_strict ||
+                                (my_id2 != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id2)) {
+                                Point tp = sol->pairs[pi].target_pos;
+                                g_current_walls[tp.x] |= (1 << tp.y);
+                            }
+                        }
+                    }
+
+                    deadlock_broken = (!pos_equal(cur_box, cur_target) &&
+                        !is_corner_deadlock(cur_box, g_current_walls));
+                }
+                #undef MAX_ITER_PUSH
+
+                if (deadlock_broken) {
+                    g_backtrack_ar = solve_single_box_a_star(
+                        g_current_player_pos, cur_box, cur_target, g_current_walls);
+                    if (g_backtrack_ar.success) {
+                        /* 事后验证本箱 */
+                        {
+                            int8_t mid = g_box_id_map[sol->pairs[try_idx].box_idx];
+                            uint16_t forbid[MAP_ROWS] = {0};
+                            for (uint8_t m = 0; m < sol->count; m++) {
+                                if (m == try_idx || g_solved[m]) continue;
+                                uint8_t ti = sol->pairs[m].target_idx;
+                                if (g_mode1_strict ||
+                                    (mid != -1 && g_target_id_map[ti] == mid))
+                                    forbid[sol->pairs[m].target_pos.x] |= (1 << sol->pairs[m].target_pos.y);
+                            }
+                            Point sim = cur_box; bool valid = true;
+                            for (uint16_t i = 0; i < g_backtrack_ar.path_len && valid; i++) {
+                                if (pos_equal(g_backtrack_ar.path_points[i], sim)) {
+                                    if (i > 0) {
+                                        int8_t dx = (int8_t)(g_backtrack_ar.path_points[i].x - g_backtrack_ar.path_points[i-1].x);
+                                        int8_t dy = (int8_t)(g_backtrack_ar.path_points[i].y - g_backtrack_ar.path_points[i-1].y);
+                                        sim.x = (uint8_t)(sim.x + dx); sim.y = (uint8_t)(sim.y + dy);
+                                        if (!pos_equal(sim, cur_target) && (forbid[sim.x] & (1 << sim.y)))
+                                            valid = false;
+                                    }
+                                }
+                            }
+                            if (valid) {
+                                g_solved[try_idx] = true;
+                                g_solve_order[g_order_idx++] = try_idx;
+                                g_current_player_pos = g_backtrack_ar.final_player_pos;
+                                g_total_cost += g_backtrack_ar.cost;
+                                {
+                                    uint16_t si = 0;
+                                    if (g_fullpath_len > 0 &&
+                                        pos_equal(g_fullpath[g_fullpath_len-1], g_backtrack_ar.path_points[0]))
+                                        si = 1;
+                                    uint16_t add = (uint16_t)(g_backtrack_ar.path_len - si);
+                                    if (g_fullpath_len + add <= MAX_PATH_LEN)
+                                        for (uint16_t i = si; i < g_backtrack_ar.path_len; i++)
+                                            g_fullpath[g_fullpath_len++] = g_backtrack_ar.path_points[i];
+                                }
+                                if (backtrack_validate(sol)) return true;
+                                /* 回溯本箱 */
+                                g_solved[try_idx] = false;
+                                g_order_idx--;
+                                g_total_cost -= g_backtrack_ar.cost;
+                                g_fullpath_len -= (uint16_t)(g_backtrack_ar.path_len -
+                                    (g_fullpath_len > 0 && pos_equal(g_fullpath[g_fullpath_len-1], g_backtrack_ar.path_points[0]) ? 1 : 0));
+                            }
+                        }
+                    }
+                }
+
+                /* 恢复挡路箱位置和状态 */
+                sol->pairs[blocker_pair].box_pos = old_blocker_pos;
+                g_current_player_pos = saved_player2;
+                g_total_cost = saved_cost2;
+                g_fullpath_len = saved_len2;
+                continue;
+            } else {
+                continue;
+            }
+        }
+
+        g_backtrack_ar = solve_single_box_a_star(g_current_player_pos, cur_box, cur_target, g_current_walls);
+        if (!g_backtrack_ar.success) {
+            continue;
+        }
 
         /* 事后验证：箱子不穿越会吸收它的非配对靶位（位图 O(1) 查表）
-           模式1：所有靶位都吸收 → 检查全部非配对靶位
-           模式2：仅同ID靶位吸收 → 仅检查同ID的非配对靶位 */
+            模式1：所有靶位都吸收 → 检查全部非配对靶位
+            模式2：仅同ID靶位吸收 → 仅检查同ID的非配对靶位 */
         {
             int8_t my_id = g_box_id_map[sol->pairs[try_idx].box_idx];
             uint16_t forbid_targets[MAP_ROWS] = {0};
@@ -1022,11 +1316,11 @@ static bool backtrack_validate(SolutionSequence* sol) {
 
             Point sim_box = cur_box;
             bool box_path_valid = true;
-            for (uint16_t i = 0; i < res.path_len && box_path_valid; i++) {
-                if (pos_equal(res.path_points[i], sim_box)) {
+            for (uint16_t i = 0; i < g_backtrack_ar.path_len && box_path_valid; i++) {
+                if (pos_equal(g_backtrack_ar.path_points[i], sim_box)) {
                     if (i > 0) {
-                        int8_t pdx = (int8_t)(res.path_points[i].x - res.path_points[i - 1].x);
-                        int8_t pdy = (int8_t)(res.path_points[i].y - res.path_points[i - 1].y);
+                        int8_t pdx = (int8_t)(g_backtrack_ar.path_points[i].x - g_backtrack_ar.path_points[i - 1].x);
+                        int8_t pdy = (int8_t)(g_backtrack_ar.path_points[i].y - g_backtrack_ar.path_points[i - 1].y);
                         sim_box.x = (uint8_t)(sim_box.x + pdx);
                         sim_box.y = (uint8_t)(sim_box.y + pdy);
                         if (!pos_equal(sim_box, cur_target) &&
@@ -1035,7 +1329,9 @@ static bool backtrack_validate(SolutionSequence* sol) {
                     }
                 }
             }
-            if (!box_path_valid) continue;
+            if (!box_path_valid) {
+                continue;
+            }
         }
 
         g_solved[try_idx] = true;
@@ -1044,16 +1340,16 @@ static bool backtrack_validate(SolutionSequence* sol) {
         int saved_cost = g_total_cost;
         uint16_t saved_len = g_fullpath_len;
 
-        g_current_player_pos = res.final_player_pos;
-        g_total_cost += res.cost;
+        g_current_player_pos = g_backtrack_ar.final_player_pos;
+        g_total_cost += g_backtrack_ar.cost;
 
         uint16_t start_idx = 0;
-        if (g_fullpath_len > 0 && pos_equal(g_fullpath[g_fullpath_len - 1], res.path_points[0]))
+        if (g_fullpath_len > 0 && pos_equal(g_fullpath[g_fullpath_len - 1], g_backtrack_ar.path_points[0]))
             start_idx = 1;
-        uint16_t add_len = (uint16_t)(res.path_len - start_idx);
+        uint16_t add_len = (uint16_t)(g_backtrack_ar.path_len - start_idx);
         if (g_fullpath_len + add_len <= MAX_PATH_LEN) {
-            for (uint16_t i = start_idx; i < res.path_len; i++)
-                g_fullpath[g_fullpath_len++] = res.path_points[i];
+            for (uint16_t i = start_idx; i < g_backtrack_ar.path_len; i++)
+                g_fullpath[g_fullpath_len++] = g_backtrack_ar.path_points[i];
         }
 
         if (backtrack_validate(sol)) return true;
@@ -1150,21 +1446,22 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
         tcp = ba;
     }
 
-    /* 第二阶段：生成访问计划（排除最后一个） */
+    /* 第二阶段：目标观测 n-1 个箱子和 n-1 个靶位。
+     * 不预先排除任何元素，靠推箱开路尽量达成。推箱失败则接受部分结果。 */
     bool vb[MAX_BOXES] = {false}, vt[MAX_BOXES] = {false};
-    if (last_box >= 0)    vb[last_box] = true;
-    if (last_target >= 0) vt[last_target] = true;
+    int need_box = (g_box_count > 0) ? g_box_count - 1 : 0;
+    int need_tgt = (g_target_count > 0) ? g_target_count - 1 : 0;
 
     Point cp = g_initial_player;
     g_visit_count = 0;
-    int to_visit = 0;
-    for (int i = 0; i < g_box_count; i++)    if (!vb[i]) to_visit++;
-    for (int i = 0; i < g_target_count; i++) if (!vt[i]) to_visit++;
+    g_current_step = 0;  /* ★ 重置步骤游标，防止上次运行的旧值导致 id_input 跳过 */
+    int observed_box = 0, observed_tgt = 0;
 
-    while (g_visit_count < to_visit) {
+    while (observed_box < need_box || observed_tgt < need_tgt) {
         bfs_compute_distances(cp, walls);
         uint16_t md = INF;
         int bei = -1; uint8_t bt = 0; Point ba = {0,0};
+        if (observed_box < need_box) {
         for (int i = 0; i < g_box_count; i++) {
             if (vb[i]) continue;
             for (int d = 0; d < DIR_COUNT; d++) {
@@ -1176,6 +1473,8 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
                 if (eff < md) { md = eff; bei = i; bt = 0; ba = ap; }
             }
         }
+        } /* observed_box < need_box */
+        if (observed_tgt < need_tgt) {
         for (int i = 0; i < g_target_count; i++) {
             if (vt[i]) continue;
             Point tp = g_initial_targets[i];
@@ -1188,7 +1487,169 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
                 if (eff < md) { md = eff; bei = i; bt = 1; ba = ap; }
             }
         }
-        if (bei == -1) break;
+        } /* observed_tgt < need_tgt */
+        if (bei == -1) {
+            bool pushed = false;
+            int rescue_attempts = 0;
+            #define MAX_RESCUE 20
+
+            while (!pushed && rescue_attempts < MAX_RESCUE) {
+                rescue_attempts++;
+                uint16_t walls_no_box[MAP_ROWS];
+                memcpy(walls_no_box, g_static_walls, sizeof(walls_no_box));
+                bfs_compute_distances(cp, walls_no_box);
+                bool any_hidden = false;
+                for (int i = 0; i < g_box_count && !any_hidden; i++) {
+                    if (vb[i]) continue;
+                    Point bp = g_initial_boxes[i];
+                    for (int d = 0; d < DIR_COUNT && !any_hidden; d++) {
+                        Point ap = {bp.x + DIRS[d][0], bp.y + DIRS[d][1]};
+                        if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
+                        if (g_static_walls[ap.x] & (1 << ap.y)) continue;
+                        if (g_dist_map[ap.x][ap.y] < INF) any_hidden = true;
+                    }
+                }
+                for (int i = 0; i < g_target_count && !any_hidden; i++) {
+                    if (vt[i]) continue;
+                    Point tp = g_initial_targets[i];
+                    for (int d = 0; d < DIR_COUNT && !any_hidden; d++) {
+                        Point ap = {tp.x + DIRS[d][0], tp.y + DIRS[d][1]};
+                        if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
+                        if (g_static_walls[ap.x] & (1 << ap.y)) continue;
+                        if (g_dist_map[ap.x][ap.y] < INF) any_hidden = true;
+                    }
+                }
+                if (!any_hidden) break;
+
+                bfs_compute_distances(cp, walls);
+                /* ★ 选最相关的箱子：离剩余元素最近的（用无障碍BFS距离） */
+                int best_bi = -1;
+                uint16_t best_relevance = INF;
+                for (int bi = 0; bi < g_box_count; bi++) {
+                    Point bp = g_initial_boxes[bi];
+                    bool can_push = false;
+                    for (int d = 0; d < DIR_COUNT && !can_push; d++) {
+                        Point ap = {bp.x + DIRS[d][0], bp.y + DIRS[d][1]};
+                        if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
+                        if (g_dist_map[ap.x][ap.y] < INF) can_push = true;
+                    }
+                    if (!can_push) continue;
+                    /* 用 any_hidden 阶段的 BFS 计算箱子到剩余元素的距离 */
+                    uint16_t rel = INF;
+                    for (int i = 0; i < g_box_count; i++) {
+                        if (vb[i]) continue;
+                        Point tbp = g_initial_boxes[i];
+                        uint16_t d = manhattan_distance(bp, tbp);
+                        if (d < rel) rel = d;
+                    }
+                    for (int i = 0; i < g_target_count; i++) {
+                        if (vt[i]) continue;
+                        Point tp = g_initial_targets[i];
+                        uint16_t d = manhattan_distance(bp, tp);
+                        if (d < rel) rel = d;
+                    }
+                    if (rel < best_relevance) { best_relevance = rel; best_bi = bi; }
+                }
+                if (best_bi < 0) { if (!pushed) break; continue; }
+                {
+                    int bi = best_bi;
+                    Point bp = g_initial_boxes[bi];
+
+                    /* ★ 推一格，检查是否打开通路；推后让外层重新扫描 */
+                    {
+                        bool found_dir = false;
+                        int8_t best_dx = 0, best_dy = 0;
+                        uint8_t best_nx = 0, best_ny = 0, best_px = 0, best_py = 0;
+                        uint16_t best_dist = INF;
+                        /* 防振荡：记录最近推过的位置 */
+                        static Point last_from[MAX_BOXES];
+                        static bool last_init = false;
+                        if (!last_init) { for (int li = 0; li < MAX_BOXES; li++) last_from[li] = (Point){0xFF,0xFF}; last_init = true; }
+
+                        for (int d = 0; d < DIR_COUNT; d++) {
+                            int8_t dx = DIRS[d][0], dy = DIRS[d][1];
+                            uint8_t nx = (uint8_t)(bp.x + dx), ny = (uint8_t)(bp.y + dy);
+                            if (nx >= MAP_ROWS || ny >= MAP_COLS) continue;
+                            if (walls[nx] & (1 << ny)) continue;
+                            /* 禁止推回上次推来的位置 */
+                            if (pos_equal((Point){nx, ny}, last_from[bi])) continue;
+                            uint8_t px = (uint8_t)(bp.x - dx), py = (uint8_t)(bp.y - dy);
+                            if (px >= MAP_ROWS || py >= MAP_COLS) continue;
+                            if (walls[px] & (1 << py)) continue;
+                            if (g_dist_map[px][py] == INF) continue;
+                            { uint16_t cw[MAP_ROWS]; memcpy(cw, walls, sizeof(cw));
+                                cw[bp.x] &= (uint16_t)~(1 << bp.y);
+                                if (is_corner_deadlock((Point){nx, ny}, cw)) continue; }
+                            if (g_dist_map[px][py] < best_dist) {
+                                best_dist = g_dist_map[px][py];
+                                best_dx = dx; best_dy = dy;
+                                best_nx = nx; best_ny = ny;
+                                best_px = px; best_py = py;
+                                found_dir = true;
+                            }
+                        }
+                        if (!found_dir) continue;
+
+                        /* 记录推箱路径 */
+                        {
+                            Point saved_cp2 = cp;
+                            VisitStep *ps = &g_visit_plan[g_visit_count];
+                            ps->pos = bp;
+                            ps->original_idx = (uint8_t)bi;
+                            ps->type = 0;
+                            Point push_stand = {best_px, best_py};
+                            uint16_t walk_len = simple_astar(saved_cp2, push_stand, walls, ps->path);
+                            if (walk_len == 0 && !pos_equal(saved_cp2, push_stand)) {
+                                ps->path[0] = bp; ps->path_len = 1;
+                            } else {
+                                if (walk_len < MAX_PATH_LEN) {
+                                    ps->path[walk_len] = bp;
+                                    ps->path_len = (uint16_t)(walk_len + 1);
+                                } else { ps->path_len = walk_len; }
+                            }
+                            ps->angle = 0; ps->direction = DIR_INVALID;
+                            g_visit_count++;
+                        }
+                        /* 记录推前位置，防振荡 */
+                        last_from[bi] = bp;
+                        /* 执行推箱 */
+                        walls[bp.x] &= (uint16_t)~(1 << bp.y);
+                        walls[best_nx] |= (1 << best_ny);
+                        g_initial_boxes[bi].x = best_nx;
+                        g_initial_boxes[bi].y = best_ny;
+                        cp = bp;
+
+                        /* 检查是否打开通路 */
+                        bfs_compute_distances(cp, walls);
+                        bool helps = false;
+                        for (int i = 0; i < g_box_count && !helps; i++) {
+                            if (vb[i]) continue;
+                            Point tbp = g_initial_boxes[i];
+                            for (int dd = 0; dd < DIR_COUNT && !helps; dd++) {
+                                Point ap = {tbp.x + DIRS[dd][0], tbp.y + DIRS[dd][1]};
+                                if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
+                                if (walls[ap.x] & (1 << ap.y)) continue;
+                                if (g_dist_map[ap.x][ap.y] < INF) helps = true;
+                            }
+                        }
+                        for (int i = 0; i < g_target_count && !helps; i++) {
+                            if (vt[i]) continue;
+                            Point tp = g_initial_targets[i];
+                            for (int dd = 0; dd < DIR_COUNT && !helps; dd++) {
+                                Point ap = {tp.x + DIRS[dd][0], tp.y + DIRS[dd][1]};
+                                if (ap.x >= MAP_ROWS || ap.y >= MAP_COLS) continue;
+                                if (walls[ap.x] & (1 << ap.y)) continue;
+                                if (g_dist_map[ap.x][ap.y] < INF) helps = true;
+                            }
+                        }
+                        if (helps) pushed = true;
+                    }
+                }
+            }
+            #undef MAX_RESCUE
+            if (!pushed) break;
+            continue;
+        }
 
         VisitStep* step = &g_visit_plan[g_visit_count];
         step->pos = ba;
@@ -1198,7 +1659,23 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
         memcpy(tw, walls, sizeof(tw));
         tw[ba.x] &= ~(1 << ba.y);
         step->path_len = simple_astar(cp, ba, tw, step->path);
-        step->step_cost = step->path_len;
+        if (step->path_len == 0 && !pos_equal(cp, ba)) {
+            step->path_len = 0;
+        } else if (step->path_len == 0 && pos_equal(cp, ba)) {
+            /* 已在接近位置 → 从前一个 visit 终点补全路径 */
+            Point from = cp;
+            if (g_visit_count > 0) {
+                VisitStep *prev_step = &g_visit_plan[g_visit_count - 1];
+                if (prev_step->path_len > 0)
+                    from = prev_step->path[prev_step->path_len - 1];
+            }
+            uint16_t ftw[MAP_ROWS]; memcpy(ftw, walls, sizeof(ftw));
+            ftw[ba.x] &= ~(1 << ba.y);
+            step->path_len = simple_astar(from, ba, ftw, step->path);
+            if (step->path_len == 0) {
+                step->path[0] = ba; step->path_len = 1;
+            }
+        }
         Point ep = (step->type == BOX) ? g_initial_boxes[bei] : g_initial_targets[bei];
         int8_t dxep = (int8_t)(ep.x - ba.x);
         int8_t dyep = (int8_t)(ep.y - ba.y);
@@ -1208,7 +1685,8 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
         else if (dyep == -1) step->direction = 2;
         else if (dyep == 1)  step->direction = 3;
         else                 step->direction = DIR_INVALID;
-        if (bt == 0) vb[bei] = true; else vt[bei] = true;
+        if (bt == 0) { vb[bei] = true; observed_box++; }
+        else         { vt[bei] = true; observed_tgt++; }
         g_visit_count++;
         cp = ba;
     }
@@ -1224,7 +1702,6 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
 static void id_record(int id) {
     if (g_current_step >= g_visit_count) return;
     VisitStep* step = &g_visit_plan[g_current_step];
-    step->scanned_id = (int8_t)id;
     if (step->type == BOX) g_box_id_map[step->original_idx] = (int8_t)id;
     else                   g_target_id_map[step->original_idx] = (int8_t)id;
 }
@@ -1289,7 +1766,7 @@ static void id_inference(void) {
                 bfs_compute_distances(g_initial_boxes[bi[i]], g_static_walls);
                 for (int j = 0; j < k; j++) {
                     dist[i][j] = g_dist_map[g_initial_targets[ti[j]].x]
-                                              [g_initial_targets[ti[j]].y];
+                                            [g_initial_targets[ti[j]].y];
                 }
             }
 
@@ -1339,14 +1816,60 @@ static void extract_look_turn_points(VisitStep* plan) {
     for (int i = 0; i < g_visit_count; i++) {
         if (plan[i].path_len == 0) continue;
         Point prev = (li > 0) ? (Point){g_path_look_out.y[li-1], g_path_look_out.x[li-1]} : plan[i].path[0];
+        /* 若路径只有1点但与 prev 不连续 → 补全间隙（推箱后瞬移导致） */
+        if (plan[i].path_len == 1 && !pos_equal(prev, plan[i].path[0])) {
+            Point gap_path[MAX_PATH_LEN];
+            uint16_t gap_walls[MAP_ROWS];
+            memcpy(gap_walls, g_static_walls, sizeof(gap_walls));
+            uint16_t gap_len = simple_astar(prev, plan[i].path[0], gap_walls, gap_path);
+            if (gap_len > 0) {
+                /* 从 gap 提取转向点（不含终点） */
+                Point gp = prev;
+                for (uint16_t gi = 0; gi < gap_len; gi++) {
+                    Point gc = gap_path[gi];
+                    if (gi < gap_len - 1) {
+                        Point gn = gap_path[gi + 1];
+                        int8_t dx1 = (int8_t)(gc.x - gp.x), dy1 = (int8_t)(gc.y - gp.y);
+                        int8_t dx2 = (int8_t)(gn.x - gc.x), dy2 = (int8_t)(gn.y - gc.y);
+                        if ((dx1 != dx2 || dy1 != dy2) &&
+                            !(li > 0 && g_path_look_out.y[li-1] == gc.x && g_path_look_out.x[li-1] == gc.y)) {
+                            if (li >= MAX_PATH_LEN) break;
+                            g_path_look_out.x[li] = gc.y; g_path_look_out.y[li] = gc.x;
+                            g_path_look_out.angle[li] = 0; g_path_look_out.type[li] = 0;
+                            g_path_look_out.is_look[li] = 0; li++;
+                        }
+                    }
+                    gp = gc;
+                }
+            }
+            /* 记录观测/推箱终点（去重：同位置保留 is_look=1） */
+            if (li < MAX_PATH_LEN) {
+                Point ep = plan[i].path[0];
+                if (li > 0 && g_path_look_out.y[li-1] == ep.x && g_path_look_out.x[li-1] == ep.y) {
+                    if (plan[i].type != 0) { g_path_look_out.is_look[li-1] = 1; g_path_look_out.type[li-1] = plan[i].type; }
+                } else {
+                    g_path_look_out.x[li] = ep.y;
+                    g_path_look_out.y[li] = ep.x;
+                    g_path_look_out.angle[li] = plan[i].angle;
+                    g_path_look_out.type[li] = plan[i].type;
+                    g_path_look_out.is_look[li] = (plan[i].type == 0) ? 0 : 1; li++;
+                }
+            }
+            continue;
+        }
         for (int j = 0; j < plan[i].path_len; j++) {
             Point cur = plan[i].path[j];
             if (j == plan[i].path_len - 1) {
                 if (li >= MAX_PATH_LEN) break;
-                g_path_look_out.x[li] = cur.y; g_path_look_out.y[li] = cur.x;
-                g_path_look_out.angle[li] = plan[i].angle;
-                g_path_look_out.type[li] = plan[i].type;
-                g_path_look_out.is_look[li] = 1; li++;
+                /* 去重：同位置保留 is_look=1 */
+                if (li > 0 && g_path_look_out.y[li-1] == cur.x && g_path_look_out.x[li-1] == cur.y) {
+                    if (plan[i].type != 0) { g_path_look_out.is_look[li-1] = 1; g_path_look_out.type[li-1] = plan[i].type; }
+                } else {
+                    g_path_look_out.x[li] = cur.y; g_path_look_out.y[li] = cur.x;
+                    g_path_look_out.angle[li] = plan[i].angle;
+                    g_path_look_out.type[li] = plan[i].type;
+                    g_path_look_out.is_look[li] = (plan[i].type == 0) ? 0 : 1; li++;
+                }
             } else {
                 Point nxt = plan[i].path[j+1];
                 int8_t dx1 = (int8_t)(cur.x - prev.x), dy1 = (int8_t)(cur.y - prev.y);
@@ -1359,6 +1882,33 @@ static void extract_look_turn_points(VisitStep* plan) {
             }
             prev = cur;
         }
+    }
+    /* 后处理：压缩连续同向推箱点（type=0 且中间点可省略） */
+    if (li >= 3) {
+        int wi = 1; /* 写指针 */
+        for (int ri = 2; ri < li; ri++) {
+            /* 检查 ri-1 是否可压缩：type=0, is_look=0, 且三点共线 */
+            if (g_path_look_out.is_look[ri-1] == 0 && g_path_look_out.type[ri-1] == 0) {
+                int8_t dx1 = (int8_t)(g_path_look_out.x[ri-1] - g_path_look_out.x[ri-2]);
+                int8_t dy1 = (int8_t)(g_path_look_out.y[ri-1] - g_path_look_out.y[ri-2]);
+                int8_t dx2 = (int8_t)(g_path_look_out.x[ri] - g_path_look_out.x[ri-1]);
+                int8_t dy2 = (int8_t)(g_path_look_out.y[ri] - g_path_look_out.y[ri-1]);
+                if (dx1 == dx2 && dy1 == dy2) continue; /* 中间点可省略 */
+            }
+            g_path_look_out.x[wi] = g_path_look_out.x[ri-1];
+            g_path_look_out.y[wi] = g_path_look_out.y[ri-1];
+            g_path_look_out.angle[wi] = g_path_look_out.angle[ri-1];
+            g_path_look_out.type[wi] = g_path_look_out.type[ri-1];
+            g_path_look_out.is_look[wi] = g_path_look_out.is_look[ri-1];
+            wi++;
+        }
+        /* 最后一个点 */
+        g_path_look_out.x[wi] = g_path_look_out.x[li-1];
+        g_path_look_out.y[wi] = g_path_look_out.y[li-1];
+        g_path_look_out.angle[wi] = g_path_look_out.angle[li-1];
+        g_path_look_out.type[wi] = g_path_look_out.type[li-1];
+        g_path_look_out.is_look[wi] = g_path_look_out.is_look[li-1];
+        li = wi + 1;
     }
     g_path_look_out.len = (uint16_t)li;
 }
@@ -1445,8 +1995,128 @@ static void compute_player_region_with_walls(const uint16_t walls[MAP_ROWS], boo
     }
 }
 
-static void compute_player_region(void) {
-    compute_player_region_with_walls(g_static_walls, false);
+/**
+ * @brief 计算"玩家可炸到的墙"——仅清除与玩家区域连通的可炸墙（方向性宽松墙）
+ * 
+ * 从玩家可达区域出发，BFS 扩展：可穿越地板 + 可炸墙。
+ * 清除所有被穿越的可炸墙，得到 bomb_walls（用于后续 ENC 合并/目标验证）。
+ * 
+ * @param bomb_walls  输出：g_static_walls 基础上仅清除玩家可达的可炸墙
+ */
+static void compute_player_bomb_walls(uint16_t bomb_walls[MAP_ROWS]) {
+    memcpy(bomb_walls, g_static_walls, sizeof(uint16_t) * MAP_ROWS);
+
+    /* 用 g_player_region 作为起点集（玩家无需炸弹即可达的区域） */
+    uint16_t head = 0, tail = 0;
+    memset(g_bomb_visited, 0, sizeof(g_bomb_visited));
+
+    /* 将所有玩家可达单元格入队（排除墙——g_player_region用epoch预标记了墙） */
+    for (uint8_t i = 0; i < MAP_ROWS; i++)
+        for (uint8_t j = 0; j < MAP_COLS; j++)
+            if (g_player_region[i][j] == g_player_region_epoch && !is_wall_bit(g_static_walls, (Point){i, j})) {
+                g_bomb_visited[i][j] = 1;
+                g_bfs_queue[tail++] = (Point){i, j};
+            }
+
+    /* BFS：可穿越地板（非墙非箱非炸弹）和可炸墙 */
+    while (head < tail) {
+        Point curr = g_bfs_queue[head++];
+        for (uint8_t d = 0; d < DIR_COUNT; d++) {
+            Point next = {(uint8_t)(curr.x + DIRS[d][0]), (uint8_t)(curr.y + DIRS[d][1])};
+            if (next.x >= MAP_ROWS || next.y >= MAP_COLS) continue;
+            if (g_bomb_visited[next.x][next.y]) continue;
+
+            bool is_breakable = is_breakable_wall_on(next, g_static_walls);
+            bool is_floor = !is_wall_bit(g_static_walls, next)
+                        && g_original_map[next.x][next.y] != BOX
+                        && g_original_map[next.x][next.y] != BOOM;
+
+            if (is_breakable) {
+                /* 可炸墙：穿越并清除 */
+                bomb_walls[next.x] &= (uint16_t)~(1 << next.y);
+                g_bomb_visited[next.x][next.y] = 1;
+                g_bfs_queue[tail++] = next;
+            } else if (is_floor) {
+                /* 地板：直接穿越 */
+                g_bomb_visited[next.x][next.y] = 1;
+                g_bfs_queue[tail++] = next;
+            }
+            /* 否则：不可穿越（静态墙/箱子/炸弹），跳过 */
+        }
+    }
+}
+
+/**
+ * @brief 找围住影响域的墙：分隔ENC内外的边界墙
+ * 
+ * 条件：1) 可炸墙 2) 玩家可达 3) 紧邻影响域 4) 至少一侧在影响域外
+ * 
+ * @param influence   影响域位图
+ * @param bomb_walls  方向性宽松墙位图（已清除的可炸墙在此图中 bit=0）
+ * @param out_walls   输出墙坐标数组
+ * @param max_walls   输出数组容量
+ * @return 找到的墙数量
+ */
+static uint8_t find_enclosing_walls(const uint16_t influence[MAP_ROWS],
+    const uint16_t bomb_walls[MAP_ROWS], Point out_walls[], uint8_t max_walls) {
+    uint8_t count = 0;
+
+    /* 预计算"真·外侧"：从玩家区域出发，把影响域当墙，能到达的格子才是外侧 */
+    uint16_t exterior[MAP_ROWS];
+    memset(exterior, 0, sizeof(exterior));
+    {
+        uint8_t head = 0, tail = 0;
+        for (uint8_t r = 0; r < MAP_ROWS; r++)
+            for (uint8_t c = 0; c < MAP_COLS; c++)
+                if (g_player_region[r][c] == g_player_region_epoch &&
+                    !is_wall_bit(g_static_walls, (Point){r,c}) &&
+                    !(influence[r] & (1 << c))) {
+                    exterior[r] |= (1 << c);
+                    g_bfs_queue[tail++] = (Point){r, c};
+                }
+        while (head < tail) {
+            Point cur = g_bfs_queue[head++];
+            for (uint8_t d = 0; d < DIR_COUNT; d++) {
+                Point nb = {(uint8_t)(cur.x + DIRS[d][0]), (uint8_t)(cur.y + DIRS[d][1])};
+                if (nb.x >= MAP_ROWS || nb.y >= MAP_COLS) continue;
+                if (exterior[nb.x] & (1 << nb.y)) continue;
+                if (is_wall_bit(g_static_walls, nb)) continue;
+                if (influence[nb.x] & (1 << nb.y)) continue;  /* 影响域当墙 */
+                exterior[nb.x] |= (1 << nb.y);
+                g_bfs_queue[tail++] = nb;
+            }
+        }
+    }
+
+    /* 遍历影响域每个格子，检查其4邻域 */
+    for (uint8_t r = 1; r < MAP_ROWS - 1; r++) {
+        uint16_t row = influence[r];
+        if (row == 0) continue;
+        for (uint8_t c = 1; c < MAP_COLS - 1; c++) {
+            if (!(row & (1 << c))) continue;
+            for (uint8_t d = 0; d < DIR_COUNT && count < max_walls; d++) {
+                Point nb = {(uint8_t)(r + DIRS[d][0]), (uint8_t)(c + DIRS[d][1])};
+                if (nb.x >= MAP_ROWS || nb.y >= MAP_COLS) continue;
+                if (!is_wall_bit(g_static_walls, nb)) continue;
+                if (is_wall_bit(bomb_walls, nb)) continue;
+                if (!is_breakable_wall_on(nb, g_static_walls)) continue;
+                /* 必须至少一侧在真·外侧（不穿影响域可达玩家） */
+                bool has_outside = false;
+                for (uint8_t wd = 0; wd < DIR_COUNT && !has_outside; wd++) {
+                    Point wn = {(uint8_t)(nb.x + DIRS[wd][0]), (uint8_t)(nb.y + DIRS[wd][1])};
+                    if (wn.x >= MAP_ROWS || wn.y >= MAP_COLS) continue;
+                    if (is_wall_bit(g_static_walls, wn)) continue;
+                    if (exterior[wn.x] & (1 << wn.y)) has_outside = true;
+                }
+                if (!has_outside) continue;
+                bool dup = false;
+                for (uint8_t k = 0; k < count; k++)
+                    if (pos_equal(out_walls[k], nb)) { dup = true; break; }
+                if (!dup) out_walls[count++] = nb;
+            }
+        }
+    }
+    return count;
 }
 
 /**
@@ -1533,94 +2203,7 @@ static bool box_can_reach_any_target(Point box, const uint16_t walls[MAP_ROWS],
 }
 
 /**
- * @brief 推箱BFS死锁模拟（验证箱子是否真的死锁）
- */
-static bool simulate_box_deadlock(uint8_t box_idx, const uint16_t obstacles[MAP_ROWS],
-    const Point targets[], uint8_t target_count, const uint16_t walls[MAP_ROWS],
-    Point start_player, Point start_box) {
-    for (uint8_t t = 0; t < target_count; t++)
-        if (start_box.x == targets[t].x && start_box.y == targets[t].y) return false;
-    g_bfs_epoch++; if (g_bfs_epoch == 0) { memset(g_bfs_visited, 0, sizeof(g_bfs_visited)); g_bfs_epoch = 1; }
-    memcpy(g_obs_buf, obstacles, sizeof(g_obs_buf));
-    /* 将除当前模拟箱子外的所有其他箱子视为永久障碍 */
-    for (uint8_t i = 0; i < g_box_count; i++) {
-        if (i != box_idx)
-            g_obs_buf[g_initial_boxes[i].x] |= (1 << g_initial_boxes[i].y);
-    }
-    /* 炸弹也是障碍——玩家不能穿过炸弹去推箱子 */
-    for (uint8_t i = 0; i < g_bomb_count; i++) {
-        if (g_initial_bombs[i].x != BOMB_INVALID) /* 已消失的跳过 */
-            g_obs_buf[g_initial_bombs[i].x] |= (1 << g_initial_bombs[i].y);
-    }
-
-    /* 快速预检：箱子当前能否被推动至少一步？若四方向全堵死则确定死锁 */
-    {
-        uint16_t saved_box_row = g_obs_buf[start_box.x];
-        g_obs_buf[start_box.x] |= (1 << start_box.y); /* 箱子自身也是障碍 */
-        bfs_compute_reachability(start_player, g_obs_buf);
-        g_obs_buf[start_box.x] = saved_box_row;
-        bool can_push = false;
-        for (uint8_t d = 0; d < DIR_COUNT && !can_push; d++) {
-            uint8_t dest_x = (uint8_t)(start_box.x + DIRS[d][0]);
-            uint8_t dest_y = (uint8_t)(start_box.y + DIRS[d][1]);
-            if (dest_x >= MAP_ROWS || dest_y >= MAP_COLS) continue;
-            if (is_wall_bit(walls, (Point){dest_x, dest_y})) continue;
-            if (g_obs_buf[dest_x] & (1 << dest_y)) continue;
-            uint8_t px = (uint8_t)(start_box.x - DIRS[d][0]);
-            uint8_t py = (uint8_t)(start_box.y - DIRS[d][1]);
-            if (px >= MAP_ROWS || py >= MAP_COLS) continue;
-            if (g_dist_epoch_tag[px][py] == g_dist_epoch) can_push = true;
-        }
-        if (!can_push) return true; /* 四方向全堵死 → 确定死锁，跳过BFS */
-    }
-
-    uint16_t head = 0, tail = 0;
-    { uint32_t idx = BFS_VISITED_INDEX(start_player.x, start_player.y, start_box.x, start_box.y);
-      g_bfs_visited[idx] = g_bfs_epoch; }
-    g_sim_queue[tail++] = ENCODE_STATE(start_player.x, start_player.y, start_box.x, start_box.y);
-    while (head < tail) {
-        uint16_t s = g_sim_queue[head++];
-        uint8_t spx = DECODE_PX(s), spy = DECODE_PY(s);
-        uint8_t sbx = DECODE_BX(s), sby = DECODE_BY(s);
-        for (uint8_t t = 0; t < target_count; t++)
-            if (sbx == targets[t].x && sby == targets[t].y) return false;
-        uint16_t saved_obs_row = g_obs_buf[sbx];
-        g_obs_buf[sbx] |= (1 << sby);
-        bfs_compute_reachability((Point){spx, spy}, g_obs_buf);
-        for (uint8_t d = 0; d < DIR_COUNT; d++) {
-            uint8_t dest_x = (uint8_t)(sbx + DIRS[d][0]), dest_y = (uint8_t)(sby + DIRS[d][1]);
-            if (dest_x >= MAP_ROWS || dest_y >= MAP_COLS) continue;
-            if (is_wall_bit(walls, (Point){dest_x, dest_y})) continue;
-            /* 箱子不能推到另一个箱子或炸弹占据的格子上 */
-            if (g_obs_buf[dest_x] & (1 << dest_y)) continue;
-            { bool blocked_by_bomb = false;
-              for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
-                if (g_initial_bombs[bi].x == BOMB_INVALID) continue; /* 已消失 */
-                if (g_initial_bombs[bi].x == dest_x && g_initial_bombs[bi].y == dest_y)
-                    { blocked_by_bomb = true; break; }
-              }
-              if (blocked_by_bomb) continue; }
-            uint8_t push_px = (uint8_t)(sbx - DIRS[d][0]), push_py = (uint8_t)(sby - DIRS[d][1]);
-            if (push_px >= MAP_ROWS || push_py >= MAP_COLS) continue;
-            if (is_wall_bit(walls, (Point){push_px, push_py})) continue;
-            if (push_px == sbx && push_py == sby) continue;
-            if (g_dist_epoch_tag[push_px][push_py] != g_dist_epoch) continue;
-            uint32_t nidx = BFS_VISITED_INDEX(push_px, push_py, dest_x, dest_y);
-            if (g_bfs_visited[nidx] != g_bfs_epoch) {
-                g_bfs_visited[nidx] = g_bfs_epoch;
-                if (tail >= MAX_SIM_QUEUE) { g_obs_buf[sbx] = saved_obs_row; return true; }
-                g_sim_queue[tail++] = ENCODE_STATE(push_px, push_py, dest_x, dest_y);
-            }
-        }
-        g_obs_buf[sbx] = saved_obs_row;
-    }
-    return true;
-}
-
-/**
  * @brief 推箱BFS验证：固定箱子+固定目标，检查箱子能否被推到该目标
- * 
- * 与 simulate_box_deadlock 逻辑相同，但目标是单一确定的目标点。
  * @return true  = 箱子可推到目标
  * @return false = 箱子无法推到目标
  */
@@ -1717,33 +2300,11 @@ static void detect_and_generate_problems(void) {
     g_problem_count = 0;
 
     /* 1. 计算玩家可达区域（炸弹视为障碍，确保炸弹堵路时触发 PROBLEM_ENCLOSED） */
-    memset(g_obs_buf, 0, sizeof(g_obs_buf));
-    for (uint8_t i = 0; i < MAP_ROWS; i++) for (uint8_t j = 0; j < MAP_COLS; j++) {
-        uint8_t v = g_original_map[i][j];
-        if (v == BOX || v == BOOM) g_obs_buf[i] |= (1 << j);
-    }
-    g_player_region_epoch++;
-    if (g_player_region_epoch == 0) {
-        memset(g_player_region, 0, sizeof(g_player_region));
-        g_player_region_epoch = 1;
-    }
-    for (uint8_t i = 0; i < MAP_ROWS; i++) for (uint8_t j = 0; j < MAP_COLS; j++)
-        if (g_static_walls[i] & (1 << j)) g_player_region[i][j] = g_player_region_epoch;
-    uint8_t head = 0, tail = 0;
-    g_player_region[g_initial_player.x][g_initial_player.y] = g_player_region_epoch;
-    g_bfs_queue[tail++] = g_initial_player;
-    while (head < tail) {
-        Point curr = g_bfs_queue[head++];
-        for (uint8_t d = 0; d < DIR_COUNT; d++) {
-            Point next = {(uint8_t)(curr.x + DIRS[d][0]), (uint8_t)(curr.y + DIRS[d][1])};
-            if (next.x >= MAP_ROWS || next.y >= MAP_COLS) continue;
-            if (g_player_region[next.x][next.y] == g_player_region_epoch) continue;
-            if (g_static_walls[next.x] & (1 << next.y)) continue;
-            if (g_obs_buf[next.x] & (1 << next.y)) continue;
-            g_player_region[next.x][next.y] = g_player_region_epoch;
-            g_bfs_queue[tail++] = next;
-        }
-    }
+    compute_player_region_with_walls(g_static_walls, false);
+
+    /* 1.5 预计算方向性宽松墙（玩家可达的可炸墙），供后续找围住墙使用 */
+    uint16_t bomb_walls[MAP_ROWS];
+    compute_player_bomb_walls(bomb_walls);
 
     /* 2. 对每个箱子做影响域分析 */
     bool box_handled[MAX_BOXES] = {0};
@@ -1774,14 +2335,24 @@ static void detect_and_generate_problems(void) {
                 Point tp = g_initial_targets[tj];
                 if (infl[tp.x] & (1 << tp.y)) pp->target_indices[pp->target_count++] = tj;
             }
+            /* 找到围住该区域的墙（方向性：仅玩家可达的可炸墙） */
+            pp->wall_count = find_enclosing_walls(infl, bomb_walls, pp->enc_walls, MAX_ENC_WALLS);
         } else if (!has_target) {
-            pp->type = PROBLEM_SEPARATED;
+            pp->type = PROBLEM_ENCLOSED;
             pp->box_indices[0] = bi; pp->box_count = 1;
             memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
             box_handled[bi] = true;
         } else {
-            if (simulate_box_deadlock(bi, g_static_walls, g_initial_targets, g_target_count,
-                g_static_walls, g_initial_player, bp)) {
+            /* 角落死锁：箱子紧贴的障碍物(墙/箱/炸弹)在水平+垂直方向各≥1个
+             * 纯左右夹击或纯上下夹击不算（箱子仍可纵向/横向推出） */
+            bool up_blk = false, down_blk = false, left_blk = false, right_blk = false;
+            Point nb;
+            nb = (Point){(uint8_t)(bp.x - 1), bp.y}; up_blk = (nb.x < MAP_ROWS && (g_static_walls[nb.x] & (1 << nb.y) || g_original_map[nb.x][nb.y] == BOX || g_original_map[nb.x][nb.y] == BOOM));
+            nb = (Point){(uint8_t)(bp.x + 1), bp.y}; down_blk = (nb.x < MAP_ROWS && (g_static_walls[nb.x] & (1 << nb.y) || g_original_map[nb.x][nb.y] == BOX || g_original_map[nb.x][nb.y] == BOOM));
+            nb = (Point){bp.x, (uint8_t)(bp.y - 1)}; left_blk = (nb.y < MAP_COLS && (g_static_walls[nb.x] & (1 << nb.y) || g_original_map[nb.x][nb.y] == BOX || g_original_map[nb.x][nb.y] == BOOM));
+            nb = (Point){bp.x, (uint8_t)(bp.y + 1)}; right_blk = (nb.y < MAP_COLS && (g_static_walls[nb.x] & (1 << nb.y) || g_original_map[nb.x][nb.y] == BOX || g_original_map[nb.x][nb.y] == BOOM));
+            bool corner_dead = (up_blk || down_blk) && (left_blk || right_blk);
+            if (corner_dead) {
                 pp->type = PROBLEM_NEED_SIM;
                 pp->box_indices[0] = bi; pp->box_count = 1;
                 memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
@@ -1826,13 +2397,88 @@ static void detect_and_generate_problems(void) {
                 }
             } else {
             }
+            /* 找到围住该目标区域的墙 */
+            pp->wall_count = find_enclosing_walls(catchment, bomb_walls, pp->enc_walls, MAX_ENC_WALLS);
             g_problem_count++;
             if (g_problem_count >= MAX_PROBLEM_POINTS) break;
         }
     }
 
+    /* ── 合并被同一堵可炸墙分隔的 ENC 问题 ── */
+    for (uint8_t pi = 0; pi < g_problem_count; pi++) {
+        if (!(g_problem_points[pi].type & PROBLEM_ENCLOSED)) continue;
+        for (uint8_t pj = (uint8_t)(pi + 1); pj < g_problem_count; pj++) {
+            if (!(g_problem_points[pj].type & PROBLEM_ENCLOSED)) continue;
+            /* 用两个ENC的围住墙并集做松弛墙，检查两区域是否连通 */
+            bool adjacent = false;
+            {
+                /* 构建并集墙：pi墙 + pj墙，去重 */
+                uint16_t merge_walls[MAP_ROWS];
+                memcpy(merge_walls, g_static_walls, sizeof(merge_walls));
+                for (uint8_t w = 0; w < g_problem_points[pi].wall_count; w++) {
+                    Point wp = g_problem_points[pi].enc_walls[w];
+                    merge_walls[wp.x] &= (uint16_t)~(1 << wp.y);
+                }
+                for (uint8_t w = 0; w < g_problem_points[pj].wall_count; w++) {
+                    Point wp = g_problem_points[pj].enc_walls[w];
+                    merge_walls[wp.x] &= (uint16_t)~(1 << wp.y);
+                }
+                uint16_t merged_infl[MAP_ROWS];
+                Point seed = (g_problem_points[pi].box_count > 0)
+                    ? g_initial_boxes[g_problem_points[pi].box_indices[0]]
+                    : g_initial_targets[g_problem_points[pi].target_indices[0]];
+                compute_box_influence(seed, merge_walls, merged_infl);
+                Point pj_seed = (g_problem_points[pj].box_count > 0)
+                    ? g_initial_boxes[g_problem_points[pj].box_indices[0]]
+                    : g_initial_targets[g_problem_points[pj].target_indices[0]];
+                if (merged_infl[pj_seed.x] & (1 << pj_seed.y))
+                    adjacent = true;
+            }
+            if (!adjacent) continue;
+            /* 合并 pj → pi */
+            for (uint8_t b = 0; b < g_problem_points[pj].box_count; b++) {
+                uint8_t bi = g_problem_points[pj].box_indices[b];
+                bool dup = false;
+                for (uint8_t k = 0; k < g_problem_points[pi].box_count; k++)
+                    if (g_problem_points[pi].box_indices[k] == bi) { dup = true; break; }
+                if (!dup && g_problem_points[pi].box_count < MAX_BOXES)
+                    g_problem_points[pi].box_indices[g_problem_points[pi].box_count++] = bi;
+            }
+            for (uint8_t t = 0; t < g_problem_points[pj].target_count; t++) {
+                uint8_t ti = g_problem_points[pj].target_indices[t];
+                bool dup = false;
+                for (uint8_t k = 0; k < g_problem_points[pi].target_count; k++)
+                    if (g_problem_points[pi].target_indices[k] == ti) { dup = true; break; }
+                if (!dup && g_problem_points[pi].target_count < MAX_BOXES)
+                    g_problem_points[pi].target_indices[g_problem_points[pi].target_count++] = ti;
+            }
+            for (uint8_t r = 0; r < MAP_ROWS; r++)
+                g_problem_points[pi].influence_mask[r] |= g_problem_points[pj].influence_mask[r];
+            /* 合并墙集 */
+            for (uint8_t w = 0; w < g_problem_points[pj].wall_count; w++) {
+                Point wp = g_problem_points[pj].enc_walls[w];
+                bool dup = false;
+                for (uint8_t k = 0; k < g_problem_points[pi].wall_count; k++)
+                    if (pos_equal(g_problem_points[pi].enc_walls[k], wp)) { dup = true; break; }
+                if (!dup && g_problem_points[pi].wall_count < MAX_ENC_WALLS)
+                    g_problem_points[pi].enc_walls[g_problem_points[pi].wall_count++] = wp;
+            }
+            /* 移除 pj */
+            g_problem_points[pj] = g_problem_points[g_problem_count - 1];
+            g_problem_count--;
+            pj--;
+        }
+    }
+
 
     /* 4. 目标反向可达性检查：未被任何死锁覆盖的目标，验证是否有箱子能推进来 */
+    /* 标记SIM死锁箱子（角落卡死无法推动），验证目标时跳过它们 */
+    bool box_is_sim[MAX_BOXES] = {false};
+    for (uint8_t pi = 0; pi < g_problem_count; pi++)
+        if (g_problem_points[pi].type & PROBLEM_NEED_SIM)
+            for (uint8_t b = 0; b < g_problem_points[pi].box_count; b++)
+                box_is_sim[g_problem_points[pi].box_indices[b]] = true;
+
     if (g_problem_count < MAX_PROBLEM_POINTS && g_box_count > 0) {
         /* 收集已覆盖的目标索引 */
         bool target_covered[MAX_BOXES] = {false};
@@ -1925,6 +2571,7 @@ static void detect_and_generate_problems(void) {
             bool any_box_reaches = false;
             for (uint8_t bi = 0; bi < g_box_count; bi++) {
                 uint8_t box_idx = box_order[bi];
+                if (box_is_sim[box_idx]) continue;  /* 死锁箱子跳过 */
                 Point bp = g_initial_boxes[box_idx];
                 /* 快速预检：普通 BFS 无视推箱约束，若直线路径都不通则绝无可能推到 */
                 bfs_compute_distances(bp, g_static_walls);
@@ -1946,8 +2593,50 @@ static void detect_and_generate_problems(void) {
                 g_problem_count++;
             }
         }
-    }
 
+        /* 补充：对 ENC 内的目标用本ENC围住墙做宽松验证（仅清除本ENC的墙） */
+        for (uint8_t pi = 0; pi < g_problem_count; pi++) {
+            if (!(g_problem_points[pi].type & PROBLEM_ENCLOSED)) continue;
+            if (g_problem_count >= MAX_PROBLEM_POINTS) break;
+            /* 构建本ENC的宽松墙：仅清除本ENC的围住墙 */
+            uint16_t enc_rlx[MAP_ROWS];
+            memcpy(enc_rlx, g_static_walls, sizeof(enc_rlx));
+            for (uint8_t w = 0; w < g_problem_points[pi].wall_count; w++) {
+                Point wp = g_problem_points[pi].enc_walls[w];
+                enc_rlx[wp.x] &= (uint16_t)~(1 << wp.y);
+            }
+            for (uint8_t t = 0; t < g_problem_points[pi].target_count; t++) {
+                uint8_t ti = g_problem_points[pi].target_indices[t];
+                Point tp = g_initial_targets[ti];
+
+                /* 宽松墙下是否可达：检查全图所有箱子（炸墙后外部箱子也能推进来） */
+                bool any_reaches = false;
+                for (uint8_t bj = 0; bj < g_box_count; bj++) {
+                    if (box_is_sim[bj]) continue;  /* 死锁箱子跳过 */
+                    Point bp = g_initial_boxes[bj];
+                    bfs_compute_distances(bp, enc_rlx);
+                    if (g_dist_map[tp.x][tp.y] == INF) continue;
+                    if (simulate_box_to_target(bj, tp, enc_rlx,
+                                                g_initial_player, bp)) {
+                        any_reaches = true; break;
+                    }
+                }
+
+                if (!any_reaches) {
+                    /* ENC 目标即使炸墙也无法推入 → 独立 UNR */
+                    DeadlockProblemPoint *pp = &g_problem_points[g_problem_count];
+                    memset(pp, 0, sizeof(DeadlockProblemPoint));
+                    pp->type = PROBLEM_TARGET_UNREACHABLE;
+                    pp->target_indices[0] = ti; pp->target_count = 1;
+                    uint16_t infl[MAP_ROWS];
+                    compute_box_influence(tp, enc_rlx, infl);
+                    memcpy(pp->influence_mask, infl, MAP_ROWS * sizeof(uint16_t));
+                    g_problem_count++;
+                    if (g_problem_count >= MAX_PROBLEM_POINTS) break;
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -1983,7 +2672,7 @@ static uint16_t check_problems_resolved_incremental(const uint16_t modified_wall
             /* 用 modified_walls 重新计算影响域（炸墙后墙壁已变更） */
             {
                 Point seed = (pp->box_count > 0) ? g_initial_boxes[pp->box_indices[0]]
-                          : g_initial_targets[pp->target_indices[0]];
+                            : g_initial_targets[pp->target_indices[0]];
                 uint16_t new_infl[MAP_ROWS];
                 compute_box_influence(seed, modified_walls, new_infl);
                 for (uint8_t ri = 0; ri < MAP_ROWS && !reachable; ri++) {
@@ -1999,37 +2688,54 @@ static uint16_t check_problems_resolved_incremental(const uint16_t modified_wall
                     Point bp = g_initial_boxes[box_idx];
                     if (!box_can_reach_any_target(bp, modified_walls, g_initial_targets, g_target_count))
                         resolved = false;
-                    else if (simulate_box_deadlock(box_idx, modified_walls, g_initial_targets,
-                        g_target_count, modified_walls, player_pos, bp))
-                        resolved = false;
                 }
             }
-        }
-        if (pp->type & PROBLEM_SEPARATED) {
-            uint8_t box_idx = pp->box_indices[0];
-            uint16_t new_infl[MAP_ROWS];
-            compute_box_influence(g_initial_boxes[box_idx], modified_walls, new_infl);
-            if (!influence_contains_target(new_infl)) resolved = false;
         }
         if (pp->type & PROBLEM_NEED_SIM) {
             uint8_t box_idx = pp->box_indices[0];
             Point bp = g_initial_boxes[box_idx];
-            if (!box_can_reach_any_target(bp, modified_walls, g_initial_targets, g_target_count))
-                resolved = false;
-            else if (simulate_box_deadlock(box_idx, modified_walls, g_initial_targets,
-                g_target_count, modified_walls, player_pos, bp))
-                resolved = false;
+            /* 角落死锁解除：检查炸墙后是否仍被水平+垂直双向堵死 */
+            bool h_blocked = false, v_blocked = false;
+            for (uint8_t d = 0; d < DIR_COUNT; d++) {
+                uint8_t nx = (uint8_t)(bp.x + DIRS[d][0]), ny = (uint8_t)(bp.y + DIRS[d][1]);
+                bool blocked = false;
+                if (nx >= MAP_ROWS || ny >= MAP_COLS) blocked = true;
+                else if (modified_walls[nx] & (1 << ny)) blocked = true;
+                else {
+                    for (uint8_t bj = 0; bj < g_box_count && !blocked; bj++)
+                        if (g_initial_boxes[bj].x == nx && g_initial_boxes[bj].y == ny) blocked = true;
+                }
+                if (blocked) { if (d < 2) v_blocked = true; else h_blocked = true; }
+            }
+            if (h_blocked && v_blocked) resolved = false;
         }
         if (pp->type & PROBLEM_TARGET_UNREACHABLE) {
             /* 目标不可达：验证是否有箱子能推到该目标 */
+            /* ★ 优化：墙只减不增，上次成功的箱子本次仍可达 → 跳过A*扫描 */
             uint8_t ti = pp->target_indices[0];
             Point tp = g_initial_targets[ti];
             bool any_box_reaches = false;
-            for (uint8_t bi = 0; bi < g_box_count; bi++) {
-                Point bp = g_initial_boxes[bi];
-                if (simulate_box_to_target(bi, tp, modified_walls,
+            int8_t cached = g_unr_reach_cache[pi];
+            if (cached >= 0 && (uint8_t)cached < g_box_count) {
+                /* 快速路径：只检查上次成功的箱子 */
+                Point bp = g_initial_boxes[(uint8_t)cached];
+                if (simulate_box_to_target((uint8_t)cached, tp, modified_walls,
                                             player_pos, bp)) {
-                    any_box_reaches = true; break;
+                    any_box_reaches = true;
+                } else {
+                    /* 缓存失效（箱子被移走等极端情况），回退全扫描 */
+                    cached = -1;
+                }
+            }
+            if (!any_box_reaches) {
+                for (uint8_t bi = 0; bi < g_box_count; bi++) {
+                    Point bp = g_initial_boxes[bi];
+                    if (simulate_box_to_target(bi, tp, modified_walls,
+                                                player_pos, bp)) {
+                        any_box_reaches = true;
+                        g_unr_reach_cache[pi] = (int8_t)bi;  /* 记住成功的箱子 */
+                        break;
+                    }
                 }
             }
             if (!any_box_reaches) resolved = false;
@@ -2054,103 +2760,128 @@ static uint16_t check_problems_resolved_cached(const uint16_t modified_walls[MAP
 }
 
 /**
- * @brief 预计算所有炸弹的完整可达区域
+ * @brief 在自定义墙位图上计算指定炸弹的可达区域
  *
- * 对每个炸弹执行一次BFS，结果存入位图实现 O(1) 查询。
- * 障碍物：墙 + 其他箱子 + 其他炸弹（自身炸弹位置可通行）。
+ * @param bi          炸弹索引
+ * @param bomb_pos    炸弹位置
+ * @param walls       自定义墙位图
+ * @param active      活跃炸弹标记（true=存在，false=已消失）
+ * @param out_reach   输出可达区域位图
  */
-static void precompute_bomb_reachability(void) {
-    memset(g_bomb_reach_map, 0, sizeof(g_bomb_reach_map));
+static void compute_one_bomb_reachability(uint8_t bi, Point bomb_pos,
+    const uint16_t walls[MAP_ROWS], const bool active[],
+    uint16_t out_reach[MAP_ROWS]) {
+    g_vis1_epoch++;
+    if (g_vis1_epoch == 0) {
+        memset(g_vis1, 0, sizeof(g_vis1));
+        g_vis1_epoch = 1;
+    }
+    memset(g_obs_buf, 0, sizeof(g_obs_buf));
 
-    for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
-        Point bomb_pos = g_initial_bombs[bi];
-        g_vis1_epoch++;
-        if (g_vis1_epoch == 0) {
-            memset(g_vis1, 0, sizeof(g_vis1));
-            g_vis1_epoch = 1;
-        }
-        memset(g_obs_buf, 0, sizeof(g_obs_buf));
+    /* 构建障碍物：墙 + 箱子 + 其他活跃炸弹 */
+    for (uint8_t i = 0; i < MAP_ROWS; i++) {
+        g_obs_buf[i] = walls[i];
+    }
+    for (uint8_t i = 0; i < g_box_count; i++) {
+        Point bp = g_initial_boxes[i];
+        g_obs_buf[bp.x] |= (1 << bp.y);
+    }
+    for (uint8_t i = 0; i < g_bomb_count; i++) {
+        if (i == bi) continue;
+        if (!active[i]) continue;
+        Point bp = g_initial_bombs[i];
+        if (bp.x == BOMB_INVALID) continue;
+        g_obs_buf[bp.x] |= (1 << bp.y);
+    }
 
-        /* 构建障碍物位图 */
-        for (uint8_t i = 0; i < MAP_ROWS; i++) {
-            for (uint8_t j = 0; j < MAP_COLS; j++) {
-                uint8_t v = g_original_map[i][j];
-                if (v == WALL) {
-                    g_obs_buf[i] |= (1 << j);
-                } else if ((v == BOX || v == BOOM) &&
-                           !(i == bomb_pos.x && j == bomb_pos.y)) {
-                    g_obs_buf[i] |= (1 << j);
-                }
-            }
-        }
+    /* 推动感知BFS：炸弹只能被玩家推动，需要目标格和玩家格都为空 */
+    uint8_t head = 0, tail = 0;
+    g_vis1[bomb_pos.x][bomb_pos.y] = g_vis1_epoch;
+    g_bfs_queue[tail++] = bomb_pos;
 
-        /* BFS遍历可达区域 */
-        uint8_t head = 0, tail = 0;
-        g_vis1[bomb_pos.x][bomb_pos.y] = g_vis1_epoch;
-        g_bfs_queue[tail++] = bomb_pos;
-
-        while (head < tail) {
-            Point curr = g_bfs_queue[head++];
-            g_bomb_reach_map[bi][curr.x] |= (1 << curr.y);
-
-            for (uint8_t d = 0; d < DIR_COUNT; d++) {
-                Point next = {
-                    (uint8_t)(curr.x + DIRS[d][0]),
-                    (uint8_t)(curr.y + DIRS[d][1])
-                };
-                if (next.x >= MAP_ROWS || next.y >= MAP_COLS) continue;
-                if (g_vis1[next.x][next.y] == g_vis1_epoch) continue;
-                if (g_obs_buf[next.x] & (1 << next.y)) continue;
-                g_vis1[next.x][next.y] = g_vis1_epoch;
-                g_bfs_queue[tail++] = next;
-            }
+    while (head < tail) {
+        Point curr = g_bfs_queue[head++];
+        out_reach[curr.x] |= (1 << curr.y);
+        for (uint8_t d = 0; d < DIR_COUNT; d++) {
+            /* 炸弹被推向 DIRS[d] 方向：目标格 */
+            Point next = {
+                (uint8_t)(curr.x + DIRS[d][0]),
+                (uint8_t)(curr.y + DIRS[d][1])
+            };
+            /* 玩家站在炸弹反方向推动 */
+            Point player_stand = {
+                (uint8_t)(curr.x - DIRS[d][0]),
+                (uint8_t)(curr.y - DIRS[d][1])
+            };
+            if (next.x >= MAP_ROWS || next.y >= MAP_COLS) continue;
+            if (player_stand.x >= MAP_ROWS || player_stand.y >= MAP_COLS) continue;
+            if (g_vis1[next.x][next.y] == g_vis1_epoch) continue;
+            /* 目标格不能有障碍物 */
+            if (g_obs_buf[next.x] & (1 << next.y)) continue;
+            /* 玩家站位不能有障碍物（玩家必须能站在那里推） */
+            if (g_obs_buf[player_stand.x] & (1 << player_stand.y)) continue;
+            /* 玩家站位不能是炸弹自身（防止死循环，炸弹不能推自己） */
+            if (player_stand.x == curr.x && player_stand.y == curr.y) continue;
+            g_vis1[next.x][next.y] = g_vis1_epoch;
+            g_bfs_queue[tail++] = next;
         }
     }
 }
 
 /**
- * @brief 获取目标墙的爆炸点候选位置
+ * @brief 在自定义墙位图上预计算所有活跃炸弹的可达区域
+ *
+ * @param walls         自定义墙位图
+ * @param active_bombs  活跃炸弹标记数组（长度 MAX_BOOMS）
+ * @param out_reach_map 输出可达区域（每个炸弹一行位图）
  */
-static void find_detonation_points_for_wall(Point target_wall, Point out_points[], uint8_t *out_count) {
+static void compute_bomb_reachability(const uint16_t walls[MAP_ROWS],
+    const bool active_bombs[MAX_BOOMS],
+    uint16_t out_reach_map[MAX_BOOMS][MAP_ROWS]) {
+    memset(out_reach_map, 0, sizeof(uint16_t) * MAX_BOOMS * MAP_ROWS);
+    for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
+        if (!active_bombs[bi]) continue;
+        Point bomb_pos = g_initial_bombs[bi];
+        if (bomb_pos.x == BOMB_INVALID) continue;
+        compute_one_bomb_reachability(bi, bomb_pos, walls, active_bombs, out_reach_map[bi]);
+    }
+}
+
+/**
+ * @brief 获取目标墙的爆炸点候选位置（自定义墙位图版）
+ */
+static void find_detonation_points_for_wall_on(Point target_wall, const uint16_t walls[MAP_ROWS],
+    Point out_points[], uint8_t *out_count) {
     *out_count = 0;
     for (int8_t dx = -1; dx <= 1; dx++) for (int8_t dy = -1; dy <= 1; dy++) {
         Point dp = {(uint8_t)(target_wall.x + dx), (uint8_t)(target_wall.y + dy)};
         if (dp.x >= MAP_ROWS || dp.y >= MAP_COLS) continue;
-        if (!is_valid_detonation_point(dp)) continue;
+        if (!is_valid_detonation_point_on(dp, walls)) continue;
         out_points[(*out_count)++] = dp;
         if (*out_count >= MAX_DETONATE_POINTS) return;
     }
 }
 
 /**
- * @brief 在封闭区域周围查找可炸墙
- *
- * 遍历地图中所有可炸墙，检查其邻格是否在封闭区域掩码内。
- *
- * @param region_mask 封闭区域掩码
- * @param out_walls   输出可炸墙列表
- * @param out_count   输出墙数量
+ * @brief 在封闭区域周围查找可炸墙（自定义墙位图版）
  */
-static void find_walls_for_enclosed(const uint16_t region_mask[MAP_ROWS],
+static void find_walls_for_enclosed_on(const uint16_t region_mask[MAP_ROWS],
+    const uint16_t walls[MAP_ROWS],
     BreakableWall out_walls[], uint8_t *out_count) {
-    *out_count = 0;
-
+    uint8_t start = *out_count;
     for (uint8_t i = 0; i < MAP_ROWS; i++) {
         for (uint8_t j = 0; j < MAP_COLS; j++) {
             Point p = {i, j};
-            if (!is_breakable_wall(p)) continue;
-
+            if (!is_breakable_wall_on(p, walls)) continue;
             for (uint8_t d = 0; d < DIR_COUNT; d++) {
                 uint8_t ni = (uint8_t)(i + DIRS[d][0]);
                 uint8_t nj = (uint8_t)(j + DIRS[d][1]);
                 if (ni >= MAP_ROWS || nj >= MAP_COLS) continue;
-                if (g_original_map[ni][nj] == WALL) continue;
+                if (is_wall_bit(walls, (Point){ni, nj})) continue;
                 if (region_mask[ni] & (1 << nj)) {
                     bool found = false;
                     for (uint8_t k = 0; k < *out_count; k++)
-                        if (pos_equal(out_walls[k].wall_pos, p)) {
-                            found = true; break;
-                        }
+                        if (pos_equal(out_walls[k].wall_pos, p)) { found = true; break; }
                     if (!found && *out_count < MAX_BREAK_WALLS) {
                         out_walls[*out_count].wall_pos = p;
                         out_walls[*out_count].benefit_score = -10;
@@ -2164,51 +2895,163 @@ static void find_walls_for_enclosed(const uint16_t region_mask[MAP_ROWS],
 }
 
 /**
- * @brief 在分隔死锁区域查找可炸墙
+ * @brief 在分隔死锁区域查找可炸墙（自定义墙位图版）
  */
-static void find_walls_for_separated(const uint16_t influence[MAP_ROWS],
+static void find_walls_for_separated_on(const uint16_t influence[MAP_ROWS],
+    const uint16_t walls[MAP_ROWS],
     BreakableWall out_walls[], uint8_t *out_count) {
-    *out_count = 0;
+    uint8_t start = *out_count;
     for (uint8_t i = 0; i < MAP_ROWS; i++) for (uint8_t j = 0; j < MAP_COLS; j++) {
-        Point p = {i, j}; if (!is_breakable_wall(p)) continue;
+        Point p = {i, j}; if (!is_breakable_wall_on(p, walls)) continue;
         bool touches_influence = false, touches_outside = false;
         for (uint8_t d = 0; d < DIR_COUNT; d++) {
             uint8_t ni = (uint8_t)(i + DIRS[d][0]), nj = (uint8_t)(j + DIRS[d][1]);
             if (ni >= MAP_ROWS || nj >= MAP_COLS) continue;
-            if (g_original_map[ni][nj] == WALL) continue;
+            if (is_wall_bit(walls, (Point){ni, nj})) continue;
             if (influence[ni] & (1 << nj)) touches_influence = true;
             else touches_outside = true;
         }
         if (touches_influence && touches_outside && *out_count < MAX_BREAK_WALLS) {
-            out_walls[*out_count].wall_pos = p;
-            out_walls[*out_count].benefit_score = -5; (*out_count)++;
+            /* 跳过已在列表中的墙 */
+            bool dup = false;
+            for (uint8_t k = 0; k < start; k++)
+                if (pos_equal(out_walls[k].wall_pos, p)) { dup = true; break; }
+            for (uint8_t k = start; k < *out_count; k++)
+                if (pos_equal(out_walls[k].wall_pos, p)) { dup = true; break; }
+            if (!dup) {
+                out_walls[*out_count].wall_pos = p;
+                out_walls[*out_count].benefit_score = -5; (*out_count)++;
+            }
         }
     }
 }
 
 /**
- * @brief 为可炸墙生成爆炸方案
+ * @brief 为指定死锁问题收集候选可炸墙（追加到列表，自动去重）
  */
-static void generate_plans_for_walls(const BreakableWall breakable_walls[], uint8_t wall_count,
+static void collect_walls_for_problem(uint8_t pi, const uint16_t cur_walls[MAP_ROWS],
+                                       BreakableWall walls[], uint8_t *wall_count,
+                                        uint8_t max_walls) {
+    const DeadlockProblemPoint *pp = &g_saved_problem_points[pi];
+    BreakableWall local[MAX_BREAK_WALLS];
+    uint8_t local_cnt = 0;
+
+    if (pp->type & PROBLEM_ENCLOSED)
+        find_walls_for_enclosed_on(pp->influence_mask, cur_walls, local, &local_cnt);
+    if (pp->type & PROBLEM_NEED_SIM) {
+        BreakableWall bw[MAX_BREAK_WALLS]; uint8_t bwc = 0;
+        for (uint8_t bi = 0; bi < pp->box_count; bi++) {
+            Point box = g_initial_boxes[pp->box_indices[bi]];
+            for (uint8_t d = 0; d < DIR_COUNT; d++) {
+                Point wp = {(uint8_t)(box.x + DIRS[d][0]), (uint8_t)(box.y + DIRS[d][1])};
+                if (wp.x >= MAP_ROWS || wp.y >= MAP_COLS) continue;
+                if (!is_wall_bit(cur_walls, wp)) continue;
+                if (wp.x == 0 || wp.x == MAP_ROWS-1 || wp.y == 0 || wp.y == MAP_COLS-1) continue;
+                bool found = false;
+                for (uint8_t k = 0; k < bwc; k++) if (pos_equal(bw[k].wall_pos, wp)) { found = true; break; }
+                if (!found && bwc < MAX_BREAK_WALLS) { bw[bwc].wall_pos = wp; bw[bwc].benefit_score = -5; bwc++; }
+            }
+        }
+        if (bwc < 5)
+            find_walls_for_separated_on(pp->influence_mask, cur_walls, bw, &bwc);
+        find_walls_for_enclosed_on(pp->influence_mask, cur_walls, bw, &bwc);
+        for (uint8_t wi = 0; wi < bwc; wi++) {
+            bool found = false;
+            for (uint8_t k = 0; k < local_cnt; k++) if (pos_equal(local[k].wall_pos, bw[wi].wall_pos)) { found = true; break; }
+            if (!found && local_cnt < MAX_BREAK_WALLS) local[local_cnt++] = bw[wi];
+        }
+    }
+    if (pp->type & PROBLEM_TARGET_UNREACHABLE) {
+        find_walls_for_enclosed_on(pp->influence_mask, cur_walls, local, &local_cnt);
+        if (local_cnt == 0)
+            find_walls_for_separated_on(pp->influence_mask, cur_walls, local, &local_cnt);
+        if (local_cnt == 0) {
+            uint8_t ti = pp->target_indices[0];
+            Point tp = g_initial_targets[ti];
+            for (uint8_t d = 0; d < DIR_COUNT; d++) {
+                Point wp = {(uint8_t)(tp.x + DIRS[d][0]), (uint8_t)(tp.y + DIRS[d][1])};
+                if (wp.x >= MAP_ROWS || wp.y >= MAP_COLS) continue;
+                if (!is_breakable_wall_on(wp, cur_walls)) continue;
+                bool dup = false;
+                for (uint8_t k = 0; k < local_cnt; k++) if (pos_equal(local[k].wall_pos, wp)) { dup = true; break; }
+                if (!dup && local_cnt < MAX_BREAK_WALLS) { local[local_cnt].wall_pos = wp; local[local_cnt].benefit_score = -5; local_cnt++; }
+            }
+        }
+    }
+
+    /* 追加到主列表（去重） */
+    for (uint8_t wi = 0; wi < local_cnt && *wall_count < max_walls; wi++) {
+        bool dup = false;
+        for (uint8_t k = 0; k < *wall_count; k++)
+            if (pos_equal(walls[k].wall_pos, local[wi].wall_pos)) { dup = true; break; }
+        if (!dup) walls[(*wall_count)++] = local[wi];
+    }
+}
+
+/**
+ * @brief 检查炸弹是否有至少一个方向可被玩家推动
+ */
+static bool can_push_bomb(uint8_t bomb_index, Point bomb_pos,
+                            const uint16_t walls[MAP_ROWS], const bool active[]) {
+    for (uint8_t d = 0; d < DIR_COUNT; d++) {
+        uint8_t nx = (uint8_t)(bomb_pos.x + DIRS[d][0]);
+        uint8_t ny = (uint8_t)(bomb_pos.y + DIRS[d][1]);
+        uint8_t px = (uint8_t)(bomb_pos.x - DIRS[d][0]);
+        uint8_t py = (uint8_t)(bomb_pos.y - DIRS[d][1]);
+        if (nx >= MAP_ROWS || ny >= MAP_COLS || px >= MAP_ROWS || py >= MAP_COLS) continue;
+        if (is_wall_bit(walls, (Point){px, py})) continue;
+        bool blocked = false;
+        for (uint8_t bj = 0; bj < g_box_count && !blocked; bj++)
+            if ((g_initial_boxes[bj].x == nx && g_initial_boxes[bj].y == ny) ||
+                (g_initial_boxes[bj].x == px && g_initial_boxes[bj].y == py)) blocked = true;
+        for (uint8_t bj = 0; bj < g_bomb_count && !blocked; bj++) {
+            if (bj == bomb_index) continue;
+            if (!active[bj]) continue;
+            if (g_initial_bombs[bj].x == BOMB_INVALID) continue;
+            if ((g_initial_bombs[bj].x == nx && g_initial_bombs[bj].y == ny) ||
+                (g_initial_bombs[bj].x == px && g_initial_bombs[bj].y == py)) blocked = true;
+        }
+        if (!blocked) return true;
+    }
+    return false;
+}
+
+/**
+ * @brief 为可炸墙生成爆炸方案（自定义墙位图/可达图/玩家版）
+ *
+ * @param breakable_walls  可炸墙列表
+ * @param wall_count       可炸墙数量
+ * @param walls            自定义墙位图
+ * @param bomb_reach_map   自定义炸弹可达图
+ * @param player_pos       玩家当前位置
+ * @param active_bombs     活跃炸弹标记
+ * @param out_plans        输出方案
+ * @param out_plan_count   输出方案数
+ */
+static void generate_plans_for_walls_on(const BreakableWall breakable_walls[], uint8_t wall_count,
+    const uint16_t walls[MAP_ROWS],
+    const uint16_t bomb_reach_map[MAX_BOOMS][MAP_ROWS],
+    Point player_pos, const bool active_bombs[MAX_BOOMS],
     DetonatePlan out_plans[], uint8_t *out_plan_count) {
     if (wall_count == 0 || g_bomb_count == 0) return;
-    compute_player_region();
+    memcpy(g_sim_walls, walls, sizeof(g_sim_walls));  /* 一次性初始化 */
     for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
+        if (!active_bombs[bi]) continue;
         Point bomb_pos = g_initial_bombs[bi];
+        if (bomb_pos.x == BOMB_INVALID) continue;
         for (uint8_t wi = 0; wi < wall_count; wi++) {
             Point wall_pos = breakable_walls[wi].wall_pos;
             Point candidates[8]; uint8_t cand_count = 0;
-            find_detonation_points_for_wall(wall_pos, candidates, &cand_count);
+            find_detonation_points_for_wall_on(wall_pos, walls, candidates, &cand_count);
             for (uint8_t ci = 0; ci < cand_count; ci++) {
                 Point dp = candidates[ci];
-                /* 复用预计算炸弹可达图 O(1) 查询，替代内联BFS */
                 bool bomb_can_reach = false;
                 for (uint8_t d = 0; d < DIR_COUNT && !bomb_can_reach; d++) {
                     uint8_t adj_x = (uint8_t)(dp.x + DIRS[d][0]);
                     uint8_t adj_y = (uint8_t)(dp.y + DIRS[d][1]);
                     if (adj_x >= MAP_ROWS || adj_y >= MAP_COLS) continue;
-                    if (is_wall_bit(g_static_walls, (Point){adj_x, adj_y})) continue;
-                    if (g_bomb_reach_map[bi][adj_x] & (1 << adj_y))
+                    if (is_wall_bit(walls, (Point){adj_x, adj_y})) continue;
+                    if (bomb_reach_map[bi][adj_x] & (1 << adj_y))
                         bomb_can_reach = true;
                 }
                 if (!bomb_can_reach) continue;
@@ -2217,12 +3060,12 @@ static void generate_plans_for_walls(const BreakableWall breakable_walls[], uint
                     if (can_explosion_cover_wall(dp, breakable_walls[wj].wall_pos))
                         covered_walls[covered_count++] = breakable_walls[wj].wall_pos;
                 if (covered_count == 0) continue;
-                uint16_t sim_walls[MAP_ROWS];
-                memcpy(sim_walls, g_static_walls, sizeof(g_static_walls));
+
+                /* 局部清除覆盖墙（sim_walls 在外层已初始化为 walls 副本） */
                 for (uint8_t k = 0; k < covered_count; k++) {
-                    Point wp = covered_walls[k]; sim_walls[wp.x] &= (uint16_t)~(1 << wp.y);
+                    Point wp = covered_walls[k];
+                    g_sim_walls[wp.x] &= (uint16_t)~(1 << wp.y);
                 }
-                /* 快速预检：被炸墙是否至少触及一个影响域？不触及则炸了也连接不了任何东西 */
                 bool walls_may_help = false;
                 for (uint8_t k = 0; k < covered_count && !walls_may_help; k++) {
                     Point wp = covered_walls[k];
@@ -2230,33 +3073,29 @@ static void generate_plans_for_walls(const BreakableWall breakable_walls[], uint
                         uint8_t nx = (uint8_t)(wp.x + DIRS[d][0]);
                         uint8_t ny = (uint8_t)(wp.y + DIRS[d][1]);
                         if (nx >= MAP_ROWS || ny >= MAP_COLS) continue;
-                        if (g_static_walls[nx] & (1 << ny)) continue;
+                        if (is_wall_bit(walls, (Point){nx, ny})) continue;
                         for (uint8_t pi = 0; pi < g_saved_problem_count; pi++)
                             if (g_saved_problem_points[pi].influence_mask[nx] & (1 << ny))
                                 { walls_may_help = true; break; }
                     }
                 }
-
                 uint16_t resolved_mask = 0;
                 bool resolves = false;
                 if (walls_may_help) {
-                /* 该炸弹引爆后会消失，验证时临时禁用 */
-                uint8_t saved_bomb = g_original_map[bomb_pos.x][bomb_pos.y];
-                g_original_map[bomb_pos.x][bomb_pos.y] = FLOOR;
-                Point saved_ibomb = g_initial_bombs[bi];
-                g_initial_bombs[bi].x = BOMB_INVALID;
-                resolved_mask = check_problems_resolved_cached(sim_walls, g_initial_player);
-                resolves = (resolved_mask == (uint16_t)((1 << g_saved_problem_count) - 1));
-                g_initial_bombs[bi] = saved_ibomb;
-                g_original_map[bomb_pos.x][bomb_pos.y] = saved_bomb;
+                    resolved_mask = check_problems_resolved_cached(g_sim_walls, player_pos);
+                    resolves = (resolved_mask == (uint16_t)((1 << g_saved_problem_count) - 1));
                 }
-                uint16_t push_dist = estimate_bomb_push_distance(bomb_pos, dp, g_initial_player);
+                /* 恢复 sim_walls */
+                for (uint8_t k = 0; k < covered_count; k++) {
+                    Point wp = covered_walls[k];
+                    g_sim_walls[wp.x] = walls[wp.x];  /* 还原整行 */
+                }
+                uint16_t push_dist = estimate_bomb_push_distance_on(bomb_pos, dp, player_pos, walls, active_bombs);
                 int total_benefit = (int)push_dist;
                 for (uint8_t k = 0; k < covered_count; k++)
                     for (uint8_t wj = 0; wj < wall_count; wj++)
                         if (pos_equal(covered_walls[k], breakable_walls[wj].wall_pos))
                             { total_benefit += breakable_walls[wj].benefit_score; break; }
-                /* 统计炸开后连通的目标数量，目标越多越优 */
                 {
                     int target_bonus = 0;
                     for (uint8_t pi = 0; pi < g_saved_problem_count; pi++)
@@ -2274,39 +3113,16 @@ static void generate_plans_for_walls(const BreakableWall breakable_walls[], uint
                         out_plans[dupe_idx].wall_count = covered_count;
                         memcpy(out_plans[dupe_idx].walls_covered, covered_walls, covered_count * sizeof(Point));
                         out_plans[dupe_idx].total_benefit = total_benefit;
-                        out_plans[dupe_idx].resolves_deadlock = resolves;
                         out_plans[dupe_idx].resolved_mask = resolved_mask;
                     } continue;
                 }
                 if (*out_plan_count >= MAX_DETONATE_POINTS) return;
-                /* 快速预检：炸弹能否被推动（仅检查第一步是否合法） */
-                {   bool can_push = false;
-                    for (uint8_t d = 0; d < DIR_COUNT && !can_push; d++) {
-                        uint8_t nx = (uint8_t)(bomb_pos.x + DIRS[d][0]);
-                        uint8_t ny = (uint8_t)(bomb_pos.y + DIRS[d][1]);
-                        uint8_t px = (uint8_t)(bomb_pos.x - DIRS[d][0]);
-                        uint8_t py = (uint8_t)(bomb_pos.y - DIRS[d][1]);
-                        if (nx >= MAP_ROWS || ny >= MAP_COLS || px >= MAP_ROWS || py >= MAP_COLS) continue;
-                        if (is_wall_bit(g_static_walls, (Point){px, py})) continue;
-                        bool blocked = false;
-                        for (uint8_t bj = 0; bj < g_box_count && !blocked; bj++) {
-                            if (g_initial_boxes[bj].x == nx && g_initial_boxes[bj].y == ny) blocked = true;
-                            if (g_initial_boxes[bj].x == px && g_initial_boxes[bj].y == py) blocked = true;
-                        }
-                        for (uint8_t bj = 0; bj < g_bomb_count && !blocked; bj++) {
-                            if (bj == bi) continue;
-                            if (g_initial_bombs[bj].x == nx && g_initial_bombs[bj].y == ny) blocked = true;
-                            if (g_initial_bombs[bj].x == px && g_initial_bombs[bj].y == py) blocked = true;
-                        }
-                        if (!blocked) can_push = true;
-                    }
-                    if (!can_push) continue;
-                }
+                if (!can_push_bomb(bi, bomb_pos, walls, active_bombs)) continue;
                 DetonatePlan *plan = &out_plans[*out_plan_count];
                 plan->detonate_pos = dp; plan->bomb_index = bi; plan->bomb_initial_pos = bomb_pos;
                 plan->bomb_push_distance = push_dist; plan->wall_count = covered_count;
                 memcpy(plan->walls_covered, covered_walls, covered_count * sizeof(Point));
-                plan->total_benefit = total_benefit; plan->resolves_deadlock = resolves;
+                plan->total_benefit = total_benefit;
                 plan->resolved_mask = resolved_mask;
                 (*out_plan_count)++;
                 if (*out_plan_count >= MAX_DETONATE_POINTS) return;
@@ -2331,7 +3147,110 @@ static void sort_plans_by_benefit(DetonatePlan plans[], uint8_t count) {
 }
 
 /**
- * @brief 递归枚举方案组合（剪枝 + 验证）
+ * @brief 验证多炸弹组合是否存在一个可执行的顺序
+ *
+ * 对方案组合尝试所有排列顺序，在每个排列中依次验证：
+ * 1. 当前炸弹在更新后的墙位图上是否可达引爆点邻格
+ * 2. 能否被推弹+引爆（用推箱A*验证）
+ * 每步成功后更新墙位图（移除爆炸范围墙 + 炸弹消失）。
+ *
+ * @param plans      炸弹方案组合（每个 plan 对应一个炸弹的爆炸方案）
+ * @param count      方案数量
+ * @param walls      初始墙位图（调用者传入的当前墙位图）
+ * @param player_pos 初始玩家位置
+ * @param out_order  输出成功排列顺序（plans 索引的排列）
+ * @return true      存在可行执行顺序
+ */
+static bool verify_multi_bomb_sequence(DetonatePlan plans[], uint8_t count,
+    const uint16_t walls[MAP_ROWS], Point player_pos,
+    uint8_t out_order[]) {
+    if (count == 0) return true;
+    if (count == 1) {
+        bool active[MAX_BOOMS];
+        for (uint8_t i = 0; i < MAX_BOOMS; i++) active[i] = true;
+        uint16_t walls_copy[MAP_ROWS];
+        memcpy(walls_copy, walls, sizeof(uint16_t) * MAP_ROWS);
+        BombExecutionStep step;
+        if (try_execute_step(&plans[0], 0, active, &player_pos, walls_copy, &step)) {
+            out_order[0] = 0;
+            return true;
+        }
+        return false;
+    }
+
+    /* 多炸弹：尝试所有排列 */
+    int perm[MAX_BOOMS];
+    for (uint8_t i = 0; i < count; i++) perm[i] = (int)i;
+
+    uint16_t best_cost = 0xFFFF;
+    uint8_t best_perm[MAX_BOOMS];
+    bool found = false;
+
+    do {
+        uint16_t cur_walls[MAP_ROWS];
+        memcpy(cur_walls, walls, sizeof(uint16_t) * MAP_ROWS);
+        Point cur_player = player_pos;
+        bool done_plans[MAX_BOOMS] = {false};
+        uint16_t total_cost = 0;
+        bool ok = true;
+
+        for (uint8_t si = 0; si < count; si++) {
+            uint8_t pi = (uint8_t)perm[si];
+            bool active[MAX_BOOMS];
+            for (uint8_t i = 0; i < g_bomb_count; i++) active[i] = true;
+            for (uint8_t i = 0; i < count; i++)
+                if (done_plans[i]) active[plans[i].bomb_index] = false;
+
+            /* 在 cur_walls 上重算 bomb 可达性（用 plan 自带位置，不受全局 BOMB_INVALID 影响） */
+            uint16_t reach_map[MAX_BOOMS][MAP_ROWS];
+            memset(reach_map, 0, sizeof(reach_map));
+            for (uint8_t i = 0; i < count; i++) {
+                uint8_t bi = plans[i].bomb_index;
+                if (done_plans[i]) continue;
+                Point bp = plans[i].bomb_initial_pos;
+                compute_one_bomb_reachability(bi, bp, cur_walls, active, reach_map[bi]);
+            }
+
+            /* 检查 bomb 在更新后墙上是否可达引爆点邻格 */
+            Point bomb_pos = plans[pi].bomb_initial_pos;
+            Point dp = plans[pi].detonate_pos;
+            bool can_reach = false;
+            for (uint8_t d = 0; d < DIR_COUNT && !can_reach; d++) {
+                uint8_t adj_x = (uint8_t)(dp.x + DIRS[d][0]);
+                uint8_t adj_y = (uint8_t)(dp.y + DIRS[d][1]);
+                if (adj_x >= MAP_ROWS || adj_y >= MAP_COLS) continue;
+                if (is_wall_bit(cur_walls, (Point){adj_x, adj_y})) continue;
+                if (reach_map[plans[pi].bomb_index][adj_x] & (1 << adj_y))
+                    can_reach = true;
+            }
+            if (!can_reach) { ok = false; break; }
+
+            /* 尝试执行推弹+引爆 */
+            BombExecutionStep step;
+            if (!try_execute_step(&plans[pi], si, active, &cur_player, cur_walls, &step)) {
+                ok = false; break;
+            }
+            total_cost = (uint16_t)(total_cost + step.push_path.path_len);
+            if (total_cost >= best_cost) { ok = false; break; }
+            done_plans[pi] = true;
+        }
+
+        if (ok && total_cost < best_cost) {
+            best_cost = total_cost;
+            memcpy(best_perm, perm, count * sizeof(uint8_t));
+            found = true;
+        }
+    } while (next_permutation(perm, (int)count));
+
+    if (found) {
+        memcpy(out_order, best_perm, count * sizeof(uint8_t));
+        return true;
+    }
+    return false;
+}
+
+/**
+ * @brief 递归枚举方案组合（剪枝 + 验证 + 顺序可执行性）
  */
 static void try_multi_plans_recursive(
     uint8_t depth, uint8_t max_depth,
@@ -2372,7 +3291,7 @@ static void try_multi_plans_recursive(
             }
             if (!touches_this) touches_all = false;
         }
-        if (!touches_all) return; /* 有问题点完全未被触及→不可能解决→跳过昂贵验证 */
+        if (!touches_all) return;
 
         Point saved[MAX_BOOMS];
         for (uint8_t i = 0; i < max_depth; i++) {
@@ -2381,13 +3300,22 @@ static void try_multi_plans_recursive(
             g_initial_bombs[ba].x = BOMB_INVALID;
         }
         if (check_problems_resolved_cached(cw, g_initial_player) == all_mask) {
-            if (accum_benefit < *best_benefit) {
-                *best_benefit = accum_benefit;
-                *result_count = max_depth;
-                for (uint8_t i = 0; i < max_depth; i++)
-                    result_plans[i] = pb[bl[bomb_idx[i]]][sel_plans[i]];
+            /* 组装临时 plans 数组做顺序验证 */
+            DetonatePlan combo_plans[MAX_BOOMS];
+            for (uint8_t i = 0; i < max_depth; i++)
+                combo_plans[i] = pb[bl[bomb_idx[i]]][sel_plans[i]];
+            uint8_t seq_order[MAX_BOOMS];
+            /* 顺序可执行性验证 — 确保各炸弹能依次推弹+引爆 */
+            if (verify_multi_bomb_sequence(combo_plans, max_depth,
+                    g_static_walls, g_initial_player, seq_order)) {
+                if (accum_benefit < *best_benefit) {
+                    *best_benefit = accum_benefit;
+                    *result_count = max_depth;
+                    for (uint8_t i = 0; i < max_depth; i++)
+                        result_plans[i] = combo_plans[i];
+                }
+                *found = 1;
             }
-            *found = 1;
         }
         for (uint8_t i = 0; i < max_depth; i++)
             g_initial_bombs[bl[bomb_idx[i]]] = saved[i];
@@ -2460,26 +3388,25 @@ static bool search_multi_bomb_combination(DetonatePlan all_plans[], uint8_t plan
     uint8_t nplans[MAX_BOOMS]; memset(nplans, 0, sizeof(nplans));
     for (uint8_t pi = 0; pi < plan_count; pi++) nplans[all_plans[pi].bomb_index]++;
 
-    DetonatePlan pb[MAX_BOOMS][MAX_PLANS_PER_BOOM];
     uint8_t fi[MAX_BOOMS]; memset(fi, 0, sizeof(fi));
     for (uint8_t pi = 0; pi < plan_count; pi++) {
         uint8_t bi = all_plans[pi].bomb_index;
-        if (fi[bi] < MAX_PLANS_PER_BOOM) pb[bi][fi[bi]++] = all_plans[pi];
+        if (fi[bi] < MAX_PLANS_PER_BOOM) g_bomb_pb[bi][fi[bi]++] = all_plans[pi];
     }
     for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
-        sort_plans_by_benefit(pb[bi], fi[bi]);
+        sort_plans_by_benefit(g_bomb_pb[bi], fi[bi]);
         uint8_t keep = 0;
         for (uint8_t pi = 0; pi < fi[bi]; pi++) {
             bool dup = false;
             for (uint8_t pj = 0; pj < keep; pj++) {
-                if (pb[bi][pi].wall_count != pb[bi][pj].wall_count) continue;
+                if (g_bomb_pb[bi][pi].wall_count != g_bomb_pb[bi][pj].wall_count) continue;
                 bool same = true;
-                for (uint8_t wk = 0; wk < pb[bi][pi].wall_count; wk++)
-                    if (!pos_equal(pb[bi][pi].walls_covered[wk], pb[bi][pj].walls_covered[wk]))
+                for (uint8_t wk = 0; wk < g_bomb_pb[bi][pi].wall_count; wk++)
+                    if (!pos_equal(g_bomb_pb[bi][pi].walls_covered[wk], g_bomb_pb[bi][pj].walls_covered[wk]))
                         { same = false; break; }
                 if (same) { dup = true; break; }
             }
-            if (!dup && keep < MAX_PLANS_PER_BOOM) pb[bi][keep++] = pb[bi][pi];
+            if (!dup && keep < MAX_PLANS_PER_BOOM) g_bomb_pb[bi][keep++] = g_bomb_pb[bi][pi];
         }
         if (keep > BOOM_TOP_K) keep = BOOM_TOP_K;
         fi[bi] = keep;
@@ -2509,192 +3436,425 @@ static bool search_multi_bomb_combination(DetonatePlan all_plans[], uint8_t plan
     const uint8_t N = blc;
 
     /* 多炸弹组合（2/3/4弹，倾向少用炸弹） */
-    if (search_multi_combo(2, N, bl, pb, fi, all_mask, &best_benefit, result_plans, result_count)) {
+    if (search_multi_combo(2, N, bl, g_bomb_pb, fi, all_mask, &best_benefit, result_plans, result_count)) {
         *out_total_benefit = best_benefit; return true;
     }
-    if (N >= 3 && search_multi_combo(3, N, bl, pb, fi, all_mask, &best_benefit, result_plans, result_count)) {
+    if (N >= 3 && search_multi_combo(3, N, bl, g_bomb_pb, fi, all_mask, &best_benefit, result_plans, result_count)) {
         *out_total_benefit = best_benefit; return true;
     }
-    if (N >= 4 && search_multi_combo(4, N, bl, pb, fi, all_mask, &best_benefit, result_plans, result_count)) {
+    if (N >= 4 && search_multi_combo(4, N, bl, g_bomb_pb, fi, all_mask, &best_benefit, result_plans, result_count)) {
         *out_total_benefit = best_benefit; return true;
     }
     return false;
 }
 
 /**
- * @brief 验证炸弹推送可行性（实际跑A*确认能推到引爆点）
+ * @brief 迭代贪心炸弹破局搜索
  *
- * 将炸弹视为"箱子"，引爆点（墙位）视为"目标"，
- * 使用推箱A*验证炸弹能否从初始位置被推到引爆点。
+ * 每轮在更新后的墙位图上重新计算炸弹可达性和可炸墙，
+ * 用 BFS 真实距离（玩家→炸弹 + 炸弹→引爆点）评估最优方案，
+ * 逐弹引爆并更新墙位图。
  *
- * @param plan 爆炸方案
- * @return true 炸弹可被推到引爆点
+ * @param deadlock      初始死锁检测结果
+ * @param out_plans     输出炸弹方案列表
+ * @param out_plan_count 输出方案数量
+ * @param out_best_benefit 输出最优收益
+ * @return true         找到可行方案
  */
-static bool verify_bomb_push_feasibility(const DetonatePlan *plan) {
-    uint16_t obs[MAP_ROWS];
-    memcpy(obs, g_static_walls, sizeof(obs));
-
-    /* 引爆点临时清除，允许炸弹推入 */
-    obs[plan->detonate_pos.x] &= (uint16_t)~(1 << plan->detonate_pos.y);
-
-    /* 箱子作为障碍 */
-    for (uint8_t i = 0; i < g_box_count; i++)
-        obs[g_initial_boxes[i].x] |= (1 << g_initial_boxes[i].y);
-
-    /* 其他炸弹作为障碍（BOMB_INVALID=已消失） */
-    for (uint8_t i = 0; i < g_bomb_count; i++) {
-        if (i == plan->bomb_index) continue;
-        if (g_initial_bombs[i].x == BOMB_INVALID) continue;
-        obs[g_initial_bombs[i].x] |= (1 << g_initial_bombs[i].y);
-    }
-
-    AStarResult ar = solve_single_box_a_star(
-        g_initial_player, plan->bomb_initial_pos, plan->detonate_pos, obs);
-    return ar.success;
-}
 
 /**
- * @brief 炸弹破局分析主函数
+ * @brief 对炸弹引爆候选方案进行评分排序
+ *
+ * 综合考量：行走距离 + 推弹距离 - 邻接死锁墙奖励 + 距UNR目标距离
+ *
+ * @param cand_count     候选方案数量
+ * @param resolved       已解决问题位掩码
+ * @param cur_walls      当前墙位图
+ * @param cur_reach      炸弹可达性位图
+ * @param active_bombs   活跃炸弹标记
+ * @param cur_player     当前玩家位置
+ * @param[out] scored    评分结果（按代价升序）
+ * @param[out] scored_count 候选数量
  */
-static bool analyze_bomb_breakthrough(const DeadlockResult *deadlock, DetonatePlan out_plans[],
-    uint8_t *out_plan_count, int *out_best_benefit) {
-    if (g_bomb_count == 0 || !deadlock->has_deadlock) { *out_plan_count = 0; return false; }
-    memcpy(g_saved_problem_points, g_problem_points, sizeof(DeadlockProblemPoint) * g_problem_count);
-    g_saved_problem_count = g_problem_count;
-    compute_player_region();
-    precompute_bomb_reachability();
+static void score_bomb_candidates(uint8_t cand_count, uint16_t resolved,
+    const uint16_t cur_walls[MAP_ROWS],
+    const uint16_t cur_reach[MAX_BOOMS][MAP_ROWS],
+    const bool active_bombs[MAX_BOOMS],
+    Point cur_player,
+    ScoredPlan scored[], uint8_t *scored_count) {
+    *scored_count = 0;
 
-    DetonatePlan all_plans[MAX_DETONATE_POINTS];
-    uint8_t all_plan_count = 0;
+    /* ENC/UNR 未解时，引爆点离目标越近越好 */
+    bool has_enc_unr = false;
+    for (uint8_t pi = 0; pi < g_saved_problem_count && !has_enc_unr; pi++)
+        if (!(resolved & (1 << pi)) &&
+            (g_saved_problem_points[pi].type & (PROBLEM_ENCLOSED | PROBLEM_TARGET_UNREACHABLE)))
+            has_enc_unr = true;
 
-    for (uint8_t pi = 0; pi < g_problem_count; pi++) {
-        BreakableWall walls[MAX_BREAK_WALLS];
-        uint8_t wall_count = 0;
-        if (g_problem_points[pi].type & PROBLEM_ENCLOSED)
-            find_walls_for_enclosed(g_problem_points[pi].influence_mask, walls, &wall_count);
-        if (g_problem_points[pi].type & PROBLEM_SEPARATED)
-            find_walls_for_separated(g_problem_points[pi].influence_mask, walls, &wall_count);
-        if (g_problem_points[pi].type & PROBLEM_NEED_SIM) {
-            BreakableWall bw[MAX_BREAK_WALLS]; uint8_t bwc = 0;
-            for (uint8_t bi = 0; bi < g_problem_points[pi].box_count; bi++) {
-                Point box = g_initial_boxes[g_problem_points[pi].box_indices[bi]];
+    /* 预计算玩家到所有可到达格的BFS距离（替代逐候选A*） */
+    {
+        memset(g_obs_buf, 0, sizeof(g_obs_buf));
+        for (uint8_t r = 0; r < MAP_ROWS; r++) g_obs_buf[r] = cur_walls[r];
+        for (uint8_t b = 0; b < g_box_count; b++)
+            g_obs_buf[g_initial_boxes[b].x] |= (1 << g_initial_boxes[b].y);
+        for (uint8_t b = 0; b < g_bomb_count; b++) {
+            if (!active_bombs[b]) continue;
+            if (g_initial_bombs[b].x == BOMB_INVALID) continue;
+            g_obs_buf[g_initial_bombs[b].x] |= (1 << g_initial_bombs[b].y);
+        }
+        bfs_compute_distances(cur_player, g_obs_buf);
+    }
+
+    for (uint8_t i = 0; i < cand_count; i++) {
+        DetonatePlan *cp = &g_bomb_candidates[i];
+        if (!active_bombs[cp->bomb_index]) continue;
+        Point bomb_approach = cp->bomb_initial_pos;
+        Point approach_pos = {0, 0};
+        bool found_approach = false;
+        for (uint8_t d = 0; d < DIR_COUNT && !found_approach; d++) {
+            uint8_t nx = (uint8_t)(bomb_approach.x + DIRS[d][0]);
+            uint8_t ny = (uint8_t)(bomb_approach.y + DIRS[d][1]);
+            if (nx >= MAP_ROWS || ny >= MAP_COLS) continue;
+            if (is_wall_bit(cur_walls, (Point){nx, ny})) continue;
+            bool blocked = false;
+            for (uint8_t bj = 0; bj < g_box_count && !blocked; bj++)
+                if (g_initial_boxes[bj].x == nx && g_initial_boxes[bj].y == ny) blocked = true;
+            for (uint8_t bj = 0; bj < g_bomb_count && !blocked; bj++) {
+                if (!active_bombs[bj]) continue;
+                if (bj == cp->bomb_index) continue;
+                if (g_initial_bombs[bj].x == BOMB_INVALID) continue;
+                if (g_initial_bombs[bj].x == nx && g_initial_bombs[bj].y == ny) blocked = true;
+            }
+            if (blocked) continue;
+            if (cur_reach[cp->bomb_index][nx] & (1 << ny)) {
+                approach_pos.x = nx; approach_pos.y = ny;
+                found_approach = true;
+            }
+        }
+        if (!found_approach) continue;
+
+        uint16_t walk_dist = g_dist_map[approach_pos.x][approach_pos.y];
+        if (walk_dist == 0 || walk_dist == INF) continue;
+
+        /* 向最近UNR目标推进的距离 */
+        uint16_t min_dist = INF;
+        for (uint8_t pi = 0; pi < g_saved_problem_count; pi++) {
+            if (resolved & (1 << pi)) continue;
+            if (!(g_saved_problem_points[pi].type & PROBLEM_TARGET_UNREACHABLE)) continue;
+            uint8_t ti = g_saved_problem_points[pi].target_indices[0];
+            uint16_t d = manhattan_distance(cp->detonate_pos, g_initial_targets[ti]);
+            if (d < min_dist) min_dist = d;
+        }
+
+        /* 统计摧毁墙中有多少邻接未解决死锁的影响域 */
+        int coverage_bonus = 0;
+        for (int8_t ddx = -1; ddx <= 1; ddx++)
+            for (int8_t ddy = -1; ddy <= 1; ddy++) {
+                uint8_t wwx = (uint8_t)((int)cp->detonate_pos.x + ddx);
+                uint8_t wwy = (uint8_t)((int)cp->detonate_pos.y + ddy);
+                if (wwx >= MAP_ROWS || wwy >= MAP_COLS) continue;
+                if (wwx == 0 || wwx == MAP_ROWS-1 || wwy == 0 || wwy == MAP_COLS-1) continue;
+                if (!is_wall_bit(cur_walls, (Point){wwx, wwy})) continue;
                 for (uint8_t d = 0; d < DIR_COUNT; d++) {
-                    Point wp = {(uint8_t)(box.x + DIRS[d][0]), (uint8_t)(box.y + DIRS[d][1])};
-                    if (wp.x >= MAP_ROWS || wp.y >= MAP_COLS) continue;
-                    if (!is_wall_bit(g_static_walls, wp)) continue;
-                    if (wp.x == 0 || wp.x == MAP_ROWS-1 || wp.y == 0 || wp.y == MAP_COLS-1) continue;
-                    bool found = false;
-                    for (uint8_t k = 0; k < bwc; k++)
-                        if (pos_equal(bw[k].wall_pos, wp)) { found = true; break; }
-                    if (!found && bwc < MAX_BREAK_WALLS) {
-                        bw[bwc].wall_pos = wp; bw[bwc].benefit_score = -5; bwc++;
+                    uint8_t nbx = (uint8_t)(wwx + DIRS[d][0]);
+                    uint8_t nby = (uint8_t)(wwy + DIRS[d][1]);
+                    if (nbx >= MAP_ROWS || nby >= MAP_COLS) continue;
+                    for (uint8_t pi = 0; pi < g_saved_problem_count; pi++) {
+                        if (resolved & (1 << pi)) continue;
+                        if (g_saved_problem_points[pi].influence_mask[nbx] & (1 << nby)) {
+                            coverage_bonus += 100;
+                            goto next_wall;
+                        }
                     }
                 }
+                next_wall:;
             }
-            for (uint8_t wi = 0; wi < bwc && wall_count < MAX_BREAK_WALLS; wi++) {
-                bool found = false;
-                for (uint8_t k = 0; k < wall_count; k++)
-                    if (pos_equal(walls[k].wall_pos, bw[wi].wall_pos)) { found = true; break; }
-                if (!found) walls[wall_count++] = bw[wi];
-            }
-        }
-        if (g_problem_points[pi].type & PROBLEM_TARGET_UNREACHABLE) {
-            /* 目标不可达：尝试封闭区域策略 + 目标影响域边界墙策略 */
-            find_walls_for_enclosed(g_problem_points[pi].influence_mask, walls, &wall_count);
-            if (wall_count == 0) {
-                /* 封闭策略无墙 → 尝试查找目标影响域边界上的墙 */
-                find_walls_for_separated(g_problem_points[pi].influence_mask, walls, &wall_count);
-            }
-            if (wall_count == 0) {
-                /* 仍无墙 → 检查目标本身周围的墙 */
-                uint8_t ti = g_problem_points[pi].target_indices[0];
-                Point tp = g_initial_targets[ti];
-                BreakableWall bw[MAX_BREAK_WALLS]; uint8_t bwc = 0;
-                for (uint8_t d = 0; d < DIR_COUNT; d++) {
-                    Point wp = {(uint8_t)(tp.x + DIRS[d][0]), (uint8_t)(tp.y + DIRS[d][1])};
-                    if (wp.x >= MAP_ROWS || wp.y >= MAP_COLS) continue;
-                    if (!is_breakable_wall(wp)) continue;
-                    bool found2 = false;
-                    for (uint8_t k = 0; k < bwc; k++)
-                        if (pos_equal(bw[k].wall_pos, wp)) { found2 = true; break; }
-                    if (!found2 && bwc < MAX_BREAK_WALLS) {
-                        bw[bwc].wall_pos = wp; bw[bwc].benefit_score = -5; bwc++;
-                    }
-                }
-                for (uint8_t wi = 0; wi < bwc && wall_count < MAX_BREAK_WALLS; wi++) {
-                    bool found2 = false;
-                    for (uint8_t k = 0; k < wall_count; k++)
-                        if (pos_equal(walls[k].wall_pos, bw[wi].wall_pos)) { found2 = true; break; }
-                    if (!found2) walls[wall_count++] = bw[wi];
-                }
-            }
-        }
-        if (wall_count == 0) continue;
-        generate_plans_for_walls(walls, wall_count, all_plans, &all_plan_count);
-    }
 
-    /* 按总收益从小到大排序（越小越优） */
-    sort_plans_by_benefit(all_plans, all_plan_count);
+        int total = (int)walk_dist + (int)cp->bomb_push_distance
+                  - coverage_bonus
+                  + (has_enc_unr ? (int)min_dist * 3 : 0);
+        for (uint8_t pi = 0; pi < g_saved_problem_count; pi++)
+            if (!(resolved & (1 << pi)) && (cp->resolved_mask & (1 << pi)))
+                total -= 500;
 
-    /* 单弹方案：resolves_deadlock 已在生成时计算，直接取第一个可行的 */
-    DetonatePlan best_plans[MAX_BOOMS];
-    uint8_t best_count = 0;
-    int best_overall_cost = 999999;
-
-    for (uint8_t i = 0; i < all_plan_count; i++) {
-        if (!all_plans[i].resolves_deadlock) continue;
-        if (!verify_bomb_push_feasibility(&all_plans[i])) continue;
-        int overall = (int)all_plans[i].bomb_push_distance;
-        if (overall < best_overall_cost) {
-            best_overall_cost = overall;
-            best_plans[0] = all_plans[i]; best_count = 1;
-            break;
+        if (*scored_count < MAX_DETONATE_POINTS) {
+            scored[*scored_count].cost = total;
+            scored[*scored_count].idx = i;
+            (*scored_count)++;
         }
     }
 
-    /* 单炸弹方案全部不可行 → 尝试多炸弹组合（需 ≥2 个炸弹才有意义） */
-    if (best_count == 0 && g_bomb_count >= 2) {
-        DetonatePlan combo_plans[MAX_BOOMS]; uint8_t combo_count = 0; int combo_benefit = 0;
-        if (search_multi_bomb_combination(all_plans, all_plan_count, combo_plans, &combo_count, &combo_benefit)) {
-            /* 若 combo 只包含一个方案 → 说明退化到单方案（已验证过，跳过） */
-            if (combo_count == 1 && !verify_bomb_push_feasibility(&combo_plans[0])) {
-                /* 退化方案不可行，放弃 */
-            } else if (combo_count >= 2) {
-                /* 验证组合中每个炸弹的推送可行性（暂时禁用组合中其他炸弹） */
-                bool all_pushable = true;
-                for (uint8_t ci = 0; ci < combo_count && all_pushable; ci++) {
-                    /* 临时禁用组合中的其他炸弹——它们会在之前被引爆 */
-                    Point saved_others[MAX_BOOMS];
-                    for (uint8_t cj = 0; cj < combo_count; cj++) {
-                        uint8_t bj = combo_plans[cj].bomb_index;
-                        saved_others[cj] = g_initial_bombs[bj];
-                        if (cj != ci) g_initial_bombs[bj].x = BOMB_INVALID;
-                    }
-                    if (!verify_bomb_push_feasibility(&combo_plans[ci]))
-                        all_pushable = false;
-                    /* 恢复 */
-                    for (uint8_t cj = 0; cj < combo_count; cj++)
-                        g_initial_bombs[combo_plans[cj].bomb_index] = saved_others[cj];
-                }
-                if (all_pushable) {
-                    best_count = combo_count;
-                    best_overall_cost = combo_benefit;
-                    for (uint8_t i = 0; i < combo_count; i++) best_plans[i] = combo_plans[i];
-                }
-            } else {
-                best_count = combo_count;
-                best_overall_cost = combo_benefit;
-                for (uint8_t i = 0; i < combo_count; i++) best_plans[i] = combo_plans[i];
-            }
-        }
+    /* 按代价升序排序 */
+    for (uint8_t si = 0; si + 1 < *scored_count; si++) {
+        uint8_t best_s = si;
+        for (uint8_t sj = (uint8_t)(si + 1); sj < *scored_count; sj++)
+            if (scored[sj].cost < scored[best_s].cost) best_s = sj;
+        if (best_s != si) { ScoredPlan tmp = scored[si]; scored[si] = scored[best_s]; scored[best_s] = tmp; }
     }
-    *out_plan_count = best_count;
-    *out_best_benefit = best_overall_cost;
-    memcpy(out_plans, best_plans, best_count * sizeof(DetonatePlan));
-    return best_count > 0;
 }
 
-/* ---------- 6.6 模式3子功能：顺序推弹路径规划 ---------- */
+static bool iterative_bomb_breakthrough(const DeadlockResult *deadlock,
+    DetonatePlan out_plans[], uint8_t *out_plan_count, int *out_best_benefit) {
+    *out_plan_count = 0;
+    if (g_bomb_count == 0 || !deadlock->has_deadlock) return false;
+
+    /* 清空验证缓存（迭代过程中墙位图变化，缓存可能误命中） */
+    memset(g_vcache_hash, 0, sizeof(g_vcache_hash));
+    memset(g_vcache_mask, 0, sizeof(g_vcache_mask));
+    memset(g_unr_reach_cache, -1, sizeof(g_unr_reach_cache));   /* UNR箱子缓存重置 */
+
+    memcpy(g_saved_problem_points, g_problem_points, sizeof(DeadlockProblemPoint) * g_problem_count);
+    g_saved_problem_count = g_problem_count;
+
+    uint8_t chosen_count = 0;
+    int total_benefit = 0;
+    const uint16_t all_mask = (uint16_t)((1 << g_saved_problem_count) - 1);
+
+    /* ================================================================
+     * 主路径：迭代贪心逐弹选择 + 逐轮重评估 + 首轮回溯
+     * ================================================================ */
+
+    /* 保存初始状态（用于失败后回溯重试） */
+    Point  saved_initial_bombs[MAX_BOOMS];
+    memcpy(saved_initial_bombs, g_initial_bombs, sizeof(g_initial_bombs));
+    memcpy(g_bomb_saved_map, g_original_map, sizeof(g_original_map));
+
+    int8_t top_alt_per_bomb[MAX_BOOMS];     /* 每颗炸弹的最佳方案索引，-1=无 */
+    uint8_t top_alt_count = 0;               /* 有方案的炸弹数 */
+    int8_t normal_bomb = -1;                  /* retry=0 首轮实际使用的炸弹 */
+    for (uint8_t i = 0; i < MAX_BOOMS; i++) top_alt_per_bomb[i] = -1;
+
+    /* ── 回溯重试循环 ── */
+    for (uint8_t retry = 0; ; retry++) {
+        if (retry > 0) {
+            /* 恢复初始状态 */
+            memcpy(g_initial_bombs, saved_initial_bombs, sizeof(g_initial_bombs));
+            memcpy(g_original_map, g_bomb_saved_map, sizeof(g_original_map));
+            memset(g_vcache_hash, 0, sizeof(g_vcache_hash));
+            memset(g_vcache_mask, 0, sizeof(g_vcache_mask));
+        }
+
+        /* 当前墙位图副本（逐步更新） */
+        uint16_t cur_walls[MAP_ROWS];
+        memcpy(cur_walls, g_static_walls, sizeof(uint16_t) * MAP_ROWS);
+        Point cur_player = g_initial_player;
+        bool active_bombs[MAX_BOOMS];
+        for (uint8_t i = 0; i < MAX_BOOMS; i++) active_bombs[i] = true;
+
+        /* ★ 卡死的炸弹视为不可炸墙：从活跃列表移除，加入墙位图 */
+        for (uint8_t bi = 0; bi < g_bomb_count; bi++) {
+            if (!active_bombs[bi]) continue;
+            Point bp = g_initial_bombs[bi];
+            if (bp.x == BOMB_INVALID) continue;
+            if (!can_push_bomb(bi, bp, cur_walls, active_bombs)) {
+                cur_walls[bp.x] |= (1 << bp.y);
+                active_bombs[bi] = false;
+                g_initial_bombs[bi].x = BOMB_INVALID;
+            }
+        }
+
+        chosen_count = 0;
+        total_benefit = 0;
+        bool forced_round0 = (retry > 0 && (retry - 1) < top_alt_count);
+
+        for (uint8_t iteration = 0; iteration < g_bomb_count; iteration++) {
+            /* 检查当前死锁是否已全部解决 */
+            uint16_t resolved = check_problems_resolved_incremental(cur_walls, cur_player);
+
+            if (resolved == all_mask) break;  /* 全部解决 */
+
+        /* 在 cur_walls 上重算炸弹可达性 */
+        uint16_t cur_reach[MAX_BOOMS][MAP_ROWS];
+        compute_bomb_reachability(cur_walls, active_bombs, cur_reach);
+
+        /*
+         * ★ 关键修复：在 cur_walls（已更新墙位图）上重新计算每个未解决问题的影响域。
+         * 炸墙后影响域会扩大，旧掩码仅覆盖旧边界 → 找不到新边界上的可炸墙。
+         */
+        for (uint8_t pi = 0; pi < g_saved_problem_count; pi++) {
+            if (resolved & (1 << pi)) continue;
+            Point seed;
+            if (g_saved_problem_points[pi].box_count > 0)
+                seed = g_initial_boxes[g_saved_problem_points[pi].box_indices[0]];
+            else if (g_saved_problem_points[pi].target_count > 0)
+                seed = g_initial_targets[g_saved_problem_points[pi].target_indices[0]];
+            else continue;
+            compute_box_influence(seed, cur_walls, g_saved_problem_points[pi].influence_mask);
+        }
+
+        /* 为当前活跃炸弹生成候选方案 */
+        uint8_t cand_count = 0;
+
+        /* 收集死锁问题的可炸墙（优先级：ENC > SIM > UNR） */
+        for (uint8_t priority = 0; priority < 3 && cand_count == 0; priority++) {
+            uint8_t target_type = (priority == 0) ? PROBLEM_ENCLOSED :
+                                  (priority == 1) ? PROBLEM_NEED_SIM : PROBLEM_TARGET_UNREACHABLE;
+
+        for (uint8_t pi = 0; pi < g_saved_problem_count; pi++) {
+            if (!(g_saved_problem_points[pi].type & target_type)) continue;
+
+            uint8_t wall_count = 0;
+
+            collect_walls_for_problem(pi, cur_walls, g_bomb_walls, &wall_count, MAX_BREAK_WALLS);
+            /* 遗墙继承：已解ENC的墙邻接开放区的，供未解问题使用 */
+            for (uint8_t pj = 0; pj < g_saved_problem_count; pj++) {
+                if (!(g_saved_problem_points[pj].type & PROBLEM_ENCLOSED)) continue;
+                for (uint8_t w = 0; w < g_saved_problem_points[pj].wall_count && wall_count < MAX_BREAK_WALLS; w++) {
+                    Point wp = g_saved_problem_points[pj].enc_walls[w];
+                    if (!is_breakable_wall_on(wp, cur_walls)) continue;
+                    bool touches_open = false;
+                    for (uint8_t d = 0; d < DIR_COUNT && !touches_open; d++) {
+                        Point nb = {(uint8_t)(wp.x + DIRS[d][0]), (uint8_t)(wp.y + DIRS[d][1])};
+                        if (nb.x >= MAP_ROWS || nb.y >= MAP_COLS) continue;
+                        if (!is_wall_bit(cur_walls, nb)) touches_open = true;
+                    }
+                    if (!touches_open) continue;
+                    bool dup = false;
+                    for (uint8_t k = 0; k < wall_count; k++)
+                        if (pos_equal(g_bomb_walls[k].wall_pos, wp)) { dup = true; break; }
+                    if (!dup) {
+                        g_bomb_walls[wall_count].wall_pos = wp;
+                        g_bomb_walls[wall_count].benefit_score = -10;
+                        wall_count++;
+                    }
+                }
+            }
+            if (wall_count == 0) continue;
+
+            generate_plans_for_walls_on(g_bomb_walls, wall_count,
+                cur_walls, cur_reach, cur_player, active_bombs,
+                g_bomb_candidates, &cand_count);
+
+        }
+        }  /* priority loop */
+        if (cand_count == 0) {
+            /* 无候选方案 → 尝试多炸弹组合回退 */
+            uint8_t all_plan_count = 0;
+            /* 重新从原始问题收集，用 cur_walls 生成 */
+            for (uint8_t pi = 0; pi < g_saved_problem_count; pi++) {
+                if (resolved & (1 << pi)) continue;
+                uint8_t wall_count = 0;
+                collect_walls_for_problem(pi, cur_walls, g_bomb_walls, &wall_count, MAX_BREAK_WALLS);
+                if (wall_count > 0)
+                    generate_plans_for_walls_on(g_bomb_walls, wall_count, cur_walls, cur_reach, cur_player, active_bombs, g_bomb_all_plans, &all_plan_count);
+            }
+
+            if (all_plan_count > 0) {
+                DetonatePlan combo_plans[MAX_BOOMS];
+                uint8_t combo_count = 0;
+                int combo_benefit = 0;
+                sort_plans_by_benefit(g_bomb_all_plans, all_plan_count);
+                if (search_multi_bomb_combination(g_bomb_all_plans, all_plan_count, combo_plans, &combo_count, &combo_benefit)) {
+                    for (uint8_t ci = 0; ci < combo_count && chosen_count < MAX_BOOMS; ci++) {
+                        out_plans[chosen_count++] = combo_plans[ci];
+                        active_bombs[combo_plans[ci].bomb_index] = false;
+                        {
+                            uint8_t bi = combo_plans[ci].bomb_index;
+                            Point bp = g_initial_bombs[bi];
+                            g_initial_bombs[bi].x = BOMB_INVALID;
+                            g_original_map[bp.x][bp.y] = FLOOR;
+                        }
+                        total_benefit += combo_plans[ci].total_benefit;
+                    }
+                    break;
+                }
+            }
+            break; /* 无解 */
+        }
+
+        /* ★ 综合评价：行走距离 + 推弹距离 - 解决死锁的奖励 */
+        ScoredPlan scored[MAX_DETONATE_POINTS];
+        uint8_t scored_count = 0;
+        score_bomb_candidates(cand_count, resolved, cur_walls, cur_reach,
+            active_bombs, cur_player, scored, &scored_count);
+
+        /* retry=0 且首轮：保存每颗炸弹的最佳方案（用于回溯尝试不同炸弹） */
+        if (retry == 0 && iteration == 0) {
+            top_alt_count = 0;
+            for (uint8_t si = 0; si < scored_count; si++) {
+                DetonatePlan *cp = &g_bomb_candidates[scored[si].idx];
+                uint8_t bi = cp->bomb_index;
+                if (top_alt_per_bomb[bi] >= 0) continue;
+                BombPushPath tp;
+                compute_one_bomb_push(cp->bomb_initial_pos, cp->bomb_index,
+                    cp->detonate_pos, cur_player, cur_walls, active_bombs, &tp);
+                if (tp.path_valid) {
+                    top_alt_per_bomb[bi] = (int8_t)scored[si].idx;
+                }
+            }
+        }
+
+        /* 第二阶段：按排序依次尝试执行，直到成功 */
+        int best_idx = -1;
+        if (forced_round0 && iteration == 0) {
+            uint8_t cnt = 0;
+            for (uint8_t bi = 0; bi < MAX_BOOMS; bi++) {
+                if (top_alt_per_bomb[bi] < 0) continue;
+                if ((int8_t)bi == normal_bomb) continue;
+                if (cnt == retry - 1) { best_idx = (int)top_alt_per_bomb[bi]; break; }
+                cnt++;
+            }
+        } else {
+            for (uint8_t si = 0; si < scored_count; si++) {
+                DetonatePlan *cp = &g_bomb_candidates[scored[si].idx];
+                BombPushPath test_path;
+                compute_one_bomb_push(cp->bomb_initial_pos, cp->bomb_index,
+                    cp->detonate_pos, cur_player, cur_walls, active_bombs, &test_path);
+                if (test_path.path_valid) {
+                    best_idx = (int)scored[si].idx;
+                    break;
+                }
+            }
+        }
+
+        if (best_idx < 0) break;
+
+        /* 执行最佳方案 */
+        DetonatePlan *chosen = &g_bomb_candidates[best_idx];
+        if (retry == 0 && iteration == 0) normal_bomb = (int8_t)chosen->bomb_index;
+        /* retry=0 首轮执行后：统计备选炸弹数（不含已用的 normal_bomb） */
+        if (retry == 0 && iteration == 0) {
+            top_alt_count = 0;
+            for (uint8_t bi = 0; bi < MAX_BOOMS; bi++)
+                if (top_alt_per_bomb[bi] >= 0 && (int8_t)bi != normal_bomb)
+                    top_alt_count++;
+        }
+
+        BombExecutionStep step;
+        bool exec_ok = try_execute_step(chosen, chosen_count, active_bombs, &cur_player, cur_walls, &step);
+        if (!exec_ok) break;
+
+        out_plans[chosen_count++] = *chosen;
+        active_bombs[chosen->bomb_index] = false;
+        {
+            uint8_t bi = chosen->bomb_index;
+            Point bp = g_initial_bombs[bi];
+            g_initial_bombs[bi].x = BOMB_INVALID;
+            g_original_map[bp.x][bp.y] = FLOOR;  /* 同步更新原始地图：已用炸弹变空地 */
+        }
+        total_benefit += chosen->total_benefit;
+    }
+
+    /* ★ 最终验证：所有死锁问题已解决？ */
+    {
+        uint16_t final_resolved = check_problems_resolved_incremental(cur_walls, cur_player);
+        if (final_resolved == all_mask) {
+            *out_plan_count = chosen_count;
+            *out_best_benefit = total_benefit;
+            return chosen_count > 0;
+        }
+    }
+
+    /* 失败 → 尝试回溯：用首轮备选方案重试 */
+    if (retry >= top_alt_count) break;
+    /* 继续下一轮重试（retry++） */
+    }
+
+    *out_plan_count = 0;
+    return false;
+}
+
+/* ---------- 6.5.1 模式3子功能：顺序推弹路径规划 ---------- */
 
 /**
  * @brief BFS计算玩家到各炸弹的行走距离
@@ -2712,9 +3872,7 @@ static uint8_t bfs_bomb_distances(Point player, const uint16_t walls[MAP_ROWS],
     uint16_t head = 0, tail = 0;
     g_dist_epoch_tag[player.x][player.y] = g_dist_epoch;
     g_bfs_queue[tail++] = player;
-    for (uint8_t i = 0; i < MAP_ROWS; i++)
-        for (uint8_t j = 0; j < MAP_COLS; j++)
-            g_dist_map[i][j] = INF;
+    memset(g_dist_map, 0xFF, sizeof(g_dist_map));
     g_dist_map[player.x][player.y] = 0;
     uint8_t found = 0;
 
@@ -2760,6 +3918,19 @@ static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
         out_path->path_valid = true; out_path->path_len = 1;
         out_path->path[0] = player_start; return;
     }
+    /* 炸弹已紧邻引爆点 → 无需推动，原地引爆 */
+    {
+        bool already_adj = false;
+        for (uint8_t d = 0; d < DIR_COUNT; d++) {
+            if ((uint8_t)(bomb_pos.x + DIRS[d][0]) == detonate_pos.x &&
+                (uint8_t)(bomb_pos.y + DIRS[d][1]) == detonate_pos.y)
+                { already_adj = true; break; }
+        }
+        if (already_adj) {
+            out_path->path_valid = true; out_path->path_len = 1;
+            out_path->path[0] = player_start; return;
+        }
+    }
     uint16_t obs[MAP_ROWS];
     memcpy(obs, walls, sizeof(uint16_t) * MAP_ROWS);
     obs[detonate_pos.x] &= (uint16_t)~(1 << detonate_pos.y);
@@ -2770,13 +3941,14 @@ static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
     for (uint8_t i = 0; i < g_bomb_count; i++) {
         if (i == bomb_index) continue;
         if (active_bombs && !active_bombs[i]) continue;
+        if (g_initial_bombs[i].x == BOMB_INVALID) continue;
         obs[g_initial_bombs[i].x] |= (1 << g_initial_bombs[i].y);
     }
-    AStarResult ar = solve_single_box_a_star(player_start, bomb_pos, detonate_pos, obs);
-    if (!ar.success || ar.path_len == 0) return;
-    uint16_t len = (ar.path_len > MAX_PATH_LEN) ? MAX_PATH_LEN : ar.path_len;
+    g_bomb_ar = solve_single_box_a_star(player_start, bomb_pos, detonate_pos, obs);
+    if (!g_bomb_ar.success || g_bomb_ar.path_len == 0) return;
+    uint16_t len = (g_bomb_ar.path_len > MAX_PATH_LEN) ? MAX_PATH_LEN : g_bomb_ar.path_len;
     out_path->path_len = len;
-    memcpy(out_path->path, ar.path_points, len * sizeof(Point));
+    memcpy(out_path->path, g_bomb_ar.path_points, len * sizeof(Point));
     out_path->path_valid = true;
 }
 
@@ -2786,22 +3958,23 @@ static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
 static bool try_execute_step(const DetonatePlan *p, uint8_t step_idx,
     const bool active_bombs[MAX_BOOMS], Point *player, uint16_t walls[MAP_ROWS],
     BombExecutionStep *out_st) {
-    BombPushPath ppath;
     compute_one_bomb_push(p->bomb_initial_pos, p->bomb_index,
-        p->detonate_pos, *player, walls, active_bombs, &ppath);
-    if (!ppath.path_valid) return false;
+        p->detonate_pos, *player, walls, active_bombs, &g_bomb_ppath);
+    if (!g_bomb_ppath.path_valid) return false;
     memset(out_st, 0, sizeof(BombExecutionStep));
     out_st->step_order = step_idx; out_st->bomb_index = p->bomb_index;
     out_st->bomb_from = p->bomb_initial_pos; out_st->detonate_at = p->detonate_pos;
     out_st->player_before = *player;
-    memcpy(&out_st->push_path, &ppath, sizeof(BombPushPath));
-    out_st->player_after = (ppath.path_len > 0) ? ppath.path[ppath.path_len - 1] : *player;
+    memcpy(&out_st->push_path, &g_bomb_ppath, sizeof(BombPushPath));
+    out_st->player_after = (g_bomb_ppath.path_len > 0) ? g_bomb_ppath.path[g_bomb_ppath.path_len - 1] : *player;
     *player = out_st->player_after;
     { Point dp = p->detonate_pos; uint8_t rc = 0;
     for (int8_t dx = -1; dx <= 1; dx++)
         for (int8_t dy = -1; dy <= 1; dy++) {
             uint8_t wx = (uint8_t)((int)dp.x + dx), wy = (uint8_t)((int)dp.y + dy);
             if (wx >= MAP_ROWS || wy >= MAP_COLS) continue;
+            /* ★ 最外层边界墙不可破坏 */
+            if (wx == 0 || wx == MAP_ROWS - 1 || wy == 0 || wy == MAP_COLS - 1) continue;
             if (!(walls[wx] & (1 << wy))) continue;
             walls[wx] &= (uint16_t)~(1 << wy);
             if (rc < 9) { out_st->walls_removed[rc].x = wx; out_st->walls_removed[rc].y = wy; rc++; }
@@ -2865,29 +4038,28 @@ static void plan_bomb_execution_sequence(const DetonatePlan plans[],
         int order[MAX_BOOMS];
         for (int i = 0; i < (int)plan_count; i++) order[i] = i;
         uint16_t best_c = 0xFFFF; uint8_t best_n = 0;
-        BombExecutionStep best_s[MAX_BOOMS];
         do {
             uint16_t w_try[MAP_ROWS]; memcpy(w_try, g_static_walls, sizeof(w_try));
             Point p_try = g_initial_player; bool d_try[MAX_BOOMS] = {false};
-            BombExecutionStep t_s[MAX_BOOMS]; uint8_t t_n = 0; uint16_t t_c = 0;
+            uint8_t t_n = 0; uint16_t t_c = 0;
             for (uint8_t si = 0; si < plan_count; si++) {
                 uint8_t pi = (uint8_t)order[si];
                 bool ab[MAX_BOOMS];
                 for (uint8_t j = 0; j < g_bomb_count; j++) ab[j] = true;
                 for (uint8_t j = 0; j < plan_count; j++)
                     if (d_try[j]) ab[plans[j].bomb_index] = false;
-                if (!try_execute_step(&plans[pi], t_n, ab, &p_try, w_try, &t_s[t_n])) break;
-                t_c = (uint16_t)(t_c + t_s[t_n].push_path.path_len);
+                if (!try_execute_step(&plans[pi], t_n, ab, &p_try, w_try, &g_bomb_t_s[t_n])) break;
+                t_c = (uint16_t)(t_c + g_bomb_t_s[t_n].push_path.path_len);
                 if (t_c >= best_c) break; /* 剪枝：累积代价已不小于当前最优 */
                 d_try[pi] = true; t_n++;
             }
             if (t_n == plan_count && t_c < best_c) {
                 best_c = t_c; best_n = t_n;
-                memcpy(best_s, t_s, t_n * sizeof(BombExecutionStep));
+                memcpy(g_bomb_best_s, g_bomb_t_s, t_n * sizeof(BombExecutionStep));
             }
         } while (next_permutation(order, (int)plan_count));
         if (best_n == plan_count && best_c < 0xFFFF) {
-            memcpy(out_exec->steps, best_s, best_n * sizeof(BombExecutionStep));
+            memcpy(out_exec->steps, g_bomb_best_s, best_n * sizeof(BombExecutionStep));
             out_exec->step_count = best_n; out_exec->total_cost = best_c;
             out_exec->is_valid = true; return;
         }
@@ -2923,14 +4095,17 @@ Path_Start path_start_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
 Path path_calculation(uint8_t box_x[MAP_ROWS][MAP_COLS]) {
     memset(&g_path_out, 0, sizeof(Path));
     parse_map_input(box_x);
+
     /* 模式一中炸弹视为墙（不可通行） */
     for (uint8_t b = 0; b < g_bomb_count; b++)
         g_static_walls[g_initial_bombs[b].x] |= (1 << g_initial_bombs[b].y);
     SolutionSequence sol;
     generate_greedy_pairing(&sol);
+
     g_mode1_strict = true;   /* 模式1：非配对靶位阻挡箱子 */
     validate_solution(&sol);
     g_mode1_strict = false;
+
     if (sol.is_valid && sol.full_path_len > 0) {
         uint16_t len = (sol.full_path_len > MAX_PATH_LEN) ? MAX_PATH_LEN : sol.full_path_len;
         g_path_out.len = len;
@@ -2958,6 +4133,9 @@ Path_Look path_look_calculation(uint8_t box_x[MAP_ROWS][MAP_COLS]) {
  * @brief 记录用户输入的ID（ID模式交互回调）
  */
 void id_input(int id) {
+    /* 跳过推箱步（type=0），找到下一个实际观测步 */
+    while (g_current_step < g_visit_count && g_visit_plan[g_current_step].type == 0)
+        g_current_step++;
     if (g_current_step < g_visit_count) {
         id_record(id);
         g_current_step++;
@@ -2988,8 +4166,11 @@ Path path_boom_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
 
     uint8_t plan_count = 0; int best_benefit = 0;
     DetonatePlan plans[MAX_BOOMS];
-    if (!analyze_bomb_breakthrough(&deadlock, plans, &plan_count, &best_benefit) || plan_count == 0)
+    if (!iterative_bomb_breakthrough(&deadlock, plans, &plan_count, &best_benefit) || plan_count == 0)
         return g_path_out;
+
+    /* ★ 重置全局状态：iterative_bomb_breakthrough 修改了 g_initial_bombs/g_original_map */
+    parse_map_input(map);
 
     BombExecutionPlan exec_plan;
     plan_bomb_execution_sequence(plans, plan_count, &exec_plan);
@@ -3061,7 +4242,7 @@ void map_boom_out(uint8_t out_map[MAP_ROWS][MAP_COLS]) {
  */
 void reset_planning_system(void) {
     /* ---- 4.1 A* 搜索全局缓冲区 ---- */
-    memset(hash_table, 0, sizeof(hash_table));
+    memset(hash_table, 0, sizeof(hash_table)); g_hash_epoch = 1;
     memset(pq, 0, sizeof(pq)); pq_size = 0;
     memset(g_succ_buf, 0, sizeof(g_succ_buf));
     for (int i = 0; i < (MAP_ROWS * MAP_COLS * 5); i++) {
@@ -3112,6 +4293,22 @@ void reset_planning_system(void) {
     memset(g_saved_player_region,  0, sizeof(g_saved_player_region));
     memset(g_vcache_hash, 0, sizeof(g_vcache_hash));
     memset(g_vcache_mask, 0, sizeof(g_vcache_mask));
+
+    /* ── 炸弹模式复用缓冲区（阶段一～三）── */
+    memset(g_bomb_pb,        0, sizeof(g_bomb_pb));
+    memset(g_bomb_t_s,       0, sizeof(g_bomb_t_s));
+    memset(g_bomb_best_s,    0, sizeof(g_bomb_best_s));
+    memset(g_bomb_candidates,0, sizeof(g_bomb_candidates));
+    memset(g_bomb_all_plans, 0, sizeof(g_bomb_all_plans));
+    memset(g_bomb_walls,     0, sizeof(g_bomb_walls));
+    memset(&g_bomb_ppath,    0, sizeof(g_bomb_ppath));
+    memset(&g_bomb_ar,       0, sizeof(g_bomb_ar));
+    memset(&g_backtrack_ar,  0, sizeof(g_backtrack_ar));
+    memset(g_bomb_saved_map, 0, sizeof(g_bomb_saved_map));
+    memset(g_bomb_visited,   0, sizeof(g_bomb_visited));
+
+    /* ── UNR 箱子可达性缓存 ── */
+    memset(g_unr_reach_cache, -1, sizeof(g_unr_reach_cache));
 
     /* ---- 4.6 推箱验证全局状态 ---- */
     memset(g_solved,   0, sizeof(g_solved));
