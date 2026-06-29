@@ -63,7 +63,6 @@ static uint8_t look_flag = 0;        // 观察模式标志
 static uint8_t id_flag = 0;          // 识别模式标志
 static uint8_t boom_flag = 0;        // 炸弹破局标志 
 static uint8_t yaw_flag = 0;         // 角度调整标志
-static uint8_t StoID_flag = 0;       // 从 start 模式切换为id模式
 static uint8_t grid[MAP_ROWS][MAP_COLS] = {0};
 
 int main(void){
@@ -74,8 +73,6 @@ int main(void){
     Init();                         // 硬件初始化
     
     interrupt_global_enable(0);     // 开启全局中断
-
-    system_delay_ms(1000);
 
 	while(1){ 
 
@@ -401,7 +398,6 @@ static void path_process(void){
                 grid[path_start_car.y[0]][path_start_car.x[0]] = 0;
                 grid[path_start_car.y[path_start_car.len - 1]][path_start_car.x[path_start_car.len - 1]] = 2;
                 look_flag = 1;
-                if (yaw_target == 0) StoID_flag = 1;
                 // 起始路径走完，转入 Look 状态识别ID
                 car_state = Look;
                 return;
@@ -415,15 +411,6 @@ static void path_process(void){
     }else if (game_mode == 2 && !map_process_flag && path_look_car.len > 0){
         if ((fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) || yaw_flag == 1) { 
             yaw_flag = 0;           
-            if (StoID_flag == 1){
-                StoID_flag = 0;
-                id_input(id);
-                id = -1;
-                step = 2;
-                x_target = (path_look_car.x[step] + 0.5f) * x_enc_uint;
-                y_target = (path_look_car.y[step] + 0.5f) * y_enc_uint;
-                return;
-            }
             if (path_look_car.is_look[step] == 1 && step < path_look_car.len){
                 vx = 0;vy = 0;
                 yaw_target = path_look_car.angle[step]; // 设置观察角度
@@ -496,7 +483,7 @@ static void cam2_process(void){
                     return;
                 }else{
                     game_mode = 2;      // 切换到ID识别模式
-                    if (StoID_flag != 1) id = -1;
+                    id = -1;
                     car_state = Waiting;
                     return;
                 }
