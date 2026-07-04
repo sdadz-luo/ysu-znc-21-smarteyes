@@ -2264,11 +2264,18 @@ static void extract_look_turn_points(VisitStep* plan) {
                     gp = gc;
                 }
             }
-            /* 记录观测/推箱终点（去重：同位置保留 is_look=1） */
+            /* 记录观测/推箱终点（同位置多观测：分别保留，不再覆盖） */
             if (li < MAX_PATH_LEN) {
                 Point ep = plan[i].path[0];
                 if (li > 0 && g_path_look_out.y[li-1] == ep.x && g_path_look_out.x[li-1] == ep.y) {
-                    if (plan[i].type != 0) { g_path_look_out.is_look[li-1] = 1; g_path_look_out.type[li-1] = plan[i].type; g_path_look_out.angle[li-1] = plan[i].angle; }
+                    if (plan[i].type != 0 && !g_path_look_out.is_look[li-1]) { g_path_look_out.is_look[li-1] = 1; g_path_look_out.type[li-1] = plan[i].type; g_path_look_out.angle[li-1] = plan[i].angle; }
+                    else if (plan[i].type != 0) {
+                        g_path_look_out.x[li] = ep.y;
+                        g_path_look_out.y[li] = ep.x;
+                        g_path_look_out.angle[li] = plan[i].angle;
+                        g_path_look_out.type[li] = plan[i].type;
+                        g_path_look_out.is_look[li] = 1; li++;
+                    }
                 } else {
                     g_path_look_out.x[li] = ep.y;
                     g_path_look_out.y[li] = ep.x;
@@ -2283,9 +2290,16 @@ static void extract_look_turn_points(VisitStep* plan) {
             Point cur = plan[i].path[j];
             if (j == plan[i].path_len - 1) {
                 if (li >= MAX_PATH_LEN) break;
-                /* 去重：同位置保留 is_look=1 */
+                /* 同位置多观测：分别保留，不再覆盖 */
                 if (li > 0 && g_path_look_out.y[li-1] == cur.x && g_path_look_out.x[li-1] == cur.y) {
-                    if (plan[i].type != 0) { g_path_look_out.is_look[li-1] = 1; g_path_look_out.type[li-1] = plan[i].type; g_path_look_out.angle[li-1] = plan[i].angle; }
+                    if (plan[i].type != 0 && !g_path_look_out.is_look[li-1]) { g_path_look_out.is_look[li-1] = 1; g_path_look_out.type[li-1] = plan[i].type; g_path_look_out.angle[li-1] = plan[i].angle; }
+                    else if (plan[i].type != 0) {
+                        g_path_look_out.x[li] = cur.y;
+                        g_path_look_out.y[li] = cur.x;
+                        g_path_look_out.angle[li] = plan[i].angle;
+                        g_path_look_out.type[li] = plan[i].type;
+                        g_path_look_out.is_look[li] = 1; li++;
+                    }
                 } else {
                     g_path_look_out.x[li] = cur.y; g_path_look_out.y[li] = cur.x;
                     g_path_look_out.angle[li] = plan[i].angle;
@@ -4806,13 +4820,13 @@ void reset_planning_system(void) {
 /* 当前使用的测试地图 */
 static uint8_t g_map_test[MAP_ROWS][MAP_COLS] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,3,0,6,6,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,2,0,0,0,3,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,6,0,0,0,0,0,1,1,1,1,1,1,0,1},
+    {1,1,3,1,1,1,1,1,1,1,0,0,0,1,0,1},
+    {1,0,0,0,0,0,0,0,1,1,6,1,0,1,0,1},
+    {1,0,0,0,0,0,0,0,1,1,6,1,0,1,0,1}, 
+    {1,0,0,0,0,0,0,2,3,0,0,3,0,1,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1},
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
