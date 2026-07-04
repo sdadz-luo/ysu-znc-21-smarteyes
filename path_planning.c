@@ -544,6 +544,8 @@ static int8_t g_id_pairing[MAX_IDS];                  /* ID配对表 */
 static int8_t g_box_id_map[MAX_BOXES];                /* 箱子ID映射 */
 static int8_t g_target_id_map[MAX_BOXES];             /* 目标ID映射 */
 static SolutionSequence g_id_based_sol;               /* ID方案 */
+static int8_t g_orig_box_id_map[MAX_BOXES];
+static int8_t g_orig_target_id_map[MAX_BOXES];
 
 /* ---------- 4.9 模式3最终地图 ---------- */
 static uint16_t g_boom_final_walls[MAP_ROWS];        /* 引爆后最终墙位图 */
@@ -1491,7 +1493,8 @@ static bool backtrack_validate(SolutionSequence* sol) {
                 Point obs = sol->pairs[pi].box_pos;
                 g_current_walls[obs.x] |= (1 << obs.y);
                 if (g_mode1_strict ||
-                    (my_id != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id)) {
+                    (my_id != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id) ||
+                    (my_id != -1 && g_orig_target_id_map[sol->pairs[pi].target_idx] == g_orig_box_id_map[sol->pairs[try_idx].box_idx])) {
                     Point tp = sol->pairs[pi].target_pos;
                     g_current_walls[tp.x] |= (1 << tp.y);
                 }
@@ -1643,7 +1646,8 @@ static bool backtrack_validate(SolutionSequence* sol) {
                             Point obs = sol->pairs[pi].box_pos;
                             g_current_walls[obs.x] |= (1 << obs.y);
                             if (g_mode1_strict ||
-                                (my_id2 != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id2)) {
+                                (my_id2 != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id2) ||
+                                (my_id2 != -1 && g_orig_target_id_map[sol->pairs[pi].target_idx] == g_orig_box_id_map[sol->pairs[try_idx].box_idx])) {
                                 Point tp = sol->pairs[pi].target_pos;
                                 g_current_walls[tp.x] |= (1 << tp.y);
                             }
@@ -1667,7 +1671,8 @@ static bool backtrack_validate(SolutionSequence* sol) {
                                 if (m == try_idx || g_solved[m]) continue;
                                 uint8_t ti = sol->pairs[m].target_idx;
                                 if (g_mode1_strict ||
-                                    (mid != -1 && g_target_id_map[ti] == mid))
+                                    (mid != -1 && g_target_id_map[ti] == mid) ||
+                                    (mid != -1 && g_orig_target_id_map[ti] == g_orig_box_id_map[sol->pairs[try_idx].box_idx]))
                                     forbid[sol->pairs[m].target_pos.x] |= (1 << sol->pairs[m].target_pos.y);
                             }
                             Point sim = cur_box; bool valid = true;
@@ -1735,7 +1740,8 @@ static bool backtrack_validate(SolutionSequence* sol) {
                 if (m == try_idx || g_solved[m]) continue;
                 uint8_t ti = sol->pairs[m].target_idx;
                 if (g_mode1_strict ||
-                    (my_id != -1 && g_target_id_map[ti] == my_id))
+                    (my_id != -1 && g_target_id_map[ti] == my_id) ||
+                    (my_id != -1 && g_orig_target_id_map[ti] == g_orig_box_id_map[sol->pairs[try_idx].box_idx]))
                     forbid_targets[sol->pairs[m].target_pos.x] |= (1 << sol->pairs[m].target_pos.y);
             }
 
@@ -4617,6 +4623,9 @@ Path path_id_calculation(void) {
     if (g_visit_count > 0) {
         g_initial_player = g_visit_plan[g_visit_count - 1].pos;
     }
+    /* 备份原始ID映射，backtrack_validate中用原始ID判断同源阻挡 */
+    memcpy(g_orig_box_id_map, g_box_id_map, sizeof(g_box_id_map));
+    memcpy(g_orig_target_id_map, g_target_id_map, sizeof(g_target_id_map));
     id_inference();
     SolutionSequence* id_sol = build_solution_from_id_pairing();
     return path_id_calculate(id_sol);
