@@ -40,10 +40,10 @@ static float dc = C / (B * N);          // 脉冲→厘米转换系数 (cm/脉冲)
 static float dc_dt = 0;                 // 预计算: dc / dt, 用于编码器速度换算 (在 encoder_init 中初始化)
 
 // 原始编码器数据 (中间值，每次读取后清零)
-int encoder_data_FL = 0;
-int encoder_data_FR = 0;
-int encoder_data_BL = 0;
-int encoder_data_BR = 0;
+float encoder_data_FL = 0;
+float encoder_data_FR = 0;
+float encoder_data_BL = 0;
+float encoder_data_BR = 0;
 
 // 一阶低通滤波历史数据（float 保留小数，防止截断累积误差）
 static float encoder_data_FL_last = 0;
@@ -105,10 +105,10 @@ void encoder_get(void){
     encoder_data_BR_enc = filt_BR;
 
     // 5. 对外输出截断 int（供 PID 速度环使用，截断误差在此隔离）
-    encoder_data_FL = (int)filt_FL;
-    encoder_data_FR = (int)filt_FR;
-    encoder_data_BL = (int)filt_BL;
-    encoder_data_BR = (int)filt_BR;
+    encoder_data_FL = filt_FL;
+    encoder_data_FR = filt_FR;
+    encoder_data_BL = filt_BL;
+    encoder_data_BR = filt_BR;
     
     // 6. 清除硬件计数器，以便下次读取的是增量值
     encoder_clear_count(ENCODER_FL);

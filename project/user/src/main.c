@@ -34,7 +34,7 @@ static void uart_updata(void);
 static void cam2_process(void);
 
 // ================= 外部变量声明  =================
-extern int encoder_data_FL, encoder_data_FR, encoder_data_BL, encoder_data_BR; 	// 四个轮子编码器数据
+extern float encoder_data_FL, encoder_data_FR, encoder_data_BL, encoder_data_BR; 	// 四个轮子编码器数据
 extern float x_enc, y_enc;   													// 小车当前位置坐标 (X, Y)
 extern float yaw;            													// 小车当前角度 (航向角)
 extern pid pid_FL, pid_FR, pid_BL, pid_BR; 										// 四个轮子的速度环 PID
@@ -61,8 +61,8 @@ static uint8_t game_over_flag = 0;   // 游戏结束标志
 static uint8_t game_mode = 0;        // 游戏模式: 0=Start, 1=Normal Run, 2=Look, 3=ID Run  
 static uint8_t look_flag = 0;        // 观察模式标志
 static uint8_t id_flag = 0;          // 识别模式标志
-static uint8_t boom_flag = 0;        // 炸弹破局标志 
-static uint8_t yaw_flag = 0;         // 角度调整标志
+static uint8_t boom_flag = 0;        // 炸弹破局标志
+static uint8_t turn_mode_flag = 0;   // 模式转换标志
 static uint8_t grid[MAP_ROWS][MAP_COLS] = {0};
 
 int main(void){
@@ -147,15 +147,6 @@ void PIT_IRQHandler(void){
         uart_updata();          		// 处理串口数据
         pit_flag_clear(PIT_CH1);
     }
-    
-  if(pit_flag_get(PIT_CH2)){
-    pit_flag_clear(PIT_CH2);
-  }
-    
-  if(pit_flag_get(PIT_CH3)){
-    pit_flag_clear(PIT_CH3); 
-  }
-	
 	__DSB();
 }
 
@@ -216,9 +207,11 @@ static void state_judgment(void){
         }
         
         case GameMap:{
-            // 设置初始目标位置
-            x_target = (origin_x_enc + 0.5) * x_enc_uint;
-            y_target = (origin_y_enc + 0.5) * y_enc_uint;
+            if (x_cam >= 0 * x_cam_uint && x_cam <= 2.5 * x_cam_uint && y_cam >= 5 * y_cam_uint && y_cam <= 7 * y_cam_uint){
+                // 设置初始目标位置
+                x_target = (origin_x_enc + 0.5) * x_enc_uint;
+                y_target = (origin_y_enc + 0.5) * y_enc_uint;
+            }
             car_state = Run;
             return;
         }
@@ -326,18 +319,19 @@ static void uart_updata(void){
     //         memset(data_buffer, 0, 64);	
     //     }
 }
- 
+
 /**
  * @brief 模式1和模式3的公共路径跟踪逻辑
  * @param path  路径数据指针
  * @param end_x 终点栅格X坐标
  * @param end_y 终点栅格Y坐标
  */
-static void process_normal_path(const Path *path, float end_x, float end_y){
+static void process_normal_path(const Path *path){
+    static float end_x = 0, end_y = 6;
     if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {
         step++;
         if (step > path->len) {
-            if (x_enc >= 12 * x_enc_uint) end_x = 0.5;
+            if (x_enc >= 12 * x_enc_uint) end_x = 0.5f;
             else end_x = 1;
             x_target = end_x * x_enc_uint;
             y_target = end_y * y_enc_uint;
@@ -358,7 +352,7 @@ static void process_normal_path(const Path *path, float end_x, float end_y){
 static void path_process(void){
     // 1. 扫描地图数据 (检测是否有车位2, 障碍3, 车辆6)
     if (map_process_flag == 1) {
-        system_delay_ms(600);
+        system_delay_ms(500);
         for (uint8_t row = 0; row < 12; row++) {
             for (uint8_t col = 0; col < 16; col++) {
                 uint8_t val = car_data.grid[row][col];
@@ -382,11 +376,15 @@ static void path_process(void){
         boom_flag = 0;look_flag = 0;id_flag = 0;
         has_2 = 0;has_3 = 0;has_6 = 0;
         step = 0;             													// 重置路径步数
+        if (game_mode == 4 && path_boom_car.len == 0){
+            game_mode = 0;
+            boom_flag = 1;
+        }
     }
 
     // 3. 路径跟踪执行 (根据不同模式)
     if (game_mode == 1 && !map_process_flag && path_car.len > 0){
-        process_normal_path(&path_car, 0.5, 6);
+        process_normal_path(&path_car);
         return;
     }else if (game_mode == 0 && !map_process_flag && path_start_car.len > 0){
         if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
@@ -394,7 +392,6 @@ static void path_process(void){
             if (step >= path_start_car.len) {
                 yaw_target = path_start_car.angle; // 设置目标角度
                 type = path_start_car.type;
-                grid[origin_y_enc][origin_x_enc] = 0;
                 grid[path_start_car.y[0]][path_start_car.x[0]] = 0;
                 grid[path_start_car.y[path_start_car.len - 1]][path_start_car.x[path_start_car.len - 1]] = 2;
                 look_flag = 1;
@@ -409,8 +406,17 @@ static void path_process(void){
             }
         }
     }else if (game_mode == 2 && !map_process_flag && path_look_car.len > 0){
-        if ((fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) || yaw_flag == 1) { 
-            yaw_flag = 0;           
+        if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {
+            if (turn_mode_flag){
+                turn_mode_flag = 0;
+                id_input(id);
+                id = -1;
+                step = 1;
+                x_target = (path_look_car.x[step] + 0.5f) * x_enc_uint;
+                y_target = (path_look_car.y[step] + 0.5f) * y_enc_uint;
+                car_state = Run;
+                return;
+            }          
             if (path_look_car.is_look[step] == 1 && step < path_look_car.len){
                 vx = 0;vy = 0;
                 yaw_target = path_look_car.angle[step]; // 设置观察角度
@@ -433,7 +439,7 @@ static void path_process(void){
             }
         }
     }else if (game_mode == 3 && !map_process_flag && path_car.len > 0){
-        process_normal_path(&path_car, 0.5, 6);
+        process_normal_path(&path_car);
         return;
     }else if (game_mode == 4 && !map_process_flag && path_boom_car.len > 0){
         if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
@@ -469,6 +475,7 @@ static void cam2_process(void){
         if (id == -1) {
             system_delay_ms(300);
             cam1_uart_send(yaw_target);
+            if (yaw_target == 0) turn_mode_flag = 1;
             cam_uart2_write(type);
             while (id == -1) id = cam_uart2_read();
         } else {
@@ -483,7 +490,7 @@ static void cam2_process(void){
                     return;
                 }else{
                     game_mode = 2;      // 切换到ID识别模式
-                    id = -1;
+                    if (turn_mode_flag == 0) id = -1;
                     car_state = Waiting;
                     return;
                 }
@@ -495,7 +502,6 @@ static void cam2_process(void){
             cam1_uart_send(yaw_target);
             cam_uart2_write(type);
             while (id == -1) id = cam_uart2_read();
-            yaw_flag = 1;
         } else {
             yaw_target = 0;
             if (fabsf(yaw) <= 1) {

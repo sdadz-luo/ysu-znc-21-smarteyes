@@ -14,13 +14,13 @@ void PID_init(pid *pid_struct,
     pid_struct->kp          = kp;
     pid_struct->ki          = ki;
     pid_struct->kd          = kd;
-    pid_struct->error       = 0;
-    pid_struct->error_last  = 0;
-    pid_struct->error_last2 = 0;
-    pid_struct->integral    = 0;
+    pid_struct->error       = 0.0f;
+    pid_struct->error_last  = 0.0f;
+    pid_struct->error_last2 = 0.0f;
+    pid_struct->integral    = 0.0f;
     pid_struct->maxintegral = maxIntegral;
-    pid_struct->output      = 0;
-    pid_struct->output_1    = 0;
+    pid_struct->output      = 0.0f;
+    pid_struct->output_1    = 0.0f;
     pid_struct->maxOutput   = maxOutput;
     pid_struct->target      = target;
     pid_struct->dead        = dead;
@@ -79,8 +79,8 @@ float pid_location(pid *pid_struct, float now_value){
                            + pid_struct->kd * (pid_struct->error - pid_struct->error_last);  // 微分
     } else {
         // 死区内清空积分，输出置零
-        pid_struct->integral = 0;
-        pid_struct->output   = 0;
+        pid_struct->integral *= 0.9f;
+        pid_struct->output   = 0.0f;
     }
 
     // 输出限幅
@@ -132,12 +132,12 @@ void pid_change(pid *pid_struct, float kp, float ki, float kd){
 }
 
 static void PID_reset(pid *pid_struct){
-    pid_struct->error       = 0;
-    pid_struct->error_last  = 0;
-    pid_struct->error_last2 = 0;
-    pid_struct->integral    = 0;
-    pid_struct->output      = 0;
-    pid_struct->output_1    = 0;
+    pid_struct->error       = 0.0f;
+    pid_struct->error_last  = 0.0f;
+    pid_struct->error_last2 = 0.0f;
+    pid_struct->integral    = 0.0f;
+    pid_struct->output      = 0.0f;
+    pid_struct->output_1    = 0.0f;
 }
 
 void pid_reset(void){

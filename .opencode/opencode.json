@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md"
+  ],
+  "skills": {
+    "copilot-embedded": {},
+    "copilot-cpp": {},
+    "copilot-general": {}
+  }
+}

@@ -25,9 +25,15 @@
 *.omf
 *.sct
 
+# ===== Build output directories =====
+project/code/build/
+project/user/src/build/
+project/user/src/output/
+
 # ===== Keil MDK =====
 project/mdk/Objects/
 project/mdk/Listings/
+project/mdk/ini/
 *.uvoptx
 *.uvgui*
 JLinkLog.txt
@@ -36,12 +42,14 @@ JLinkLog.txt
 project/iar/Debug/
 project/iar/Release/
 project/iar/settings/
+project/iar/program/settings/
 *.wsdt
 *.dni
 *.dbgconf
 
 # ===== IDE / Debugger =====
 .vscode/
+opencode/
 JLinkSettings.ini
 *.jlink
 *.dnx
@@ -49,11 +57,36 @@ JLinkSettings.ini
 *.eww
 *.ewd
 
+# ===== OS metadata =====
+Thumbs.db
+.DS_Store
+
+# ===== Editor temp files =====
+*~
+*.swp
+*.swo
+
 # ===== Logs =====
 *.log
 
-# ===== Others =====
-project/mdk/ini/
-
 # ===== Temp scripts =====
 *.bat
+
+# ===== OpenCode runtime caches =====
+.opencode/.omo/
+.opencode/.opencode/memory/
+
+# ===== LSP / clangd stubs (local only) =====
+libraries/zf_common/assert.h
+libraries/zf_common/float.h
+libraries/zf_common/inttypes.h
+libraries/zf_common/limits.h
+libraries/zf_common/errno.h
+libraries/zf_common/math.h
+libraries/zf_common/stdarg.h
+libraries/zf_common/stdbool.h
+libraries/zf_common/stddef.h
+libraries/zf_common/stdint.h
+libraries/zf_common/stdio.h
+libraries/zf_common/stdlib.h
+libraries/zf_common/string.h
