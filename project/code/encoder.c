@@ -31,8 +31,8 @@
 #define C               (2.0f * PI * 3.0f)                        // 轮子周长 (2 * PI * 半径3.0cm)
 
 // ================= 滤波与算法参数 =================
-#define ENC_FILTER_ALPHA        0.8f    // 编码器一阶低通滤波系数
-#define ENC_FILTER_BETA         0.2f    // 编码器一阶低通滤波历史权重 (1 - alpha)
+#define ENC_FILTER_ALPHA        0.9f    // 编码器一阶低通滤波系数
+#define ENC_FILTER_BETA         0.1f    // 编码器一阶低通滤波历史权重 (1 - alpha)
 
 // ================= 全局变量 =================
 float x_enc = 0, y_enc = 0;             // 编码器全局累积位移 (单位: cm)

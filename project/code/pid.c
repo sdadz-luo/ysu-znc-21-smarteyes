@@ -79,8 +79,10 @@ float pid_location(pid *pid_struct, float now_value){
                            + pid_struct->kd * (pid_struct->error - pid_struct->error_last);  // 微分
     } else {
         // 死区内清空积分，输出置零
-        pid_struct->integral *= 0.9f;
-        pid_struct->output   = 0.0f;
+        pid_struct->integral *= 0.95f;
+        pid_struct->output = pid_struct->kp * pid_struct->error                              // 比例
+                           + pid_struct->ki * pid_struct->integral                           // 积分
+                           + pid_struct->kd * (pid_struct->error - pid_struct->error_last);  // 微分
     }
 
     // 输出限幅

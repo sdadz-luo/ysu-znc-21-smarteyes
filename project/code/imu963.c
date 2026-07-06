@@ -198,11 +198,7 @@ void imu_get(void){
     gyro_y = gyro_raw_y * ALPHA_GYRO + gyro_y * (1.0f - ALPHA_GYRO);
     gyro_z = gyro_raw_z * ALPHA_GYRO + gyro_z * (1.0f - ALPHA_GYRO);
 
-    // // 6. 死区滤波（抑制振动噪声）
-    // if (fabs(gyro_x) <= GYRO_DEADZONE) gyro_x = 0;
-    // if (fabs(gyro_y) <= GYRO_DEADZONE) gyro_y = 0;
-    // if (fabs(gyro_z) <= GYRO_DEADZONE) gyro_z = 0;
-    // else gyro_z += corr_yaw;
+    gyro_z += corr_yaw;
 
     // 7. Mahony 互补滤波更新四元数（内含自适应 Kp）
     mahony_update(gyro_x, gyro_y, gyro_z, acc_x, acc_y, acc_z, dt);

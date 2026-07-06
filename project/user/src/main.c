@@ -107,6 +107,10 @@ void PIT_IRQHandler(void){
 
         // 3. ½Ç¶È»· PID ¼ÆËã 
         if (time % 2 == 0){
+
+            if (car_state == Run) pid_change(&pid_yaw, 8, 0.001f, 20);
+            else pid_change(&pid_yaw, 4, 0.001f, 20);
+
             float yaw_error = yaw_target - yaw;
             if (yaw_error > 180.0f)       yaw_error -= 360.0f;
             else if (yaw_error < -180.0f) yaw_error += 360.0f;
