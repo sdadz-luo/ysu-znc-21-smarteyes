@@ -103,7 +103,7 @@ typedef enum
 }imu963ra_mag_sample_config;
 
 #define IMU963RA_ACC_SAMPLE_DEFAULT     ( IMU963RA_ACC_SAMPLE_SGN_8G )          // 在这设置默认的 加速度计 初始化量程
-#define IMU963RA_GYRO_SAMPLE_DEFAULT    ( IMU963RA_GYRO_SAMPLE_SGN_2000DPS )    // 在这设置默认的 陀螺仪   初始化量程
+#define IMU963RA_GYRO_SAMPLE_DEFAULT    ( IMU963RA_GYRO_SAMPLE_SGN_500DPS )    // 在这设置默认的 陀螺仪   初始化量程
 #define IMU963RA_MAG_SAMPLE_DEFAULT     ( IMU963RA_MAG_SAMPLE_8G )              // 在这设置默认的 磁力计   初始化量程
 
 #define IMU963RA_TIMEOUT_COUNT                      ( 0x00FF )                  // IMU963RA 超时计数

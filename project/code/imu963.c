@@ -26,7 +26,7 @@
 // 物理单位转换常量
 #define GRAVITY      9.8f    // 重力加速度 m/s?
 #define ACC_SCALE    4098    // 加速度计 LSB/g（±8G 量程）
-#define GYRO_SCALE   14.3f   // 陀螺仪 LSB/(°/s)
+#define GYRO_SCALE   57.1f   // 陀螺仪 LSB/(°/s)
 #define DEG_TO_RAD   (PI / 180.0f)
 
 float yaw = 0.0;
@@ -198,11 +198,11 @@ void imu_get(void){
     gyro_y = gyro_raw_y * ALPHA_GYRO + gyro_y * (1.0f - ALPHA_GYRO);
     gyro_z = gyro_raw_z * ALPHA_GYRO + gyro_z * (1.0f - ALPHA_GYRO);
 
-    // 6. 死区滤波（抑制振动噪声）
-    if (fabs(gyro_x) <= GYRO_DEADZONE) gyro_x = 0;
-    if (fabs(gyro_y) <= GYRO_DEADZONE) gyro_y = 0;
-    if (fabs(gyro_z) <= GYRO_DEADZONE) gyro_z = 0;
-    else gyro_z += corr_yaw;
+    // // 6. 死区滤波（抑制振动噪声）
+    // if (fabs(gyro_x) <= GYRO_DEADZONE) gyro_x = 0;
+    // if (fabs(gyro_y) <= GYRO_DEADZONE) gyro_y = 0;
+    // if (fabs(gyro_z) <= GYRO_DEADZONE) gyro_z = 0;
+    // else gyro_z += corr_yaw;
 
     // 7. Mahony 互补滤波更新四元数（内含自适应 Kp）
     mahony_update(gyro_x, gyro_y, gyro_z, acc_x, acc_y, acc_z, dt);

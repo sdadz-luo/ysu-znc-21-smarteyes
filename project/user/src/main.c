@@ -79,15 +79,6 @@ int main(void){
         // 状态机判断与状态转换处理
 		state_judgment();
 
-        // my_uart_write(0,id);
-        // my_uart_write(1,car_state);
-        // my_uart_write(2,path_car.len);
-        // my_uart_write(3,y_enc);
-        // my_uart_write(4,x_imu);
-        // my_uart_write(5,y_imu);
-        // my_uart_write(6,yaw);
-        // my_uart_send(3);
-
 	}
 }
 
@@ -101,7 +92,6 @@ void PIT_IRQHandler(void){
     // --- PIT Channel 0: 运动控制周期 (5ms) ---
     if(pit_flag_get(PIT_CH0)){
         time++;
-        
         // 1. 获取传感器数据
         encoder_get(); // 读取编码器数据
         imu_get();     // 读取 IMU 数据

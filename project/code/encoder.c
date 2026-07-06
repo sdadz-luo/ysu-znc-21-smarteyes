@@ -39,6 +39,7 @@ float x_enc = 0, y_enc = 0;             // 编码器全局累积位移 (单位: cm)
 static float dc = C / (B * N);          // 脉冲→厘米转换系数 (cm/脉冲)
 static float dc_dt = 0;                 // 预计算: dc / dt, 用于编码器速度换算 (在 encoder_init 中初始化)
 
+
 // 原始编码器数据 (中间值，每次读取后清零)
 float encoder_data_FL = 0;
 float encoder_data_FR = 0;

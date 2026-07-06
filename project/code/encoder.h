@@ -1,6 +1,8 @@
 #ifndef _CODE_ENCODER_h_
 #define _CODE_ENCODER_h_
 
+#include "zf_common_headfile.h"
+
 // 全局位置变量
 extern float x_enc, y_enc;      // 编码器里程计位置 (cm)
 extern float x_imu, y_imu;      // IMU 积分位置 (cm)
