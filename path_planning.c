@@ -243,6 +243,7 @@ typedef struct {
     Point path[MAX_PATH_LEN];           /* 玩家路径点序列 */
     uint16_t path_len;                  /* 路径长度（步数） */
     bool     path_valid;                /* 路径是否有效 */
+    bool     is_push[MAX_PATH_LEN];     /* 是否为推弹动作 */
 } BombPushPath;
 
 /* 一次炸弹执行步骤 */
@@ -4424,6 +4425,22 @@ static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
     out_path->path_len = len;
     memcpy(out_path->path, g_bomb_ar.path_points, len * sizeof(Point));
     out_path->path_valid = true;
+
+    /* 检测推弹步：玩家位置与炸弹位置重合时即为推弹动作 */
+    {
+        Point cur_bomb = bomb_pos;
+        for (uint16_t i = 0; i < len; i++) {
+            if (pos_equal(out_path->path[i], cur_bomb)) {
+                out_path->is_push[i] = true;
+                if (i > 0) {
+                    int8_t dx = (int8_t)(out_path->path[i].x - out_path->path[i-1].x);
+                    int8_t dy = (int8_t)(out_path->path[i].y - out_path->path[i-1].y);
+                    cur_bomb.x = (uint8_t)(cur_bomb.x + dx);
+                    cur_bomb.y = (uint8_t)(cur_bomb.y + dy);
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -4676,7 +4693,7 @@ Path path_boom_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
             Point cur = pp->path[i];
             if (total > 0 && pos_equal(cur, last_added)) continue;
             g_path_out.x[total] = cur.y; g_path_out.y[total] = cur.x;
-            g_path_out.is_push[total] = 0; last_added = cur; total++;
+            g_path_out.is_push[total] = (uint8_t)pp->is_push[i]; last_added = cur; total++;
         }
     }
     g_path_out.len = total;
@@ -4937,7 +4954,7 @@ int main(void) {
 
         if (path_bomb.len > 0) {
             for (int i = 0; i <= path_bomb.len; i++) {
-                printf("(%d,%d) ", path_bomb.x[i], path_bomb.y[i]);
+                printf("(%d,%d、%d) ", path_bomb.x[i], path_bomb.y[i], path_bomb.is_push[i]);
             }
             printf("\n路径总长: %d\n", path_bomb.len);
             for (int i = 0;i < 12;i++){
