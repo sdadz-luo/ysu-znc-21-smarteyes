@@ -7,7 +7,7 @@
 
 /* ---------- 4.1 A* 搜索全局缓冲区 ---------- */
 __attribute__((section(".bss.SDRAM_CACHE")))static HashEntry hash_table[MAX_OPENSET];           /* A*哈希表 */
-static PQNode pq[MAX_PQ_SIZE];                      /* A*优先队列 */
+__attribute__((section(".bss.$DTCM"))) static PQNode pq[MAX_PQ_SIZE];                      /* A*优先队列 */
 static uint32_t pq_size = 0;                        /* 优先队列大小 */
 static State g_succ_buf[8];                         /* 后继状态缓冲区 */
 static PathNode path_nodes[MAP_ROWS * MAP_COLS * 5];/* A*路径节点池 */
@@ -39,20 +39,20 @@ static uint8_t g_bomb_count = 0;                     /* 炸弹数量 */
 /* ---------- 4.5 模式3（炸弹破局）全局缓冲区 ---------- */
 static uint8_t g_original_map[MAP_ROWS][MAP_COLS];   /* 原始地图副本（模式3用） */
 static SimState g_sim_queue[MAX_SIM_QUEUE];          /* 推箱模拟队列（压缩版） */
-static uint16_t g_obs_buf[MAP_ROWS];                 /* 障碍物缓冲区 */
+__attribute__((section(".bss.$DTCM"))) static uint16_t g_obs_buf[MAP_ROWS];                 /* 障碍物缓冲区 */
 
 /* 推箱模拟BFS访问标记（epoch技术避免memset） */
 static uint8_t g_bfs_epoch = 1;
-static uint8_t g_bfs_visited[MAP_ROWS * MAP_COLS * MAP_ROWS * MAP_COLS];
+__attribute__((section(".bss.$DTCM"))) static uint8_t g_bfs_visited[MAP_ROWS * MAP_COLS * MAP_ROWS * MAP_COLS];
 static uint8_t g_dist_epoch = 1;
-static uint8_t g_dist_epoch_tag[MAP_ROWS][MAP_COLS];
+__attribute__((section(".bss.$DTCM"))) static uint8_t g_dist_epoch_tag[MAP_ROWS][MAP_COLS];
 
 static uint8_t g_vis1[MAP_ROWS][MAP_COLS];           /* 临时访问标记1 */
 
 static uint8_t g_player_region[MAP_ROWS][MAP_COLS];   /* 玩家可达区域 */
 static uint8_t g_vis1_epoch = 1;
 static uint8_t g_player_region_epoch = 1;
-static uint8_t g_hash_epoch = 1;                       /* 推箱A*哈希表epoch */
+__attribute__((section(".data.$DTCM"))) static uint8_t g_hash_epoch = 1;                       /* 推箱A*哈希表epoch */
 
 /* 死锁待解决点 */
 static DeadlockProblemPoint g_problem_points[MAX_PROBLEM_POINTS];
@@ -117,7 +117,7 @@ static Path_Start g_path_start_out = {0};            /* START模式输出 */
 static Path_Look g_path_look_out = {0};              /* ID模式输出 */
 
 /* ---------- 4.8 ID模式状态 ---------- */
-static uint16_t g_dist_map[MAP_ROWS][MAP_COLS];      /* BFS距离图 */
+__attribute__((section(".bss.$DTCM"))) static uint16_t g_dist_map[MAP_ROWS][MAP_COLS];      /* BFS距离图 */
 static VisitStep g_visit_plan[MAX_VISIT_STEPS];       /* 访问计划 */
 static uint8_t g_visit_count = 0;                    /* 访问计数 */
 static uint8_t g_current_step = 0;                   /* 当前步骤 */
@@ -191,7 +191,7 @@ static inline int get_smooth_idx(int x, int y, int dir) {
 /**
  * @brief 计算曼哈顿距离
  */
-static inline uint16_t manhattan_distance(Point a, Point b) {
+static inline __attribute__((section("ITCM_NonCacheable"))) uint16_t manhattan_distance(Point a, Point b) {
     int16_t dx = (int)a.x - (int)b.x;
     int16_t dy = (int)a.y - (int)b.y;
     return (uint16_t)((dx < 0 ? -dx : dx) + (dy < 0 ? -dy : dy));
@@ -210,7 +210,7 @@ static bool is_wall_bit(const uint16_t walls[MAP_ROWS], Point p) {
 /**
  * @brief 判断箱子是否处于角落死锁（两个垂直方向都有墙）
  */
-static bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]) {
+static __attribute__((section("ITCM_NonCacheable"))) bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]) {
     bool up    = is_wall_bit(walls, (Point){box.x - 1, box.y});
     bool down  = is_wall_bit(walls, (Point){box.x + 1, box.y});
     bool left  = is_wall_bit(walls, (Point){box.x, box.y - 1});
@@ -230,7 +230,7 @@ static bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]) {
  * @param out_blocker_idx  输出：挡路箱子的 box_idx
  * @return true=软死锁（out_blocker_idx 有效），false=硬死锁或无死锁
  */
-static bool is_soft_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS],
+static __attribute__((section("ITCM_NonCacheable"))) bool is_soft_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS],
     const bool solved[MAX_BOXES], uint8_t *out_blocker_idx) {
     bool up    = is_wall_bit(walls, (Point){box.x - 1, box.y});
     bool down  = is_wall_bit(walls, (Point){box.x + 1, box.y});
@@ -294,7 +294,7 @@ static bool state_equal(const State *a, const State *b) {
  * @brief 哈希表查找/插入（线性探测解决冲突）
  * @return >=0 索引 / -1 未找到 / -2 表满
  */
-static int32_t hash_lookup_insert(const State *s, uint16_t g, int32_t from, uint8_t insert) {
+static __attribute__((section("ITCM_NonCacheable"))) int32_t hash_lookup_insert(const State *s, uint16_t g, int32_t from, uint8_t insert) {
     uint32_t h = hash_state(s);
     uint32_t idx = h;
     uint32_t probe_cnt = 0;
@@ -320,7 +320,7 @@ static int32_t hash_lookup_insert(const State *s, uint16_t g, int32_t from, uint
 /**
  * @brief 推箱A*优先队列插入
  */
-static void pq_push(PQNode node) {
+static __attribute__((section("ITCM_NonCacheable"))) void pq_push(PQNode node) {
     if (pq_size >= MAX_PQ_SIZE) return;
     uint32_t pos = pq_size++;
     pq[pos] = node;
@@ -335,7 +335,7 @@ static void pq_push(PQNode node) {
 /**
  * @brief 推箱A*优先队列弹出
  */
-static PQNode pq_pop(void) {
+static __attribute__((section("ITCM_NonCacheable"))) PQNode pq_pop(void) {
     PQNode top = pq[0];
     pq[0] = pq[--pq_size];
     uint32_t i = 0;
@@ -355,7 +355,7 @@ static PQNode pq_pop(void) {
 /**
  * @brief 启发式函数（箱子的曼哈顿距离到目标）
  */
-static uint8_t heuristic(const State *s) {
+static __attribute__((section("ITCM_NonCacheable"))) uint8_t heuristic(const State *s) {
     return (uint8_t)(abs((int)s->box.x - (int)s->target.x) + abs((int)s->box.y - (int)s->target.y));
 }
 
@@ -375,7 +375,7 @@ static bool is_goal(const State *s) {
  * @param res 后继状态输出数组
  * @param cnt 输出后继数量
  */
-static void get_successors(const State *cur, State *res, uint8_t *cnt) {
+static __attribute__((section("ITCM_NonCacheable"))) void get_successors(const State *cur, State *res, uint8_t *cnt) {
     *cnt = 0;
     for (uint8_t d = 0; d < DIR_COUNT; d++) {
         Point np = {cur->player.x + DIRS[d][0], cur->player.y + DIRS[d][1]};
@@ -402,7 +402,7 @@ static void get_successors(const State *cur, State *res, uint8_t *cnt) {
 /**
  * @brief 从起点BFS计算到地图所有格子的距离
  */
-static void bfs_compute_distances(Point start, const uint16_t walls[MAP_ROWS]) {
+static __attribute__((section("ITCM_NonCacheable"))) void bfs_compute_distances(Point start, const uint16_t walls[MAP_ROWS]) {
     memset(g_dist_map, 0xFF, sizeof(g_dist_map)); /* INF=0xFFFF */
     int head = 0, tail = 0;
     g_dist_map[start.x][start.y] = 0;
@@ -707,7 +707,7 @@ static void parse_map_input(uint8_t map[MAP_ROWS][MAP_COLS]) {
  * @param out_path 输出路径数组
  * @return 路径长度（0=无路径）
  */
-static uint16_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path) {
+static __attribute__((section("ITCM_NonCacheable"))) uint16_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path) {
     for (int i = 0; i < (MAP_ROWS * MAP_COLS * 5); i++) {
         path_nodes[i].g_cost = INF;
         path_nodes[i].closed = false;
@@ -783,7 +783,7 @@ static uint16_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], P
  * @param dynamic_walls 动态墙位图（含其他箱子等障碍）
  * @return AStarResult 搜索结果
  */
-static AStarResult solve_single_box_a_star(Point player, Point box, Point target,
+static __attribute__((section("ITCM_NonCacheable"))) AStarResult solve_single_box_a_star(Point player, Point box, Point target,
                                             uint16_t dynamic_walls[MAP_ROWS]) {
     AStarResult result = {0};
     result.success = false;
@@ -1993,7 +1993,7 @@ static Path path_id_calculate(SolutionSequence* sol) {
 /**
  * @brief 计算玩家可达区域（箱子和炸弹视为障碍）
  */
-static void compute_player_region_with_walls(const uint16_t walls[MAP_ROWS], bool ignore_bombs) {
+static __attribute__((section("ITCM_NonCacheable"))) void compute_player_region_with_walls(const uint16_t walls[MAP_ROWS], bool ignore_bombs) {
     memset(g_obs_buf, 0, sizeof(g_obs_buf));
     for (uint8_t i = 0; i < MAP_ROWS; i++) for (uint8_t j = 0; j < MAP_COLS; j++) {
         uint8_t v = g_original_map[i][j];
