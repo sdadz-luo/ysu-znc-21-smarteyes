@@ -239,6 +239,7 @@ typedef struct {
     Point path[MAX_PATH_LEN];           /* 玩家路径点序列 */
     uint16_t path_len;                  /* 路径长度（步数） */
     bool     path_valid;                /* 路径是否有效 */
+    bool     is_push[MAX_PATH_LEN];     /* 是否为推弹动作 */
 } BombPushPath;
 
 /* 一次炸弹执行步骤 */

@@ -108,8 +108,8 @@ void PIT_IRQHandler(void){
         // 3. 角度环 PID 计算 
         if (time % 2 == 0){
 
-            if (car_state == Run) pid_change(&pid_yaw, 8, 0.001f, 20);
-            else pid_change(&pid_yaw, 4, 0.001f, 20);
+            if (car_state == Run) pid_change(&pid_yaw, 10, 0.001f, 30);
+            else pid_change(&pid_yaw, 5, 0.001f, 30);
 
             float yaw_error = yaw_target - yaw;
             if (yaw_error > 180.0f)       yaw_error -= 360.0f;
@@ -123,11 +123,11 @@ void PIT_IRQHandler(void){
         motor_solution(vx, vy, yaw, vz);
 
         // 5. 速度环/增量式 PID 计算得到最终 PWM
-        FL = pid_increm(&pid_FL, encoder_data_FL);
-        FR = pid_increm(&pid_FR, encoder_data_FR);
-        BL = pid_increm(&pid_BL, encoder_data_BL);
-        BR = pid_increm(&pid_BR, encoder_data_BR);
-                
+        FL = pid_increm(&pid_FL, encoder_data_FL / 4.0f);
+        FR = pid_increm(&pid_FR, encoder_data_FR / 4.0f);
+        BL = pid_increm(&pid_BL, encoder_data_BL / 4.0f);
+        BR = pid_increm(&pid_BR, encoder_data_BR / 4.0f);
+
         motor_duty(FL, FR, BL, BR); // 输出电机PWM
         
         if (time >= 200) time = 0; // 时间计数器复位 (1s 循环)
@@ -237,7 +237,7 @@ static void state_judgment(void){
                 // 停车入位: 到达停车位
                 if (fabsf(x_enc - x_target) <= 2 && fabsf(y_enc - y_target) <= 2){
                     vx = 0;vy = 0;
-                    system_delay_ms(1000);
+                    system_delay_ms(500);
                     if (find_in_grid(&car_data, 3, 6)) system_delay_ms(3000);
                     game_over_flag = 0;
                 }
@@ -259,7 +259,6 @@ static void state_judgment(void){
 					memset(&path_look_car, 0, sizeof(path_look_car));
                     memset(&path_car, 0, sizeof(path_car));
                     memset(&path_boom_car, 0, sizeof(path_boom_car));
-                    system_delay_ms(500);
                     car_state = NoGame; // 回到初始状态
                     return;
                 } 
@@ -347,6 +346,8 @@ static void path_process(void){
     // 1. 扫描地图数据 (检测是否有车位2, 障碍3, 车辆6)
     if (map_process_flag == 1) {
         system_delay_ms(500);
+        if (game_count == 0) game_mode = 1;
+        else game_mode = 2;
         for (uint8_t row = 0; row < 12; row++) {
             for (uint8_t col = 0; col < 16; col++) {
                 uint8_t val = car_data.grid[row][col];
@@ -371,7 +372,7 @@ static void path_process(void){
         has_2 = 0;has_3 = 0;has_6 = 0;
         step = 0;             													// 重置路径步数
         if (game_mode == 4 && path_boom_car.len == 0){
-            game_mode = 0;
+            game_mode = 2;
             boom_flag = 1;
         }
     }
@@ -444,7 +445,7 @@ static void path_process(void){
                 grid[origin_y_enc][origin_x_enc] = 0;
                 grid[path_boom_car.y[path_boom_car.len]][path_boom_car.x[path_boom_car.len]] = 2;
                 boom_flag = 1;
-                game_mode = 0;
+                game_mode = 2;
                 car_state = Waiting;
                 return;
             }else{

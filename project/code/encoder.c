@@ -23,7 +23,7 @@
 #define ENCODER_BR_B     (QTIMER3_ENCODER2_CH2_B19)
 
 
-#define N    4096                       // 编码器每圈脉冲数 (CPR * 4倍频)
+#define N    16384                       // 编码器每圈脉冲数 (CPR * 4倍频)
 // ================= 机械参数 (根据实际齿轮确认) =================
 #define GEAR_ENCODER    30              // 编码器齿轮齿数
 #define GEAR_WHEEL      70              // 轮子大齿轮齿数

@@ -135,7 +135,6 @@ static uint8_t  g_boom_used_mask;                    /* 已使用炸弹位掩码 */
  * @brief 向最小堆中插入一个节点索引
  * @param idx path_nodes 中的索引
  */
-__attribute__((section("ITCM_NonCacheable")))
 static inline void s_heap_push(int idx) {
     if (s_heap_size >= MAP_ROWS * MAP_COLS * 5) return;
     uint32_t pos = s_heap_size++;
@@ -151,7 +150,6 @@ static inline void s_heap_push(int idx) {
 /**
  * @brief 从最小堆中弹出f_cost最小的节点索引
  */
-__attribute__((section("ITCM_NonCacheable")))
 static inline int s_heap_pop(void) {
     int top_idx = s_heap[0].idx;
     s_heap[0].idx = s_heap[--s_heap_size].idx;
@@ -197,7 +195,6 @@ static inline uint16_t manhattan_distance(Point a, Point b) {
 /**
  * @brief 判断某位置是否为墙（在位图中查询）
  */
-__attribute__((section("ITCM_NonCacheable")))
 static bool is_wall_bit(const uint16_t walls[MAP_ROWS], Point p) {
     if (p.x >= MAP_ROWS || p.y >= MAP_COLS) return true;
     return (walls[p.x] & (1 << p.y)) != 0;
@@ -206,7 +203,6 @@ static bool is_wall_bit(const uint16_t walls[MAP_ROWS], Point p) {
 /**
  * @brief 判断箱子是否处于角落死锁（两个垂直方向都有墙）
  */
-__attribute__((section("ITCM_NonCacheable")))
 static bool is_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS]) {
     bool up    = is_wall_bit(walls, (Point){box.x - 1, box.y});
     bool down  = is_wall_bit(walls, (Point){box.x + 1, box.y});
@@ -265,7 +261,6 @@ static bool is_soft_corner_deadlock(Point box, const uint16_t walls[MAP_ROWS],
 /**
  * @brief 计算状态的哈希值（djb2算法）
  */
-__attribute__((section("ITCM_NonCacheable")))
 static uint32_t hash_state(const State *s) {
     uint32_t h = 5381;
     h = ((h << 5) + h) ^ (uint32_t)s->player.x;
@@ -279,7 +274,6 @@ static uint32_t hash_state(const State *s) {
 /**
  * @brief 判断两个状态是否相等
  */
-__attribute__((section("ITCM_NonCacheable")))
 static bool state_equal(const State *a, const State *b) {
     if (!pos_equal(a->player, b->player)) return false;
     if (!pos_equal(a->box, b->box)) return false;
@@ -293,7 +287,6 @@ static bool state_equal(const State *a, const State *b) {
  * @brief 哈希表查找/插入（线性探测解决冲突）
  * @return >=0 索引 / -1 未找到 / -2 表满
  */
-__attribute__((section("ITCM_NonCacheable")))
 static int32_t hash_lookup_insert(const State *s, uint16_t g, int32_t from, uint8_t insert) {
     uint32_t h = hash_state(s);
     uint32_t idx = h;
@@ -320,7 +313,6 @@ static int32_t hash_lookup_insert(const State *s, uint16_t g, int32_t from, uint
 /**
  * @brief 推箱A*优先队列插入
  */
-__attribute__((section("ITCM_NonCacheable")))
 static void pq_push(PQNode node) {
     if (pq_size >= MAX_PQ_SIZE) return;
     uint32_t pos = pq_size++;
@@ -336,7 +328,6 @@ static void pq_push(PQNode node) {
 /**
  * @brief 推箱A*优先队列弹出
  */
-__attribute__((section("ITCM_NonCacheable")))
 static PQNode pq_pop(void) {
     PQNode top = pq[0];
     pq[0] = pq[--pq_size];
@@ -357,7 +348,6 @@ static PQNode pq_pop(void) {
 /**
  * @brief 启发式函数（箱子的曼哈顿距离到目标）
  */
-__attribute__((section("ITCM_NonCacheable")))
 static uint8_t heuristic(const State *s) {
     return (uint8_t)(abs((int)s->box.x - (int)s->target.x) + abs((int)s->box.y - (int)s->target.y));
 }
@@ -365,7 +355,6 @@ static uint8_t heuristic(const State *s) {
 /**
  * @brief 判断是否达到目标状态（箱子到达目标位置）
  */
-__attribute__((section("ITCM_NonCacheable")))
 static bool is_goal(const State *s) {
     return pos_equal(s->box, s->target);
 }
@@ -379,7 +368,6 @@ static bool is_goal(const State *s) {
  * @param res 后继状态输出数组
  * @param cnt 输出后继数量
  */
-__attribute__((section("ITCM_NonCacheable")))
 static void get_successors(const State *cur, State *res, uint8_t *cnt) {
     *cnt = 0;
     for (uint8_t d = 0; d < DIR_COUNT; d++) {
@@ -407,7 +395,6 @@ static void get_successors(const State *cur, State *res, uint8_t *cnt) {
 /**
  * @brief 从起点BFS计算到地图所有格子的距离
  */
-__attribute__((section("ITCM_NonCacheable")))
 static void bfs_compute_distances(Point start, const uint16_t walls[MAP_ROWS]) {
     memset(g_dist_map, 0xFF, sizeof(g_dist_map)); /* INF=0xFFFF */
     int head = 0, tail = 0;
@@ -430,7 +417,6 @@ static void bfs_compute_distances(Point start, const uint16_t walls[MAP_ROWS]) {
 /**
  * @brief BFS可达性计算（使用epoch技术避免全零memset）
  */
-__attribute__((section("ITCM_NonCacheable")))
 static void bfs_compute_reachability(Point start, const uint16_t obstacles[MAP_ROWS]) {
     g_dist_epoch++;
     if (g_dist_epoch == 0) { memset(g_dist_epoch_tag, 0, sizeof(g_dist_epoch_tag)); g_dist_epoch = 1; }
@@ -713,7 +699,6 @@ static void parse_map_input(uint8_t map[MAP_ROWS][MAP_COLS]) {
  * @param out_path 输出路径数组
  * @return 路径长度（0=无路径）
  */
-__attribute__((section("ITCM_NonCacheable")))
 static uint16_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], Point* out_path) {
     for (int i = 0; i < (MAP_ROWS * MAP_COLS * 5); i++) {
         path_nodes[i].g_cost = INF;
@@ -790,7 +775,6 @@ static uint16_t simple_astar(Point start, Point end, uint16_t walls[MAP_ROWS], P
  * @param dynamic_walls 动态墙位图（含其他箱子等障碍）
  * @return AStarResult 搜索结果
  */
-__attribute__((section("ITCM_NonCacheable")))
 static AStarResult solve_single_box_a_star(Point player, Point box, Point target,
                                             uint16_t dynamic_walls[MAP_ROWS]) {
     AStarResult result = {0};
@@ -969,7 +953,6 @@ static void extract_start_turn_points(ApproachResult* res) {
  *
  * @param sol 输出配对方案
  */
-__attribute__((section("ITCM_NonCacheable")))
 static void generate_greedy_pairing(SolutionSequence* sol) {
     sol->count = g_box_count;
     sol->is_valid = false;
@@ -1011,7 +994,6 @@ static void generate_greedy_pairing(SolutionSequence* sol) {
  * @param sol 配对方案
  * @return true 方案可行
  */
-__attribute__((section("ITCM_NonCacheable")))
 static bool backtrack_validate(SolutionSequence* sol) {
     if (g_order_idx == sol->count) {
         sol->is_valid = true;
@@ -1084,9 +1066,9 @@ static bool backtrack_validate(SolutionSequence* sol) {
                 uint8_t pi = g_remaining[m];
                 Point obs = sol->pairs[pi].box_pos;
                 g_current_walls[obs.x] |= (1 << obs.y);
-            if (g_mode1_strict ||
-                (my_id != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id) ||
-                (my_id != -1 && g_orig_target_id_map[sol->pairs[pi].target_idx] == g_orig_box_id_map[sol->pairs[try_idx].box_idx])) {
+                if (g_mode1_strict ||
+                    (my_id != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id) ||
+                    (my_id != -1 && g_orig_target_id_map[sol->pairs[pi].target_idx] == g_orig_box_id_map[sol->pairs[try_idx].box_idx])) {
                     Point tp = sol->pairs[pi].target_pos;
                     g_current_walls[tp.x] |= (1 << tp.y);
                 }
@@ -1196,9 +1178,8 @@ static bool backtrack_validate(SolutionSequence* sol) {
                             if ((int8_t)pi == blocker_pair || g_solved[pi]) continue;
                             Point obs = sol->pairs[pi].box_pos;
                             blocker_walls[obs.x] |= (1 << obs.y);
-                        if (g_mode1_strict ||
-                            (bid != -1 && g_target_id_map[sol->pairs[pi].target_idx] == bid) ||
-                            (bid != -1 && g_orig_target_id_map[sol->pairs[pi].target_idx] == g_orig_box_id_map[blocker_idx])) {
+                            if (g_mode1_strict ||
+                                (bid != -1 && g_target_id_map[sol->pairs[pi].target_idx] == bid)) {
                                 Point tp = sol->pairs[pi].target_pos;
                                 blocker_walls[tp.x] |= (1 << tp.y);
                             }
@@ -1395,7 +1376,6 @@ static bool backtrack_validate(SolutionSequence* sol) {
  * 
  * @param sol 待验证的配对方案
  */
-__attribute__((section("ITCM_NonCacheable")))
 static void validate_solution(SolutionSequence* sol) {
     if (sol->count == 0 || g_box_count != g_target_count) {
         sol->is_valid = false; return;
@@ -4018,6 +3998,22 @@ static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
     out_path->path_len = len;
     memcpy(out_path->path, g_bomb_ar.path_points, len * sizeof(Point));
     out_path->path_valid = true;
+
+    /* 检测推弹步：玩家位置与炸弹位置重合时即为推弹动作 */
+    {
+        Point cur_bomb = bomb_pos;
+        for (uint16_t i = 0; i < len; i++) {
+            if (pos_equal(out_path->path[i], cur_bomb)) {
+                out_path->is_push[i] = true;
+                if (i > 0) {
+                    int8_t dx = (int8_t)(out_path->path[i].x - out_path->path[i-1].x);
+                    int8_t dy = (int8_t)(out_path->path[i].y - out_path->path[i-1].y);
+                    cur_bomb.x = (uint8_t)(cur_bomb.x + dx);
+                    cur_bomb.y = (uint8_t)(cur_bomb.y + dy);
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -4217,6 +4213,7 @@ Path path_id_calculation(void) {
     if (g_visit_count > 0) {
         g_initial_player = g_visit_plan[g_visit_count - 1].pos;
     }
+    /* 备份原始ID映射，backtrack_validate中用原始ID判断同源阻挡 */
     memcpy(g_orig_box_id_map, g_box_id_map, sizeof(g_box_id_map));
     memcpy(g_orig_target_id_map, g_target_id_map, sizeof(g_target_id_map));
     id_inference();
@@ -4269,7 +4266,7 @@ Path path_boom_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
             Point cur = pp->path[i];
             if (total > 0 && pos_equal(cur, last_added)) continue;
             g_path_out.x[total] = cur.y; g_path_out.y[total] = cur.x;
-            g_path_out.is_push[total] = 0; last_added = cur; total++;
+            g_path_out.is_push[total] = (uint8_t)pp->is_push[i]; last_added = cur; total++;
         }
     }
     g_path_out.len = total;
