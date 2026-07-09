@@ -1504,7 +1504,9 @@ static bool backtrack_validate(SolutionSequence* sol) {
                 g_current_walls[obs.x] |= (1 << obs.y);
                 if (g_mode1_strict ||
                     (my_id != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id) ||
-                    (my_id != -1 && g_orig_target_id_map[sol->pairs[pi].target_idx] == g_orig_box_id_map[sol->pairs[try_idx].box_idx])) {
+                    (my_id != -1
+                     && g_orig_target_id_map[sol->pairs[pi].target_idx] != -1
+                     && g_orig_target_id_map[sol->pairs[pi].target_idx] == g_orig_box_id_map[sol->pairs[try_idx].box_idx])) {
                     Point tp = sol->pairs[pi].target_pos;
                     g_current_walls[tp.x] |= (1 << tp.y);
                 }
@@ -1657,7 +1659,9 @@ static bool backtrack_validate(SolutionSequence* sol) {
                             g_current_walls[obs.x] |= (1 << obs.y);
                             if (g_mode1_strict ||
                                 (my_id2 != -1 && g_target_id_map[sol->pairs[pi].target_idx] == my_id2) ||
-                                (my_id2 != -1 && g_orig_target_id_map[sol->pairs[pi].target_idx] == g_orig_box_id_map[sol->pairs[try_idx].box_idx])) {
+                                (my_id2 != -1
+                                 && g_orig_target_id_map[sol->pairs[pi].target_idx] != -1
+                                 && g_orig_target_id_map[sol->pairs[pi].target_idx] == g_orig_box_id_map[sol->pairs[try_idx].box_idx])) {
                                 Point tp = sol->pairs[pi].target_pos;
                                 g_current_walls[tp.x] |= (1 << tp.y);
                             }
@@ -1682,7 +1686,9 @@ static bool backtrack_validate(SolutionSequence* sol) {
                                 uint8_t ti = sol->pairs[m].target_idx;
                                 if (g_mode1_strict ||
                                     (mid != -1 && g_target_id_map[ti] == mid) ||
-                                    (mid != -1 && g_orig_target_id_map[ti] == g_orig_box_id_map[sol->pairs[try_idx].box_idx]))
+                                    (mid != -1
+                                     && g_orig_target_id_map[ti] != -1
+                                     && g_orig_target_id_map[ti] == g_orig_box_id_map[sol->pairs[try_idx].box_idx]))
                                     forbid[sol->pairs[m].target_pos.x] |= (1 << sol->pairs[m].target_pos.y);
                             }
                             Point sim = cur_box; bool valid = true;
@@ -1751,7 +1757,9 @@ static bool backtrack_validate(SolutionSequence* sol) {
                 uint8_t ti = sol->pairs[m].target_idx;
                 if (g_mode1_strict ||
                     (my_id != -1 && g_target_id_map[ti] == my_id) ||
-                    (my_id != -1 && g_orig_target_id_map[ti] == g_orig_box_id_map[sol->pairs[try_idx].box_idx]))
+                    (my_id != -1
+                     && g_orig_target_id_map[ti] != -1
+                     && g_orig_target_id_map[ti] == g_orig_box_id_map[sol->pairs[try_idx].box_idx]))
                     forbid_targets[sol->pairs[m].target_pos.x] |= (1 << sol->pairs[m].target_pos.y);
             }
 
@@ -1840,7 +1848,8 @@ static void id_learning(uint8_t map[MAP_ROWS][MAP_COLS]) {
     /* 模式二中炸弹视为墙（不可通行） */
     for (uint8_t b = 0; b < g_bomb_count; b++)
         g_static_walls[g_initial_bombs[b].x] |= (1 << g_initial_bombs[b].y);
-    uint16_t walls[MAP_ROWS] = {0};
+    uint16_t *walls = g_tmp_walls2;  /* 指向全局缓冲区省栈 */
+    memset(walls, 0, sizeof(uint16_t) * MAP_ROWS);
     for (int i = 0; i < MAP_ROWS; i++)
         for (int j = 0; j < MAP_COLS; j++)
             if (map[i][j] == WALL || map[i][j] == BOX || map[i][j] == BOOM)
@@ -2256,17 +2265,14 @@ static void extract_look_turn_points(VisitStep* plan) {
         Point prev = (li > 0) ? (Point){g_path_look_out.y[li-1], g_path_look_out.x[li-1]} : plan[i].path[0];
         /* 若路径只有1点但与 prev 不连续 → 补全间隙（推箱后瞬移导致） */
         if (plan[i].path_len == 1 && !pos_equal(prev, plan[i].path[0])) {
-            Point gap_path[MAX_PATH_LEN];
-            uint16_t gap_walls[MAP_ROWS];
-            memcpy(gap_walls, g_static_walls, sizeof(gap_walls));
-            uint16_t gap_len = simple_astar(prev, plan[i].path[0], gap_walls, gap_path);
+            memcpy(g_tmp_walls1, g_static_walls, sizeof(g_tmp_walls1));
+            uint16_t gap_len = simple_astar(prev, plan[i].path[0], g_tmp_walls1, g_temp_path);
             if (gap_len > 0) {
-                /* 从 gap 提取转向点（不含终点） */
                 Point gp = prev;
                 for (uint16_t gi = 0; gi < gap_len; gi++) {
-                    Point gc = gap_path[gi];
+                    Point gc = g_temp_path[gi];
                     if (gi < gap_len - 1) {
-                        Point gn = gap_path[gi + 1];
+                        Point gn = g_temp_path[gi + 1];
                         int8_t dx1 = (int8_t)(gc.x - gp.x), dy1 = (int8_t)(gc.y - gp.y);
                         int8_t dx2 = (int8_t)(gn.x - gc.x), dy2 = (int8_t)(gn.y - gc.y);
                         if ((dx1 != dx2 || dy1 != dy2) &&
