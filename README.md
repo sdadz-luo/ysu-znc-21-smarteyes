@@ -571,15 +571,6 @@ ysu-znc-21-smarteyes/
 
 ---
 
-## ⚠️ 已知问题
-
-- `cam_uart.h` 中声明了 `enc_cam()` 函数但尚无实现
-- `isr.h` 为空占位头文件
-- `wireless_uart.c/h` 与 `my_uart.c/h` 内容完全重复（可能是历史遗留）
-- `待解决问题.md` 已不存在（已从文档中移除）
-
----
-
 ## 📄 开源协议
 
 本项目基于逐飞科技 RT1064 开源库开发，底层库遵循 **[GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html)** 协议。
