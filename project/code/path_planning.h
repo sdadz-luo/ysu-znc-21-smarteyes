@@ -24,7 +24,9 @@
 #define BOOM                 7          /* 炸弹 */
 
 /* ---- A* 相关常量 ---- */
-#define MAX_OPENSET          50000      /* 哈希表容量（推箱A*） */
+#define MAX_OPENSET          65536      /* 哈希表容量（推箱A*, 2^16） */
+#define HASH_MASK            (MAX_OPENSET - 1)  /* 位与取模掩码 */
+#define HASH_STEP            7          /* 质数步长，减少聚集 */
 #define MAX_PQ_SIZE          10000      /* 优先队列容量 */
 #define MAX_SEARCH_CNT       50000      /* A*最大搜索步数 */
 #define SINGLE_STEP_MAX_PATH 500        /* 单步A*最大路径长度 */
@@ -331,7 +333,6 @@ static uint32_t hash_walls(const uint16_t walls[MAP_ROWS]);
 static void compute_player_region_with_walls(const uint16_t walls[MAP_ROWS], bool ignore_bombs);
 static void compute_box_influence(Point box, const uint16_t walls[MAP_ROWS],
                                       uint16_t influence_mask[MAP_ROWS]);
-static bool influence_contains_target(const uint16_t influence[MAP_ROWS]);
 static bool box_can_reach_any_target(Point box, const uint16_t walls[MAP_ROWS],
                                      const Point targets[], uint8_t target_count);
 static bool simulate_box_to_target(uint8_t box_idx, Point target,

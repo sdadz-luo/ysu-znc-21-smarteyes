@@ -437,7 +437,8 @@ static void path_process(void){
         process_normal_path(&path_car);
         return;
     }else if (game_mode == 4 && !map_process_flag && path_boom_car.len > 0){
-        if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {            
+        if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {
+            if (path_boom_car.is_push[step] == 1) system_delay_ms(1500); // 如果是爆炸动作，延时等待            
             step++;
             // 检查是否走完整个路径
             if (step > path_boom_car.len) {
