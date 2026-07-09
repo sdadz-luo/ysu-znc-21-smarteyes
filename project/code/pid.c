@@ -97,10 +97,10 @@ float pid_location(pid *pid_struct, float now_value){
 }
 
 void pid_init(void){
-    PID_init(&pid_FL, 70, 10, 60,   1000, 8000, 0, 1);
-    PID_init(&pid_FR, 70, 10, 60,   1000, 8000, 0, 1);
-    PID_init(&pid_BL, 70, 10, 60,   1000, 8000, 0, 1);
-    PID_init(&pid_BR, 70, 10, 60,   1000, 8000, 0, 1);
+    PID_init(&pid_FL, 60, 10, 50,   1000, 8000, 0, 1);
+    PID_init(&pid_FR, 60, 10, 50,   1000, 8000, 0, 1);
+    PID_init(&pid_BL, 60, 10, 50,   1000, 8000, 0, 1);
+    PID_init(&pid_BR, 60, 10, 50,   1000, 8000, 0, 1);
     PID_init(&pid_yaw, 5, 0.001f, 30, 1000, 70, 0, 0.1f);
     PID_init(&pid_x, pid_x_p, pid_x_i, pid_x_d, 500, pid_x_speed, 0, 0.5f);
     PID_init(&pid_y, pid_y_p, pid_y_i, pid_y_d, 500, pid_y_speed, 0, 0.5f);

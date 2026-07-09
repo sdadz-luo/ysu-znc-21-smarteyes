@@ -345,7 +345,7 @@ static void process_normal_path(const Path *path){
 static void path_process(void){
     // 1. 扫描地图数据 (检测是否有车位2, 障碍3, 车辆6)
     if (map_process_flag == 1) {
-        system_delay_ms(500);
+        system_delay_ms(600);
         if (game_count == 0) game_mode = 1;
         else game_mode = 2;
         for (uint8_t row = 0; row < 12; row++) {

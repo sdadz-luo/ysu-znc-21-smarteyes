@@ -10,37 +10,37 @@
 /*===========================================================================
  * 全局变量 —— PID 参数
  *===========================================================================*/
-float   pid_x_p     =  2.0;
-float   pid_x_i     =  0.005;
-float   pid_x_d     =  5.0;
-uint8_t pid_x_speed =  80;
-float   pid_y_p     = -2.0;
-float   pid_y_i     = -0.005;
-float   pid_y_d     = -5.0;
-uint8_t pid_y_speed =  80;
+float   pid_x_p     =  3.50;
+float   pid_x_i     =  0.003;
+float   pid_x_d     =  7.00;
+uint8_t pid_x_speed =  110;
+float   pid_y_p     = -3.50;
+float   pid_y_i     = -0.003;
+float   pid_y_d     = -7.0;
+uint8_t pid_y_speed =  110;
 
 /*===========================================================================
  * 全局变量 —— 原点参数
  *===========================================================================*/
-uint8_t origin_x_enc = 2;
-uint8_t origin_y_enc = 6;
+uint8_t origin_x_enc = 1;
+uint8_t origin_y_enc = 7;
 
 /*===========================================================================
  * 全局变量 —— 修正值
  *===========================================================================*/
-float  corr_x_enc = 0.75;
-float  corr_y_enc = 0.73;
+float  corr_x_enc = 0.760;
+float  corr_y_enc = 0.795;
 int8_t corr_x_cam = 0;
-int8_t corr_y_cam = 0;
-float   corr_yaw   = 0.00025;
+int8_t corr_y_cam = 1;
+float   corr_yaw  = 0.0;
 
 /*===========================================================================
  * 全局变量 —— 加减速控制
  *===========================================================================*/
-float x_acc = 0.02;
-float x_dec = 0.05;
-float y_acc = 0.02;
-float y_dec = 0.05;
+float x_acc = 0.01;
+float x_dec = 0.06;
+float y_acc = 0.01;
+float y_dec = 0.06;
 
 /*===========================================================================
  * 按键宏定义 (key[0]=左, key[1]=右, key[2]=上, key[3]=下)
@@ -81,7 +81,7 @@ static int8_t       edit_mode    = 0;           /* 0=导航, 1=编辑模式  */
 #define STEP_CORR_YAW  0.000001f
 #define STEP_CORR_ENC    0.005f
 #define STEP_CORR_CAM    1
-#define STEP_CONTROL     0.01f
+#define STEP_CONTROL     0.005f
 
 
 /*===========================================================================

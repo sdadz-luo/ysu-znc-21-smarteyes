@@ -14,6 +14,5 @@ CAMDATA cam_uart1_read(void);
 void cam1_uart_send(float angle);
 int cam_uart2_read(void);
 void cam_uart2_write(uint8_t id);
-float enc_cam(float x, float y, int x_target, int y_target, int mode);
 
 #endif
