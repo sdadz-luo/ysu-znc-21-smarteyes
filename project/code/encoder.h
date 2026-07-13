@@ -4,7 +4,7 @@
 #include "zf_common_headfile.h"
 
 // 全局位置变量
-extern float x_enc, y_enc;      // 编码器里程计位置 (cm)
+extern volatile float x_enc, y_enc;      // 编码器里程计位置 (cm)
 
 void encoder_init(void);        // 初始化编码器硬件接口
 void encoder_get(void);         // 读取编码器数据

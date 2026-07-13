@@ -1,7 +1,7 @@
 #include "pid.h"
 #include "zf_common_headfile.h"
 
-pid pid_FL, pid_FR, pid_BL, pid_BR, pid_gyro, pid_yaw, pid_x, pid_y;
+pid pid_FL, pid_FR, pid_BL, pid_BR, pid_yaw, pid_x, pid_y;
 
 void PID_init(pid *pid_struct,
               float kp,

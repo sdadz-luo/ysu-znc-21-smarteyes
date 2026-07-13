@@ -28,7 +28,7 @@
 #define HASH_MASK            (MAX_OPENSET - 1)  /* 位与取模掩码 */
 #define HASH_STEP            7          /* 质数步长，减少聚集 */
 #define MAX_PQ_SIZE          10000      /* 优先队列容量 */
-#define MAX_SEARCH_CNT       50000      /* A*最大搜索步数 */
+#define MAX_SEARCH_CNT       65536      /* A*最大搜索步数 */
 #define SINGLE_STEP_MAX_PATH 500        /* 单步A*最大路径长度 */
 #define TURN_WEIGHT          4          /* 转向惩罚代价 */
 

@@ -720,7 +720,7 @@ static __attribute__((section("ITCM_NonCacheable"))) uint16_t simple_astar(Point
     path_nodes[start_idx].pos = start;
     path_nodes[start_idx].last_dir = -1;
     path_nodes[start_idx].g_cost = 0;
-    path_nodes[start_idx].f_cost = (6 * h_start) / 5;
+    path_nodes[start_idx].f_cost = h_start;
     s_heap_push(start_idx);
 
     int final_idx = -1;
@@ -749,7 +749,7 @@ static __attribute__((section("ITCM_NonCacheable"))) uint16_t simple_astar(Point
                 path_nodes[nidx].last_dir = (int8_t)d;
                 path_nodes[nidx].g_cost = ng;
                 int h = abs((int)np.x - (int)end.x) + abs((int)np.y - (int)end.y);
-                path_nodes[nidx].f_cost = ng + (6 * h) / 5;
+                path_nodes[nidx].f_cost = ng + h;
                 path_nodes[nidx].parent_idx = current_idx;
                 s_heap_push(nidx);
             }

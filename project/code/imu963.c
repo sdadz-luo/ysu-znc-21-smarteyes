@@ -29,7 +29,7 @@
 #define GYRO_SCALE   57.1f   // 陀螺仪 LSB/(°/s)
 #define DEG_TO_RAD   (PI / 180.0f)
 
-float yaw = 0.0;
+volatile float yaw = 0.0;
 // 全局变量扩展：添加四元数、欧拉角、采样时间、积分误差
 float acc_x = 0,acc_y = 0,acc_z = 0;
 float gyro_x = 0,gyro_y = 0,gyro_z = 0;

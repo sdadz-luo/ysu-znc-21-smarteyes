@@ -2,7 +2,7 @@
 #include "zf_common_headfile.h"
 
 
-#define MAX_DUTY                    (9000)                      // 最大 MAX_DUTY% 占空比
+#define MAX_DUTY                    (8000)                      // 最大 MAX_DUTY% 占空比
 #define MOTOR_FL_PWM1               (PWM1_MODULE0_CHB_D13)
 #define MOTOR_FL_PWM2               (PWM1_MODULE0_CHA_D12)
 
@@ -47,6 +47,16 @@ void motor_init(void){
  * @return 无
  */
 void motor_duty(int FL,int FR,int BL,int BR){
+	
+	/* 限幅：将每个电机的占空比限制在 [-MAX_DUTY, MAX_DUTY] 范围内 */
+	if (FL > MAX_DUTY) FL = MAX_DUTY;
+	if (FL < -MAX_DUTY) FL = -MAX_DUTY;
+	if (FR > MAX_DUTY) FR = MAX_DUTY;
+	if (FR < -MAX_DUTY) FR = -MAX_DUTY;
+	if (BL > MAX_DUTY) BL = MAX_DUTY;
+	if (BL < -MAX_DUTY) BL = -MAX_DUTY;
+	if (BR > MAX_DUTY) BR = MAX_DUTY;
+	if (BR < -MAX_DUTY) BR = -MAX_DUTY;
 	
 	/* 控制前左电机(FL)的方向和占空比 */
 	if (FL >= 0){

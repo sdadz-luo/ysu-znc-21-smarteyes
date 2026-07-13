@@ -35,13 +35,12 @@ static void cam2_process(void);
 
 // ================= 外部变量声明  =================
 extern float encoder_data_FL, encoder_data_FR, encoder_data_BL, encoder_data_BR; 	// 四个轮子编码器数据
-extern float x_enc, y_enc;   													// 小车当前位置坐标 (X, Y)
 extern float yaw;            													// 小车当前角度 (航向角)
 extern pid pid_FL, pid_FR, pid_BL, pid_BR; 										// 四个轮子的速度环 PID
 extern pid pid_gyro,pid_yaw,pid_x, pid_y;          							    // 角速度环，角度环, X/Y位置环 PID
 
 // ================= 全局变量 =================
-static int time = 0;             												// 时间计数器 (每 10ms 加1)
+static uint32_t time = 0;             												// 时间计数器 (每 10ms 加1)
 static float vx = 0, vy = 0, vz = 0; 											// 底盘合成速度
 static volatile float x_target = 10, y_target = 130; 							// 目标位置坐标
 static float x_cam = 0, y_cam = 0, x_cam_last = 0, y_cam_last = 0; 				// 摄像头检测到的车位坐标及上次值
@@ -108,8 +107,8 @@ void PIT_IRQHandler(void){
         // 3. 角度环 PID 计算 
         if (time % 2 == 0){
 
-            if (car_state == Run) pid_change(&pid_yaw, 10, 0.001f, 30);
-            else pid_change(&pid_yaw, 5, 0.001f, 30);
+            if (car_state == Run) pid_change(&pid_yaw, 10, 0.001f, 25);
+            else pid_change(&pid_yaw, 5, 0.001f, 25);
 
             float yaw_error = yaw_target - yaw;
             if (yaw_error > 180.0f)       yaw_error -= 360.0f;
@@ -129,8 +128,6 @@ void PIT_IRQHandler(void){
         BR = pid_increm(&pid_BR, encoder_data_BR / 4.0f);
 
         motor_duty(FL, FR, BL, BR); // 输出电机PWM
-        
-        if (time >= 200) time = 0; // 时间计数器复位 (1s 循环)
         
         pit_flag_clear(PIT_CH0);
     }
@@ -155,7 +152,7 @@ static void Init(void){
     tft180_show_string(0, 0, "Init... ");
     encoder_init(); 						// 编码器初始化
     imu_init();     						// IMU 初始化
-    my_uart_init(); 						// 串口初始化
+    // my_uart_init(); 						// 串口初始化
     motor_init();   						// 电机 PWM 初始化
     pid_init();     						// PID 参数初始化
     cam_uart_init();						// 摄像头串口初始化
@@ -320,12 +317,10 @@ static void uart_updata(void){
  * @param end_y 终点栅格Y坐标
  */
 static void process_normal_path(const Path *path){
-    static float end_x = 0, end_y = 6;
+    static float end_x = 1, end_y = 6;
     if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {
         step++;
         if (step > path->len) {
-            if (x_enc >= 12 * x_enc_uint) end_x = 0.5f;
-            else end_x = 1;
             x_target = end_x * x_enc_uint;
             y_target = end_y * y_enc_uint;
             pid_position_speed();

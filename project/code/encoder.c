@@ -35,16 +35,16 @@
 #define ENC_FILTER_BETA         0.1f    // 编码器一阶低通滤波历史权重 (1 - alpha)
 
 // ================= 全局变量 =================
-float x_enc = 0, y_enc = 0;             // 编码器全局累积位移 (单位: cm)
+volatile float x_enc = 0, y_enc = 0;             // 编码器全局累积位移 (单位: cm)
 static float dc = C / (B * N);          // 脉冲→厘米转换系数 (cm/脉冲)
 static float dc_dt = 0;                 // 预计算: dc / dt, 用于编码器速度换算 (在 encoder_init 中初始化)
 
 
 // 原始编码器数据 (中间值，每次读取后清零)
-float encoder_data_FL = 0;
-float encoder_data_FR = 0;
-float encoder_data_BL = 0;
-float encoder_data_BR = 0;
+volatile float encoder_data_FL = 0;
+volatile float encoder_data_FR = 0;
+volatile float encoder_data_BL = 0;
+volatile float encoder_data_BR = 0;
 
 // 一阶低通滤波历史数据（float 保留小数，防止截断累积误差）
 static float encoder_data_FL_last = 0;
