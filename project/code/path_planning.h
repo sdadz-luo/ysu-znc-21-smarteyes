@@ -8,7 +8,7 @@
 /* ---- 地图基本尺寸 ---- */
 #define MAP_ROWS             12         /* 地图行数 */
 #define MAP_COLS             16         /* 地图列数 */
-#define MAX_BOXES            5          /* 最大箱子数量 */
+#define MAX_BOXES            7          /* 最大箱子数量 */
 #define MAX_IDS              10         /* 最大ID编号数 */
 #define MAX_VISIT_STEPS      (2 * MAX_BOXES) /* 最大访问步骤数 */
 #define MAX_PATH_LEN         500        /* 最大路径长度 */
