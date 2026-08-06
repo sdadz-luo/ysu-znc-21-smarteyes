@@ -3,7 +3,7 @@
 > 🏎️ **燕山大学 · 第21届全国大学生智能汽车竞赛 — 智能视觉组**
 
 [![Platform](https://img.shields.io/badge/Platform-NXP%20RT1064-blue)](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1064-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1064)
-[![IDE](https://img.shields.io/badge/IDE-IAR%208.32%20%7C%20Keil%205.33-green)](#开发环境)
+[![IDE](https://img.shields.io/badge/IDE-Keil%205.33-green)](#开发环境)
 [![Language](https://img.shields.io/badge/Language-C99-orange)](https://en.wikipedia.org/wiki/C_(programming_language))
 [![RAM](https://img.shields.io/badge/DTCM-448KB%20%7C%20SDRAM-32MB-lightgrey)]()
 
@@ -101,7 +101,7 @@ main()
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| `main.c` | 515 | 入口 → `Init()` → `state_judgment()` 状态机 + `PIT_IRQHandler` 控制循环 |
+| `main.c` | 489 | 入口 → `Init()` → `state_judgment()` 状态机 + `PIT_IRQHandler` 控制循环 |
 | `isr.c` | 320 | 13 个外设中断处理函数（UART、CSI、GPIO、FlexIO、ToF） |
 | `isr.h` | 0 | **空占位**（当前无内容） |
 
@@ -174,14 +174,14 @@ PIT_CH1 (10ms):
 | `pid_FL/FR/BL/BR` | 增量式 | kp=60, ki=10, kd=50, maxOut=8000 | 四轮速度内环 |
 | `pid_x` | 位置式 | 菜单可调 (默认 3.50/0.003/7.00/110) | X 方向位置外环 |
 | `pid_y` | 位置式 | 菜单可调 (默认 -3.50/-0.003/-7.0/110) | Y 方向位置外环 |
-| `pid_yaw` | 位置式 | 5/0.001/30/70 (Run 态 10/0.001/25) | 偏航角闭环 |
+| `pid_yaw` | 位置式 | 5/0.001/30/70 (Run 态 10/0.001/30) | 偏航角闭环 |
 | `pid_gyro` | 位置式 | **未初始化** | 角速度环（备⽤） |
 
 **算法：**
 - **增量式**：`Δu = kp·(e−e_last) + ki·e + kd·(e−2e_last+e_last2)`，累积输出，死区衰减 0.9
 - **位置式**：`u = kp·e + ki·∫e + kd·(e−e_last)`，积分限幅，死区衰减 0.95
 - **运行时切换**：`pid_yaw` 在 Run 态 kp=10（快速响应），其他态 kp=5（平稳）
-- **急停**：`pid_position_speed()` 将 maxOutput 设为 130
+- **终点冲刺**：`pid_position_speed()`（GameOver 冲线时调用）将 maxOutput 从 110 提升至 130
 - **完全重置**：`pid_reset()` 清零所有累计状态
 
 #### 4. `encoder.c/h` — 编码器与里程计（151 行）
@@ -479,8 +479,7 @@ solve_single_box_a_star, compute_player_region_with_walls
 | 工具 | 版本 |
 |------|------|
 | Keil MDK (µVision) | 5.33 |
-| IAR EWARM | 8.32 |
-| 编译器 | ARMCLANG (Keil) / ARMCC (IAR) |
+| 编译器 | ARMCLANG (Keil) |
 | C 标准 | **C99** |
 | 构建目标 | `nor_sdram_zf_dtcm` |
 | 关键预定义宏 | `CPU_MIMXRT1064DVL6A`, `XIP_EXTERNAL_FLASH=1`, `USB_STACK_BM`, `MCUXPRESSO_SDK`, `SKIP_SYSCLK_INIT`, `PRINTF_FLOAT_ENABLE=1` |
@@ -490,7 +489,6 @@ solve_single_box_a_star, compute_player_region_with_walls
 
 **编译 / 烧录：**
 - Keil: 打开 `project/mdk/rt1064.uvprojx` → 选择 `nor_sdram_zf_dtcm` → 编译 → DAP-Link/J-Link 烧录
-- IAR: 打开 `project/iar/rt1064.eww` → 选择 `nor_sdram_zf_dtcm` → 编译 → 烧录
 
 ---
 
@@ -498,14 +496,11 @@ solve_single_box_a_star, compute_player_region_with_walls
 
 ```
 ysu-znc-21-smarteyes/
-├── AGENTS.md                        # OpenCode AI 代理指令
+├── Claude.md                        # Claude Code 指令文档（原 AGENTS.md 重命名）
 ├── README.md
 ├── .clangd                          # clangd ARMCLANG include 路径
 ├── compile_flags.txt                # clangd 编译标志（57 个 include 路径）
 ├── .gitignore
-├── .opencode/                       # OpenCode AI 配置
-│   ├── opencode.json                # 引用 AGENTS.md + copilot-embedded/cpp/general
-│   └── lsp.json                     # clangd LSP 启用
 ├── libraries/                       # 逐飞开源库 V3.9.2（请勿修改）
 │   ├── zf_common/                   # 通用头文件、typedef、时钟、FIFO、数学
 │   ├── zf_driver/                   # 底层驱动抽象层
@@ -532,11 +527,10 @@ ysu-znc-21-smarteyes/
     │   ├── mpu_config.c             # MPU 6 Region + D-Cache 使能
     │   └── 本文件夹作用.txt          # 文件放置说明
     ├── user/src/
-    │   ├── main.c                   # 入口、状态机、PIT 中断（515 行）
+    │   ├── main.c                   # 入口、状态机、PIT 中断（489 行）
     │   └── isr.c                    # 外设中断处理（320 行）
     │   inc/isr.h                    # 空占位文件
-    ├── mdk/                         # Keil MDK 工程（uvprojx/uvoptx/scf）
-    └── iar/                         # IAR EWARM 工程（eww/icf）
+    └── mdk/                         # Keil MDK 工程（uvprojx/uvoptx/scf）
 ```
 
 ---

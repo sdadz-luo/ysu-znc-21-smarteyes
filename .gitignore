@@ -23,7 +23,6 @@
 *.edk
 *.tmp
 *.omf
-*.sct
 
 # ===== Build output directories =====
 project/code/build/
@@ -49,13 +48,12 @@ project/iar/program/settings/
 
 # ===== IDE / Debugger =====
 .vscode/
-opencode/
 JLinkSettings.ini
 *.jlink
 *.dnx
 *.ewt
-*.eww
 *.ewd
+# 注意: *.eww/*.ewp 是 IAR 工程文件, 必须跟踪, 不可忽略
 
 # ===== OS metadata =====
 Thumbs.db
@@ -69,24 +67,5 @@ Thumbs.db
 # ===== Logs =====
 *.log
 
-# ===== Temp scripts =====
-*.bat
-
-# ===== OpenCode runtime caches =====
-.opencode/.omo/
-.opencode/.opencode/memory/
-
-# ===== LSP / clangd stubs (local only) =====
-libraries/zf_common/assert.h
-libraries/zf_common/float.h
-libraries/zf_common/inttypes.h
-libraries/zf_common/limits.h
-libraries/zf_common/errno.h
-libraries/zf_common/math.h
-libraries/zf_common/stdarg.h
-libraries/zf_common/stdbool.h
-libraries/zf_common/stddef.h
-libraries/zf_common/stdint.h
-libraries/zf_common/stdio.h
-libraries/zf_common/stdlib.h
-libraries/zf_common/string.h
+# ===== LSP / tool caches =====
+.cache/

@@ -1,8 +1,6 @@
 #include "zf_common_headfile.h"
 #include <string.h>
 
-#define cam_uint					13.8
-#define enc_uint					20
 
 // 串口1定义（接收OpenMV数据）
 #define UART1             (UART_3)

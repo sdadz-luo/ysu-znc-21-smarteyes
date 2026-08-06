@@ -1,4 +1,8 @@
-# AGENTS.md — ysu-znc-21-smarteyes
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# ysu-znc-21-smarteyes — 智能车竞赛固件
 
 > NXP RT1064 (Cortex-M7 @ 600MHz) 智能车竞赛固件。
 > 第21届全国大学生智能汽车竞赛 — 智能视觉组。
@@ -21,16 +25,18 @@ Flash: 4MB FlexSPI XIP (代码原地执行)
 
 | 优先级 | 文件 | 行数 | 作用 |
 |--------|------|------|------|
-| ⭐⭐⭐ | `project/code/path_planning.c` | ~4447 | **路径规划核心**（最复杂，谨慎修改） |
-| ⭐⭐⭐ | `project/code/path_planning.h` | 428 | 数据结构 + 函数声明 |
-| ⭐⭐⭐ | `project/user/src/main.c` | 515 | **主入口 + 状态机 + PIT 中断控制循环** |
-| ⭐⭐ | `project/code/imu963.c` | 212 | IMU 姿态估计 |
+| ⭐⭐⭐ | `project/code/path_planning.c` | ~4446 | **路径规划核心**（最复杂，谨慎修改） |
+| ⭐⭐⭐ | `project/code/path_planning.h` | 427 | 数据结构 + 函数声明 |
+| ⭐⭐⭐ | `project/user/src/main.c` | 489 | **主入口 + 状态机 + PIT 中断控制循环** |
+| ⭐⭐ | `project/code/imu963.c` | 211 | IMU 姿态估计 |
 | ⭐⭐ | `project/code/encoder.c` | 151 | 编码器 + 里程计 |
 | ⭐⭐ | `project/code/pid.c` | 154 | PID 控制器 |
 | ⭐⭐ | `project/code/control.c` | 44 | 运动学合成 |
-| ⭐⭐ | `project/code/cam_uart.c` | 242 | OPENMV 双 UART 通信 |
+| ⭐⭐ | `project/code/cam_uart.c` | 240 | OPENMV 双 UART 通信 |
 | ⭐ | `project/code/menu.c` | 505 | TFT 菜单 + Flash 存储 |
-| ⭐ | `project/code/motor.c` | 97 | PWM 电机驱动 |
+| ⭐ | `project/code/key.c` | 45 | 4 按键 3 态去抖 |
+| ⭐ | `project/code/tft180.c` | 13 | TFT180 显示屏驱动 |
+| ⭐ | `project/code/motor.c` | 96 | PWM 电机驱动 |
 | ⭐ | `project/user/src/isr.c` | 320 | 中断路由 |
 | ⭐ | `project/code/mpu_config.c` | 122 | MPU + D-Cache（启动时自动运行） |
 
@@ -41,7 +47,6 @@ Flash: 4MB FlexSPI XIP (代码原地执行)
 | IDE | 项目文件 | 构建目标 |
 |-----|---------|----------|
 | Keil MDK 5.33 | `project/mdk/rt1064.uvprojx` | `nor_sdram_zf_dtcm` |
-| IAR EWARM 8.32 | `project/iar/rt1064.eww` | `nor_sdram_zf_dtcm` |
 
 **⚠️ 无命令行构建方式。** 编译后通过 DAP-Link / J-Link 烧录。
 
@@ -84,7 +89,7 @@ __GNUC__       // 欺骗 clangd 使用 GCC 兼容模式
 
 ### 3.1 入口与中断（`project/user/src/`）
 
-#### `main.c` — 主入口 + 状态机 + PIT 中断（515 行）
+#### `main.c` — 主入口 + 状态机 + PIT 中断（489 行）
 
 **全局数据流（跨模块 extern 变量）：**
 
@@ -114,11 +119,11 @@ typedef enum { NoGame, GameMap, Waiting, Look, Run, GameOver, End } Car_State;
 | GameOver | game_count≥3 | End | 停止 |
 | GameOver | game_count<3 | NoGame | 重置系统重新开始 |
 
-**PIT 中断**（`main.c:89-142`）：
+**PIT 中断**（`main.c:89-133`）：
 - **CH0 (5ms)**：编码器 → IMU → 里程计 → 位置环 → 偏航环 → 运动学 → 速度环 → PWM
 - **CH1 (10ms)**：读取 OPENMV → 数据低通滤波
 
-**路径规划调度**（`path_process()`, `main.c:340-456`）：
+**路径规划调度**（`path_process()`, `main.c:314-431`）：
 
 ```
 path_process():
@@ -136,7 +141,7 @@ path_process():
        mode 4: 逐点→is_push→delay(1.5s)→继续→完成→map_boom_out()→mode 2
 ```
 
-**ID 扫描函数**（`cam2_process()`, `main.c:458-515`）：
+**ID 扫描函数**（`cam2_process()`, `main.c:432-489`）：
 - 等待偏航对准（`|yaw_diff| ≤ 1°`）
 - 发送角度指令 → 发送类型 → 阻塞读取 ID
 - Mode 0：ID=10→Mode 1, 否则 Mode 2
@@ -148,7 +153,7 @@ path_process():
 
 ### 3.2 用户代码（`project/code/`）
 
-#### `path_planning.h` — 路径规划头文件（428 行）
+#### `path_planning.h` — 路径规划头文件（427 行）
 
 **关键常量**：
 ```c
@@ -217,7 +222,7 @@ typedef struct {
 | `pid_target(p, target)` | 设置目标值 | — |
 | `pid_wheel_target(FL,FR,BL,BR)` | 设置四轮目标 | `control.c:42` |
 | `pid_position_target(x,y)` | 设置位置目标 | `main.c:101` |
-| `pid_position_speed()` | 急停模式 | `main.c:326` |
+| `pid_position_speed()` | 终点冲刺（提速） | `main.c:300` |
 | `pid_change(p, kp, ki, kd)` | 运行时改参数 | `main.c:110-111` |
 | `pid_reset()` | 完全重置 | `main.c:250` |
 
@@ -307,6 +312,16 @@ void my_uart_send(int sum);               // 发送 sum 个通道
 
 **⚠️ 注意**：`wireless_uart.h` 头文件保护宏是 `_CODE_MY_UART_h_`（与文件名不一致）。
 
+#### `tft180.c/h` — TFT180 显示屏（13 行）
+
+竖屏 (PORTRAIT)，8×16 字体，SPI 模式，RGB565 白底黑字。仅 `tft180_clear()` 一个接口，被 `menu.c` 和启动流程使用。
+
+#### `key.c` — 按键驱动（45 行）
+
+3 态去抖状态机：`IDLE → PRESSED → DONE`，4 键上拉输入。
+`key[0]=C30(左)`, `key[1]=C29(右)`, `key[2]=C31(下)`, `key[3]=C28(上)`。
+**注意：** 菜单中按键映射与物理引脚命名有差异（`KEY_UP=key[2]`=C31=下按键，`KEY_DOWN=key[3]`=C28=上按键，见 `menu.c:46-52`）。
+
 #### `mpu_config.c` — MPU 配置（122 行）
 
 ```c
@@ -317,27 +332,27 @@ void SystemInitHook(void);  // SDK 弱函数覆盖，main() 前自动调用
 
 ## 四、中断路由表（易错点，高优先级）
 
-**所有 ISR 位于 `project/user/src/isr.c`**。PIT 中断在 `main.c` 中。
+**所有 ISR 位于 `project/user/src/isr.c`**（SDK 标准向量名），内部再调用用户函数。PIT 中断在 `main.c` 中。
 
-| 中断向量 | 外设 | 引脚 | 用途 | ISR 函数 | 行号 |
-|---------|------|------|------|---------|------|
-| PIT | PIT_CH0/1 | — | **5ms+10ms 控制循环** | `PIT_IRQHandler()` | `main.c:89` |
-| 58 | CSI | — | 摄像头并行接口（未用） | `CSI_DriverIRQHandler()` | `isr.c:43` |
-| 20 | LPUART1 | B12/B13 | ID 通信/调试 | `cam_uart_isc_2()` | `isr.c:49` |
-| 21 | LPUART2 | — | **未使用（空 handler）** | (空) | `isr.c:62` |
-| 22 | LPUART3 | B22/B23 | **OPENMV 主摄像头** | `cam_uart_isc_1()` | `isr.c:73` |
-| 23 | LPUART4 | — | FlexIO 摄像头 + GNSS | `flexio_camera_uart_handler()` + `gnss_uart_callback()` | `isr.c:86` |
-| 24 | LPUART5 | — | 备用摄像头 | `camera_uart_handler()` | `isr.c:99` |
-| 25 | LPUART6 | — | **未使用** | (空) | `isr.c:110` |
-| 30 | LPUART8 | D16/D17 | BLE 无线 + 调试中断 | `wireless_module_uart_handler()` + `debug_interrupr_handler()` | `isr.c:122` |
-| 93 | GPIO1_0_15 | B0 | GPIO 外部中断 | EXTI flag clear | `isr.c:138` |
-| 94 | GPIO1_16_31 | B16 | 无线 SPI | `wireless_module_spi_handler()` + EXTI clear | `isr.c:148` |
-| 95 | GPIO2_0_15 | C0 | FlexIO 帧同步 | `flexio_camera_vsync_handler()` + EXTI clear | `isr.c:159` |
-| 96 | GPIO2_16_31 | C16 | **ToF 传感器** | `tof_module_exti_handler()` + EXTI clear | `isr.c:170` |
-| 97 | GPIO3_0_15 | D4 | GPIO 外部中断 | EXTI flag clear | `isr.c:186` |
+| 外设 | 引脚 | 用途 | ISR 向量（isr.c 行号） | 内部调用 |
+|------|------|------|----------------------|---------|
+| PIT_CH0/1 | — | **5ms+10ms 控制循环** | `PIT_IRQHandler()` (`main.c:89`) | — |
+| CSI | — | 摄像头并行接口（未用） | `CSI_IRQHandler` (43) | `CSI_DriverIRQHandler()`（SDK 内部） |
+| LPUART1 | B12/B13 | ID 通信/调试 | `LPUART1_IRQHandler` (49) | `cam_uart_isc_2()` |
+| LPUART2 | — | **未使用（空 handler）** | `LPUART2_IRQHandler` (62) | — |
+| LPUART3 | B22/B23 | **OPENMV 主摄像头** | `LPUART3_IRQHandler` (73) | `cam_uart_isc_1()` |
+| LPUART4 | — | FlexIO 摄像头 + GNSS | `LPUART4_IRQHandler` (86) | `flexio_camera_uart_handler()` + `gnss_uart_callback()` |
+| LPUART5 | — | 备用摄像头 | `LPUART5_IRQHandler` (99) | `camera_uart_handler()` |
+| LPUART6 | — | **未使用** | `LPUART6_IRQHandler` (110) | — |
+| LPUART8 | D16/D17 | BLE 无线 + 调试中断 | `LPUART8_IRQHandler` (122) | `wireless_module_uart_handler()` + `debug_interrupr_handler()` |
+| GPIO1_0_15 | B0 | GPIO 外部中断 | `GPIO1_Combined_0_15_IRQHandler` (138) | EXTI flag clear |
+| GPIO1_16_31 | B16 | 无线 SPI | `GPIO1_Combined_16_31_IRQHandler` (148) | `wireless_module_spi_handler()` + EXTI clear |
+| GPIO2_0_15 | C0 | FlexIO 帧同步 | `GPIO2_Combined_0_15_IRQHandler` (159) | `flexio_camera_vsync_handler()` + EXTI clear |
+| GPIO2_16_31 | C16 | **ToF 传感器** | `GPIO2_Combined_16_31_IRQHandler` (170) | `tof_module_exti_handler()` + EXTI clear |
+| GPIO3_0_15 | D4 | GPIO 外部中断 | `GPIO3_Combined_0_15_IRQHandler` (186) | EXTI flag clear |
 
 **⚠️ 注意**：
-- `isr.c:128` 函数名 `debug_interrupr_handler` 拼写错误（应为 `debug_interrupt_handler`）
+- `isr.c:129` 函数名 `debug_interrupr_handler` 拼写错误（应为 `debug_interrupt_handler`），且仅在 `DEBUG_UART_USE_INTERRUPT` 宏下编译
 - LPUART2/6 的 handler 为空，仅清除溢出标志
 - 所有 GPIO ISR 仅清除 EXTI 标志，无实际业务逻辑
 
@@ -389,17 +404,18 @@ compute_player_region_with_walls (path_planning.c)
 
 ## 六、PID 系统（8 个全局实例）
 
-### 6.1 实例列表
+### 6.1 实例列表（初始化参数见 `pid.c:99-107`）
 
-| 变量名 | 类型 | kp | ki | kd | maxOut | 用途 |
-|--------|------|-----|-----|-----|---------|------|
-| `pid_FL` | 增量式 | 60 | 10 | 50 | 8000 | 左前轮速度环 |
-| `pid_FR` | 增量式 | 60 | 10 | 50 | 8000 | 右前轮速度环 |
-| `pid_BL` | 增量式 | 60 | 10 | 50 | 8000 | 左后轮速度环 |
-| `pid_BR` | 增量式 | 60 | 10 | 50 | 8000 | 右后轮速度环 |
-| `pid_yaw` | 位置式 | 5/10 | 0.001 | 30 | 70/25 | 偏航角闭环 |
-| `pid_x` | 位置式 | 菜单可调 | 菜单可调 | 菜单可调 | 110 | X 位置环 |
-| `pid_y` | 位置式 | 菜单可调 | 菜单可调 | 菜单可调 | 110 | Y 位置环 |
+| 变量名 | 类型 | kp | ki | kd | maxI | maxOut | 用途 |
+|--------|------|-----|-----|-----|------|--------|------|
+| `pid_FL` | 增量式 | 60 | 10 | 50 | 1000 | 8000 | 左前轮速度环 |
+| `pid_FR` | 增量式 | 60 | 10 | 50 | 1000 | 8000 | 右前轮速度环 |
+| `pid_BL` | 增量式 | 60 | 10 | 50 | 1000 | 8000 | 左后轮速度环 |
+| `pid_BR` | 增量式 | 60 | 10 | 50 | 1000 | 8000 | 右后轮速度环 |
+| `pid_yaw` | 位置式 | 5/10 | 0.001 | 30 | 1000 | 70 | 偏航角闭环 |
+| `pid_x` | 位置式 | 菜单可调 | 菜单可调 | 菜单可调 | 500 | 110 (pid_x_speed) | X 位置环 |
+| `pid_y` | 位置式 | 菜单可调 | 菜单可调 | 菜单可调 | 500 | 110 (pid_y_speed) | Y 位置环 |
+| `pid_gyro` | 位置式 | — | — | — | — | — | **未初始化**（`pid_init()` 未调用，不可用） |
 
 ### 6.2 控制循环
 
@@ -416,10 +432,13 @@ compute_player_region_with_walls (path_planning.c)
 
 ```c
 // Run 状态: 快速响应 (main.c:110)
-pid_change(&pid_yaw, 10, 0.001f, 25);
+pid_change(&pid_yaw, 10, 0.001f, 30);
 // 其他状态: 平稳 (main.c:111)
-pid_change(&pid_yaw, 5, 0.001f, 25);
-// 急停: maxOutput→130 (main.c:326)
+pid_change(&pid_yaw, 5, 0.001f, 30);
+// 偏航角误差 ±180° 归一化 (main.c:113-115)
+if (yaw_error > 180.0f) yaw_error -= 360.0f;
+else if (yaw_error < -180.0f) yaw_error += 360.0f;
+// 终点冲刺: maxOutput→130 (main.c:300, GameOver 冲线提速)
 pid_position_speed();
 ```
 
@@ -569,8 +588,8 @@ Flash 存储：`Sector 127, Page 3`（共 19 个参数映射到 `flash_union_buf
 | 3 | `pid_gyro` 未初始化 | `pid.c` | 4,99-107 | 有定义但 `pid_init()` 未初始化，不可用 |
 | 4 | 头文件保护宏与文件名不一致 | `wireless_uart.h` | 2 | 保护宏 `_CODE_MY_UART_h_` 但文件为 `wireless_uart.h` |
 | 5 | 函数名拼写错误 | `isr.c` | 128 | `debug_interrupr_handler` 多了一个 'r' |
-| 6 | 按键映射命名混乱 | `menu.c` | 48-52 | `KEY_UP=key[2]=C31(下)`, `KEY_DOWN=key[3]=C28(上)` |
-| 7 | 阻塞等待无超时 | `main.c` | 471 | `while(id==-1) id=cam_uart2_read()` 可能永久阻塞 |
+| 6 | 按键映射命名混乱 | `menu.c` | 46-52 | `KEY_UP=key[2]=C31(下)`, `KEY_DOWN=key[3]=C28(上)` |
+| 7 | 阻塞等待无超时 | `main.c` | 445, 469 | `while(id==-1) id=cam_uart2_read()`（cam2_process 中两处）可能永久阻塞 |
 | 8 | FIFO 写满溢出 | `cam_uart.c` | 91-99 | 512 字节 FIFO，ISR 写主循环读，帧数据量大时可能溢出 |
 
 ### 10.2 架构约束
@@ -617,38 +636,14 @@ BLE 蓝牙:    TX=D16 (LPUART8_RX), RX=D17 (LPUART8_TX)
 
 ---
 
-## 十二、OpenCode 配置
-
-### `project/.opencode/opencode.json`
-
-```json
-{
-  "instructions": ["AGENTS.md"],     // 本文件作为 AI 指令
-  "skills": {
-    "copilot-embedded": {},          // 嵌入式 C 编码要求
-    "copilot-cpp": {},               // C/C++ 编码标准
-    "copilot-general": {}            // 通用编码规范
-  }
-}
-```
-
-### 推荐技能
-
-| 技能 | 用途 |
-|------|------|
-| `copilot-embedded` | volatile、临界区、中断安全、静态内存 |
-| `copilot-cpp` | C99、固定类型、头文件保护、安全字符串 |
-| `copilot-general` | 中文注释、Git 提交规范 |
-| `embed-engineer` | 嵌入式系统工程理解 |
-| `tool-debugging` | 系统性调试（崩溃/死锁/内存问题） |
-
-### 编写规则
+## 十二、编写规则
 
 - 所有代码为 **C99**，注意 ARMCC 编译器扩展（`__attribute__`、内联汇编等）
 - **始终尊重 `libraries/` 边界** — 逐飞库 + NXP SDK 代码无需修改
 - 调试手段有限：TFT 显示 + 串口输出（SeekFree 无线示波器模式）
 - 注释风格：中英文混用，函数头部无统一格式
 - 变量命名：snake_case（C 风格）
+- 静态分析：使用 clangd LSP（`compile_flags.txt` + `.clangd`）做代码检查
 
 ---
 
