@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-// 串口1定义（接收OpenMV数据）
+// 串口1定义（接收OpenART_Plus数据）
 #define UART1             (UART_3)
 #define UART1_BAUDRATE    (115200)
 #define UART_TX1          (UART3_TX_B22)

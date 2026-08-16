@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 MCU:  NXP MIMXRT1064DVL6A (Cortex-M7, 600MHz)
 RAM:  ITCM 64KB + DTCM 512KB + OCRAM 512KB + SDRAM 32MB
 Flash: 4MB FlexSPI XIP (代码原地执行)
-摄像头: OPENMV over UART (文本协议, 115200 baud)
+摄像头: OpenART_Plus over UART (文本协议, 115200 baud)
 控制周期: 5ms (PIT_CH0) + 10ms (PIT_CH1)
 路径规划: 全部在 MCU 端裸机运行 (A*/BFS/推箱子/炸弹/ID 学习)
 ```
@@ -32,7 +32,7 @@ Flash: 4MB FlexSPI XIP (代码原地执行)
 | ⭐⭐ | `project/code/encoder.c` | 151 | 编码器 + 里程计 |
 | ⭐⭐ | `project/code/pid.c` | 154 | PID 控制器 |
 | ⭐⭐ | `project/code/control.c` | 44 | 运动学合成 |
-| ⭐⭐ | `project/code/cam_uart.c` | 240 | OPENMV 双 UART 通信 |
+| ⭐⭐ | `project/code/cam_uart.c` | 240 | OpenART_Plus 双 UART 通信 |
 | ⭐ | `project/code/menu.c` | 505 | TFT 菜单 + Flash 存储 |
 | ⭐ | `project/code/key.c` | 45 | 4 按键 3 态去抖 |
 | ⭐ | `project/code/tft180.c` | 13 | TFT180 显示屏驱动 |
@@ -62,13 +62,20 @@ SKIP_SYSCLK_INIT
 PRINTF_FLOAT_ENABLE=1
 ```
 
-### clangd 附加宏（`compile_flags.txt`，仅用于 LSP）
+### clangd 配置（`.clangd` + `compile_flags.txt`，仅用于 LSP）
+
+由 `keil-clangd-setup` skill 从 `rt1064.uvprojx` 自动生成，合并项目自定义项后完整内容：
 
 ```c
-__GNUC__       // 欺骗 clangd 使用 GCC 兼容模式
--U_WIN32       // 取消 Windows 宏
--nostdinc      // 禁止系统头文件（使用逐飞库提供的 stub）
+-target arm-none-eabi -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard // 架构目标（脚本生成）
+-fms-extensions -fdeclspec        // ARMCC 兼容模式（脚本生成）
+-D__GNUC__                        // 欺骗 clangd 使用 GCC 兼容模式（项目自定义）
+-U_WIN32                          // 取消 Windows 宏（项目自定义）
+-nostdinc                         // 禁止系统头文件，使用逐飞库 stub（项目自定义）
+// 另含 14 个预定义宏 + 32 个 -I 包含路径 + -std=c99
 ```
+
+**⚠️ 更新规则**：`keil-clangd-setup` 脚本会覆盖两个文件，且丢失项目自定义项。重新生成后必须手动补回 `-D__GNUC__` / `-U_WIN32` / `-nostdinc` 三个宏（脚本已正确生成架构与路径部分）。
 
 ### 文件添加规则
 
@@ -111,7 +118,7 @@ typedef enum { NoGame, GameMap, Waiting, Look, Run, GameOver, End } Car_State;
 
 | 当前态 | 条件 | 下一态 | 关键动作 |
 |--------|------|--------|---------|
-| NoGame | OPENMV 检测到起始区 | GameMap | `x_enc = (x_cam/x_cam_uint)×x_enc_uint` |
+| NoGame | OpenART_Plus 检测到起始区 | GameMap | `x_enc = (x_cam/x_cam_uint)×x_enc_uint` |
 | GameMap | 无条件 | Run | 目标设到 `(origin_x_enc+0.5)×20, (origin_y_enc+0.5)×20` |
 | Run | `|x_enc-target|≤1` | Waiting | 停止运动 (vx=vy=0) |
 | Waiting | `path_process()` 完成 | Run/Look | 见下文 |
@@ -121,7 +128,7 @@ typedef enum { NoGame, GameMap, Waiting, Look, Run, GameOver, End } Car_State;
 
 **PIT 中断**（`main.c:89-133`）：
 - **CH0 (5ms)**：编码器 → IMU → 里程计 → 位置环 → 偏航环 → 运动学 → 速度环 → PWM
-- **CH1 (10ms)**：读取 OPENMV → 数据低通滤波
+- **CH1 (10ms)**：读取 OpenART_Plus → 数据低通滤波
 
 **路径规划调度**（`path_process()`, `main.c:314-431`）：
 
@@ -261,7 +268,7 @@ typedef struct {
 } CAMDATA;
 
 void cam_uart_init(void);
-void cam_uart_isc_1(void);         // UART1 ISR (LPUART3, OPENMV)
+void cam_uart_isc_1(void);         // UART1 ISR (LPUART3, OpenART_Plus)
 void cam_uart_isc_2(void);         // UART2 ISR (LPUART1, ID)
 CAMDATA cam_uart1_read(void);
 void cam1_uart_send(float angle);  // 0→01, 90→02, -90→03, 180→04
@@ -340,7 +347,7 @@ void SystemInitHook(void);  // SDK 弱函数覆盖，main() 前自动调用
 | CSI | — | 摄像头并行接口（未用） | `CSI_IRQHandler` (43) | `CSI_DriverIRQHandler()`（SDK 内部） |
 | LPUART1 | B12/B13 | ID 通信/调试 | `LPUART1_IRQHandler` (49) | `cam_uart_isc_2()` |
 | LPUART2 | — | **未使用（空 handler）** | `LPUART2_IRQHandler` (62) | — |
-| LPUART3 | B22/B23 | **OPENMV 主摄像头** | `LPUART3_IRQHandler` (73) | `cam_uart_isc_1()` |
+| LPUART3 | B22/B23 | **OpenART_Plus 主摄像头** | `LPUART3_IRQHandler` (73) | `cam_uart_isc_1()` |
 | LPUART4 | — | FlexIO 摄像头 + GNSS | `LPUART4_IRQHandler` (86) | `flexio_camera_uart_handler()` + `gnss_uart_callback()` |
 | LPUART5 | — | 备用摄像头 | `LPUART5_IRQHandler` (99) | `camera_uart_handler()` |
 | LPUART6 | — | **未使用** | `LPUART6_IRQHandler` (110) | — |
@@ -493,7 +500,7 @@ map_boom_out()                   ── 炸弹后更新栅格
 
 ---
 
-## 八、OPENMV 通信协议
+## 八、OpenART_Plus 通信协议
 
 ### 8.1 硬件通道
 
@@ -509,7 +516,7 @@ map_boom_out()                   ── 炸弹后更新栅格
 FIFO 缓冲: 512 字节, ISR 逐字节写入, 主循环提取帧
 ```
 
-### 8.3 下行（MCU→OPENMV）格式
+### 8.3 下行（MCU→OpenART_Plus）格式
 
 ```c
 // 角度指令 (cam1_uart_send, cam_uart.c:166-180)
@@ -522,7 +529,7 @@ FIFO 缓冲: 512 字节, ISR 逐字节写入, 主循环提取帧
 "start%02dend\r\n"  // 如 type=2 → "start02end\r\n"
 ```
 
-### 8.4 上行（OPENMV→MCU）格式
+### 8.4 上行（OpenART_Plus→MCU）格式
 
 ```c
 // 小车位置 (push_cam_data, cam_uart.c:47-86)
@@ -606,7 +613,7 @@ Flash 存储：`Sector 127, Page 3`（共 19 个参数映射到 `flash_union_buf
 
 ## 十一、硬件引脚分配（完整版）
 
-### 摄像头（OPENMV 通过 UART 通信）
+### 摄像头（OpenART_Plus 通过 UART 通信）
 
 ```
 主摄像头:  TX=B22 (LPUART3_TX), RX=B23 (LPUART3_RX), 115200 baud

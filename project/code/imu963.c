@@ -151,7 +151,7 @@ void imu_init(void){
     imu963ra_init();
 	
     // 陀螺仪偏置校准
-    for (int i = 0;i < 400;i++){
+    for (int i = 0;i < 700;i++){
         imu963ra_get_acc(); 
 		imu963ra_get_gyro();
         gyro_x_offset  += imu963ra_gyro_x;
@@ -162,12 +162,12 @@ void imu_init(void){
         acc_z_offset   += imu963ra_acc_z;
         system_delay_ms(5);
     }
-    gyro_x_offset /= 400;
-    gyro_y_offset /= 400;
-    gyro_z_offset /= 400;
-    acc_x_offset  /= 400;
-    acc_y_offset  /= 400;
-    acc_z_offset   = acc_z_offset / 400 + ACC_SCALE;  // Z 轴静止时期望 +1g，扣除后为零偏
+    gyro_x_offset /= 700;
+    gyro_y_offset /= 700;
+    gyro_z_offset /= 700;
+    acc_x_offset  /= 700;
+    acc_y_offset  /= 700;
+    acc_z_offset   = acc_z_offset / 700 + ACC_SCALE;  // Z 轴静止时期望 +1g，扣除后为零偏
 }
 
 void imu_get(void){

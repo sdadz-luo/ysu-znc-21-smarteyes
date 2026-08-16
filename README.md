@@ -13,13 +13,13 @@
 
 本项目是燕山大学参加 **第21届全国大学生智能汽车竞赛（智能视觉组）** 的参赛代码，基于 **NXP RT1064 (MIMXRT1064DVL6A)** 微控制器开发，运行于逐飞科技 RT1064 核心板。
 
-智能视觉组要求小车具备 **自主视觉识别 + 运动控制 + 逻辑推理** 能力。OPENMV 摄像头通过 UART 将栅格地图和车位坐标发送给 MCU，MCU 负责路径规划、推箱子求解、炸弹破墙规划、PID 运动控制和状态机调度。**所有推理任务均在 Cortex-M7（600MHz）裸机上完成**，无上位机、无操作系统。
+智能视觉组要求小车具备 **自主视觉识别 + 运动控制 + 逻辑推理** 能力。OpenART_Plus 摄像头通过 UART 将栅格地图和车位坐标发送给 MCU，MCU 负责路径规划、推箱子求解、炸弹破墙规划、PID 运动控制和状态机调度。**所有推理任务均在 Cortex-M7（600MHz）裸机上完成**，无上位机、无操作系统。
 
 ### 核心能力
 
 | 能力 | 实现模块 | 说明 |
 |------|---------|------|
-| 栅格建图 | `cam_uart.c` + `main.c` | OPENMV 摄像头文本协议，解析 12×16 栅格 |
+| 栅格建图 | `cam_uart.c` + `main.c` | OpenART_Plus 摄像头文本协议，解析 12×16 栅格 |
 | 姿态估计 | `imu963.c` | Mahony 自适应增益 AHRS，偏航角闭环 |
 | 里程计 | `encoder.c` | 麦克纳姆轮正运动学 + 体→世界坐标系旋转 |
 | 位置/速度控制 | `pid.c` + `control.c` | 串级 PID（位置环→偏航环→速度环） |
@@ -35,14 +35,14 @@
 |------|------|
 | **MCU** | NXP MIMXRT1064DVL6A (Cortex-M7 @ 600MHz, 4MB 内部 FlexSPI Flash) |
 | **核心板** | 逐飞科技 RT1064 核心板 |
-| **摄像头** | OPENMV5-RT（主摄像头，UART 通信，LPUART3） |
+| **摄像头** | OpenART_Plus（主摄像头，UART 通信，LPUART3） |
 | **显示器** | TFT180 (1.8", 128×160, SPI) |
 | **IMU** | IMU963RA（三轴加速度计 + 三轴陀螺仪） |
 | **无线通信** | BLE6A20 蓝牙（UART 透传，LPUART8） |
 | **电机** | 直流减速电机 × 4（麦克纳姆轮，正交编码器 × 4） |
 | **舵机** | 2 路（C30/C31，预留） |
 
-> 注：板载 CSI 摄像头接口保留但未使用，主摄像头通过 UART（OPENMV）通信。
+> 注：板载 CSI 摄像头接口保留但未使用，主摄像头通过 UART（OpenART_Plus）通信。
 
 ---
 
@@ -85,7 +85,7 @@ main()
       ├─ motor_init()                         ← 8 路 PWM (10kHz)
       ├─ pid_init()                           ← 8 个 PID 实例
       ├─ cam_uart_init()                      ← 双 UART (LPUART1/LPUART3)
-      ├─ cam1_uart_send(0)                    ← OPENMV 角度回零
+      ├─ cam1_uart_send(0)                    ← OpenART_Plus 角度回零
       ├─ reset_planning_system()
       ├─ pit_ms_init(PIT_CH0, 5ms)
       └─ pit_ms_init(PIT_CH1, 10ms)
@@ -130,7 +130,7 @@ PIT_CH0 (5ms):
   8. motor_duty(FL,FR,BL,BR) ← PWM 输出
 
 PIT_CH1 (10ms):
-  1. cam_uart1_read()       ← 读取 OPENMV 数据帧
+  1. cam_uart1_read()       ← 读取 OpenART_Plus 数据帧
   2. uart_updata()          ← 数据低通滤波 (α=0.8)
 ```
 
@@ -232,7 +232,7 @@ y_enc += world_y × corr_y_enc;
 
 **关键输出：** `yaw`（全局变量，范围 -180°~180°）
 
-#### 6. `cam_uart.c/h` — OPENMV 双 UART 通信（242 行）
+#### 6. `cam_uart.c/h` — OpenART_Plus 双 UART 通信（242 行）
 
 **硬件通道：**
 
@@ -319,7 +319,7 @@ my_uart_send(count);           // 发送 count 通道数据
 
 ### 5.1 栅格地图
 
-12 行 × 16 列 = 192 格，由 OPENMV 摄像头通过 UART 实时发送。
+12 行 × 16 列 = 192 格，由 OpenART_Plus 摄像头通过 UART 实时发送。
 
 | 元素 | 值 | 说明 |
 |------|----|------|
@@ -368,7 +368,7 @@ my_uart_send(count);           // 发送 count 通道数据
 ### 5.5 ID 学习与推理
 
 ```
-Mode 2 (Look) → 逐个访问箱子和目标 → OPENMV 扫描 ID → id_record()
+Mode 2 (Look) → 逐个访问箱子和目标 → OpenART_Plus 扫描 ID → id_record()
     ↓
 id_inference() → 频率均衡 + 排列枚举 → 建立箱↔目标映射
     ↓
@@ -376,7 +376,7 @@ Mode 3 (ID Run) → 利用 ID 精准配对推箱
 ```
 
 - **`id_learning()`**：BFS 规划访问路径，预留最后一个锚点
-- **`id_record()`**：到达后调用 OPENMV 扫描 ID
+- **`id_record()`**：到达后调用 OpenART_Plus 扫描 ID
 - **`id_inference()`**：频率均衡 + `next_permutation()` 排列枚举
 - **`build_solution_from_id_pairing()`**：ID 映射 → 求解方案
 
@@ -461,7 +461,7 @@ solve_single_box_a_star, compute_player_region_with_walls
 | CSI | — | 摄像头并行接口 | `CSI_DriverIRQHandler()` |
 | LPUART1 | B12/B13 | 调试串口 / ID 通信 | `cam_uart_isc_2()` |
 | LPUART2 | — | 未使用（空 handler） | — |
-| LPUART3 | B22/B23 | **OPENMV 主摄像头** | `cam_uart_isc_1()` |
+| LPUART3 | B22/B23 | **OpenART_Plus 主摄像头** | `cam_uart_isc_1()` |
 | LPUART4 | — | FlexIO 摄像头 + GNSS | `flexio_camera_uart_handler()`, `gnss_uart_callback()` |
 | LPUART5 | — | 备用摄像头 | `camera_uart_handler()` |
 | LPUART6 | — | 未使用 | — |
@@ -483,7 +483,7 @@ solve_single_box_a_star, compute_player_region_with_walls
 | C 标准 | **C99** |
 | 构建目标 | `nor_sdram_zf_dtcm` |
 | 关键预定义宏 | `CPU_MIMXRT1064DVL6A`, `XIP_EXTERNAL_FLASH=1`, `USB_STACK_BM`, `MCUXPRESSO_SDK`, `SKIP_SYSCLK_INIT`, `PRINTF_FLOAT_ENABLE=1` |
-| clangd 附加宏 | `__GNUC__`, `-U_WIN32`, `-nostdinc` |
+| clangd 配置 | `.clangd` + `compile_flags.txt`（keil-clangd-setup 生成：Cortex-M7 架构目标 + 14 宏 + 32 路径 + `__GNUC__`/`-U_WIN32`/`-nostdinc`） |
 
 > ⚠️ **仅支持 IDE 构建**（无命令行构建方式）。添加 `.c`/`.h` 文件时需同时放入 `project/code/` **并在 IDE 工程树中添加**。
 
@@ -496,10 +496,10 @@ solve_single_box_a_star, compute_player_region_with_walls
 
 ```
 ysu-znc-21-smarteyes/
-├── Claude.md                        # Claude Code 指令文档（原 AGENTS.md 重命名）
+├── CLAUDE.md                        # Claude Code 指令文档
 ├── README.md
-├── .clangd                          # clangd ARMCLANG include 路径
-├── compile_flags.txt                # clangd 编译标志（57 个 include 路径）
+├── .clangd                          # clangd 配置（keil-clangd-setup 生成：架构目标 + 宏 + 包含路径）
+├── compile_flags.txt                # clangd 编译标志平铺版（与 .clangd 内容一致）
 ├── .gitignore
 ├── libraries/                       # 逐飞开源库 V3.9.2（请勿修改）
 │   ├── zf_common/                   # 通用头文件、typedef、时钟、FIFO、数学
@@ -519,7 +519,7 @@ ysu-znc-21-smarteyes/
     │   ├── motor.c/h                # PWM 电机驱动（10kHz，H 桥双极性）
     │   ├── encoder.c/h              # 正交编码器 + 里程计
     │   ├── imu963.c/h               # IMU963RA + Mahony AHRS
-    │   ├── cam_uart.c/h             # OPENMV 双 UART 通信协议
+    │   ├── cam_uart.c/h             # OpenART_Plus 双 UART 通信协议
     │   ├── menu.c/h                 # TFT 菜单 + Flash 持久化
     │   ├── tft180.c/h               # TFT180 显示屏驱动
     │   ├── wireless_uart.c/h        # 无线示波器调试（与 my_uart 名义重复）
