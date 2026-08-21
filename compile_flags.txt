@@ -6,8 +6,6 @@ arm-none-eabi
 -mfloat-abi=hard
 -fms-extensions
 -fdeclspec
--D__GNUC__
--U_WIN32
 -DCPU_MIMXRT1064DVL6A
 -DSKIP_SYSCLK_INIT
 -DXIP_EXTERNAL_FLASH=1
@@ -86,5 +84,9 @@ libraries/zf_driver
 libraries/zf_device
 -I
 libraries/zf_components
--nostdinc
+-nostdlibinc
+-I
+C:/Path/arm-gcc/arm-none-eabi/include
+-D__GNUC__
+-U_WIN32
 -std=c99

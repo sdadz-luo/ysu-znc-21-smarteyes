@@ -12,10 +12,6 @@ CompileFlags:
     - "-fms-extensions"
     - "-fdeclspec"
 
-    # 项目自定义：欺骗 clangd 使用 GCC 兼容模式 / 取消 Windows 宏
-    - "-D__GNUC__"
-    - "-U_WIN32"
-
     # Preprocessor defines from Keil project
     - "-DCPU_MIMXRT1064DVL6A"
     - "-DSKIP_SYSCLK_INIT"
@@ -98,8 +94,12 @@ CompileFlags:
     - "-I"
     - "libraries/zf_components"
 
-    # 项目自定义：禁止系统头文件（使用逐飞库 stub）
-    - "-nostdinc"
+    # libc: 禁用宿主 libc, 使用 ARM GCC newlib
+    - "-nostdlibinc"
+    - "-I"
+    - "C:/Path/arm-gcc/arm-none-eabi/include"
 
-    # C standard
+    # 项目自定义 flags (来自 .clangd.extra.txt, 脚本重跑会保留)
+    - "-D__GNUC__"
+    - "-U_WIN32"
     - "-std=c99"

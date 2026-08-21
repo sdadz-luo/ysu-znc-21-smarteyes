@@ -69,13 +69,17 @@ PRINTF_FLOAT_ENABLE=1
 ```c
 -target arm-none-eabi -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard // 架构目标（脚本生成）
 -fms-extensions -fdeclspec        // ARMCC 兼容模式（脚本生成）
--D__GNUC__                        // 欺骗 clangd 使用 GCC 兼容模式（项目自定义）
--U_WIN32                          // 取消 Windows 宏（项目自定义）
--nostdinc                         // 禁止系统头文件，使用逐飞库 stub（项目自定义）
-// 另含 14 个预定义宏 + 32 个 -I 包含路径 + -std=c99
+-nostdlibinc                      // 禁用宿主 libc（脚本生成，自动检测 ARM GCC newlib）
+-I C:/Path/arm-gcc/arm-none-eabi/include  // newlib 头文件（脚本生成）
+-D__GNUC__                        // 欺骗 clangd 使用 GCC 兼容模式（自定义，在 .clangd.extra.txt）
+-U_WIN32                          // 取消 Windows 宏（自定义，在 .clangd.extra.txt）
+-std=c99                          // Keil AC5 默认标准（自定义，在 .clangd.extra.txt）
+// 另含 14 个预定义宏 + 32 个 -I 包含路径（脚本生成）
 ```
 
-**⚠️ 更新规则**：`keil-clangd-setup` 脚本会覆盖两个文件，且丢失项目自定义项。重新生成后必须手动补回 `-D__GNUC__` / `-U_WIN32` / `-nostdinc` 三个宏（脚本已正确生成架构与路径部分）。
+**✅ 更新规则**：`keil-clangd-setup` 脚本会覆盖 `.clangd` / `compile_flags.txt`，但**项目自定义项全部放在 `.clangd.extra.txt`（每行一个 flag，`#` 为注释），脚本重跑自动合并、不再丢失**。需要新增自定义 flag 时改 `.clangd.extra.txt` 后重跑脚本即可。
+
+⚠️ 历史教训：旧配置曾用 `-nostdinc`（无 stub 头文件），导致 stdio.h/stdint.h 断链、clangd 满屏误报且验证漏检——修复为 `-nostdlibinc` + ARM GCC newlib 后解决（2026-08-17）。
 
 ### 文件添加规则
 

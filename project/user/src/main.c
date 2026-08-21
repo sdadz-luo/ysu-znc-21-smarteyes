@@ -344,6 +344,14 @@ static void path_process(void){
             game_mode = 2;
             boom_flag = 1;
         }
+        if (((game_mode == 1 || game_mode == 3) && path_car.len == 0) || (game_mode == 2 && path_look_car.len == 0)){
+            x_target = 1 * x_enc_uint;
+            y_target = 6 * y_enc_uint;
+            pid_position_speed();
+            game_over_flag = 1;
+            car_state = GameOver;
+            return;
+        }
     }
 
     // 3. 路径跟踪执行 (根据不同模式)

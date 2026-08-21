@@ -1,0 +1,9 @@
+# 项目自定义 flags — 由 keil-clangd-setup 生成时自动合并，重跑不丢失
+# 每行一个 flag，以 # 开头为注释
+
+# 欺骗 clangd 使用 GCC 兼容模式（newlib 是 GCC 系 libc，需 __GNUC__ 分支）
+-D__GNUC__
+# 取消 Windows 宏污染
+-U_WIN32
+# Keil AC5 默认 C99
+-std=c99
