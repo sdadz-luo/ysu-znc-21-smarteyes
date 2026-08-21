@@ -7,6 +7,8 @@
 #define y_cam_uint                   15.8
 #define x_enc_uint					 20
 #define y_enc_uint					 20
+#define END_ROTATION_SPEED_LIMIT     50.0f
+#define END_ROTATION_ANGLE           360.0f
 
 // ================= 状态机定义 =================
 typedef enum {
@@ -35,7 +37,8 @@ static void cam2_process(void);
 
 // ================= 外部变量声明  =================
 extern float encoder_data_FL, encoder_data_FR, encoder_data_BL, encoder_data_BR; 	// 四个轮子编码器数据
-extern float yaw;            													// 小车当前角度 (航向角)
+extern volatile float yaw;            															// 小车当前角度 (航向角)
+extern volatile float yaw_continuous;  														// 解包后的连续偏航角
 extern pid pid_FL, pid_FR, pid_BL, pid_BR; 										// 四个轮子的速度环 PID
 extern pid pid_gyro,pid_yaw,pid_x, pid_y;          							    // 角速度环，角度环, X/Y位置环 PID
 
@@ -47,6 +50,9 @@ static float x_cam = 0, y_cam = 0, x_cam_last = 0, y_cam_last = 0; 				// 摄像头
 static uint8_t has_2 = 0, has_3 = 0, has_6 = 0;
 static uint8_t map_has_car = 0;
 static volatile float yaw_target = 0; 						                	// 目标角度
+static volatile float end_rotation_target = 0.0f;
+static volatile uint8_t end_rotation_started = 0;
+static volatile uint8_t end_rotation_completed = 0;
 static int FL = 0, FR = 0, BL = 0, BR = 0; 										// 四个电机的 PWM 占空比
 static int step = 0;             												// 路径跟踪的当前步数
 static volatile CAMDATA car_data;         										// 摄像头数据结构体
@@ -106,28 +112,47 @@ void PIT_IRQHandler(void){
 
         // 3. 角度环 PID 计算 
         if (time % 2 == 0){
+            if (car_state == End && end_rotation_started && !end_rotation_completed){
+                pid_change(&pid_yaw, 5, 0.001f, 30);
+                pid_target(&pid_yaw, end_rotation_target);
+                vz = pid_location(&pid_yaw, yaw_continuous);
+                if (vz > END_ROTATION_SPEED_LIMIT) vz = END_ROTATION_SPEED_LIMIT;
+                else if (vz < -END_ROTATION_SPEED_LIMIT) vz = -END_ROTATION_SPEED_LIMIT;
 
-            if (car_state == Run) pid_change(&pid_yaw, 10, 0.001f, 30);
-            else pid_change(&pid_yaw, 5, 0.001f, 30);
+                if (yaw_continuous >= end_rotation_target){
+                    end_rotation_completed = 1;
+                    vz = 0.0f;
+                }
+            } else if (car_state != End){
+                if (car_state == Run) pid_change(&pid_yaw, 10, 0.001f, 30);
+                else pid_change(&pid_yaw, 5, 0.001f, 30);
 
-            float yaw_error = yaw_target - yaw;
-            if (yaw_error > 180.0f)       yaw_error -= 360.0f;
-            else if (yaw_error < -180.0f) yaw_error += 360.0f;
+                float yaw_error = yaw_target - yaw;
+                if (yaw_error > 180.0f)       yaw_error -= 360.0f;
+                else if (yaw_error < -180.0f) yaw_error += 360.0f;
 
-            pid_target(&pid_yaw, yaw + yaw_error);
-            vz = pid_location(&pid_yaw, yaw); 
+                pid_target(&pid_yaw, yaw + yaw_error);
+                vz = pid_location(&pid_yaw, yaw); 
+            } else {
+                vz = 0.0f;
+            }
         } 
         
         // 4. 运动学解算: 将合成速度 (vx, vy, vz) 分解到四个轮子
         motor_solution(vx, vy, yaw, vz);
 
         // 5. 速度环/增量式 PID 计算得到最终 PWM
-        FL = pid_increm(&pid_FL, encoder_data_FL / 4.0f);
-        FR = pid_increm(&pid_FR, encoder_data_FR / 4.0f);
-        BL = pid_increm(&pid_BL, encoder_data_BL / 4.0f);
-        BR = pid_increm(&pid_BR, encoder_data_BR / 4.0f);
+        if (car_state == End && end_rotation_completed){
+            pid_wheel_target(0, 0, 0, 0);
+            motor_duty(0, 0, 0, 0);
+        } else {
+            FL = pid_increm(&pid_FL, encoder_data_FL / 4.0f);
+            FR = pid_increm(&pid_FR, encoder_data_FR / 4.0f);
+            BL = pid_increm(&pid_BL, encoder_data_BL / 4.0f);
+            BR = pid_increm(&pid_BR, encoder_data_BR / 4.0f);
 
-        motor_duty(FL, FR, BL, BR); // 输出电机PWM
+            motor_duty(FL, FR, BL, BR); // 输出电机PWM
+        }
         
         pit_flag_clear(PIT_CH0);
     }
@@ -265,6 +290,13 @@ static void state_judgment(void){
         
         case End:{
             vx = 0;vy = 0;
+            if (!end_rotation_started){
+                end_rotation_target = yaw_continuous + END_ROTATION_ANGLE;
+                end_rotation_started = 1;
+                end_rotation_completed = 0;
+                pid_reset();
+            }
+            if (end_rotation_completed) vz = 0;
             break;
         }
     }

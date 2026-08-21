@@ -29,7 +29,8 @@
 #define GYRO_SCALE   57.1f   // 陀螺仪 LSB/(°/s)
 #define DEG_TO_RAD   (PI / 180.0f)
 
-volatile float yaw = 0.0;
+volatile float yaw = 0.0f;
+volatile float yaw_continuous = 0.0f;
 // 全局变量扩展：添加四元数、欧拉角、采样时间、积分误差
 float acc_x = 0,acc_y = 0,acc_z = 0;
 float gyro_x = 0,gyro_y = 0,gyro_z = 0;
@@ -38,6 +39,7 @@ static float acc_x_offset = 0,acc_y_offset = 0,acc_z_offset = 0;
 static Quaternion q = {1.0f, 0.0f, 0.0f, 0.0f}; // 全局四元数（初始无旋转）
 static EulerAngle euler = {0.0f, 0.0f, 0.0f};   // 全局欧拉角
 static float integral_fx = 0, integral_fy = 0, integral_fz = 0; // 积分误差
+static float yaw_last = 0.0f;
 
 /**
  * @brief 四元数转欧拉角（适配前右上坐标系，X/Y顺时针正，Z逆时针正）
@@ -146,6 +148,9 @@ static void mahony_update(float gx, float gy, float gz, float ax, float ay, floa
 void imu_init(void){
     // 初始化四元数（无旋转）
     q.w = 1.0f; q.x = 0.0f; q.y = 0.0f; q.z = 0.0f;
+    yaw = 0.0f;
+    yaw_continuous = 0.0f;
+    yaw_last = 0.0f;
     EulerAngle angle1 = quaternion_to_euler(q);
 	
     imu963ra_init();
@@ -208,5 +213,12 @@ void imu_get(void){
 
     // 9. 输出 yaw
     yaw = euler.yaw;
+
+    // 解包 [-180, 180] 角度，使连续旋转跨越边界时不会丢失转角。
+    float yaw_delta = yaw - yaw_last;
+    if (yaw_delta > 180.0f) yaw_delta -= 360.0f;
+    else if (yaw_delta < -180.0f) yaw_delta += 360.0f;
+    yaw_continuous += yaw_delta;
+    yaw_last = yaw;
 
 }

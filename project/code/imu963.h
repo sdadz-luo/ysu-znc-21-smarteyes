@@ -18,5 +18,7 @@ typedef struct {
 
 void imu_init(void);
 void imu_get(void);
+extern volatile float yaw;
+extern volatile float yaw_continuous;
 
 #endif

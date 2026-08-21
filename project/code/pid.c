@@ -147,6 +147,7 @@ void pid_reset(void){
     PID_reset(&pid_FR);
     PID_reset(&pid_BL);
     PID_reset(&pid_BR);
+    PID_reset(&pid_yaw);
     PID_reset(&pid_x);
     PID_reset(&pid_y);
     pid_x.maxOutput = pid_x_speed;
