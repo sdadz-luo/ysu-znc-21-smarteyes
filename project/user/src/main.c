@@ -7,7 +7,7 @@
 #define y_cam_uint                   15.8
 #define x_enc_uint					 20
 #define y_enc_uint					 20
-#define END_ROTATION_SPEED_LIMIT     50.0f
+#define END_ROTATION_SPEED_LIMIT     45.0f
 #define END_ROTATION_ANGLE           360.0f
 
 // ================= 状态机定义 =================
@@ -21,12 +21,12 @@ typedef enum {
     End         // 完全结束
 } Car_State;
 
-static volatile Car_State car_state = NoGame; // 初始状态
+static volatile Car_State car_state = NoGame;   // 初始状态
 // ================= 路径结构体 =================
-static Path path_car = {0};          		// 正常行驶路径
-static Path_Look path_look_car = {0}; 		// 观察路径
-static Path_Start path_start_car = {0}; 	// 起始路径
-static Path path_boom_car = {0};			// 炸弹破局路径
+static Path path_car = {0};          		    // 正常行驶路径
+static Path_Look path_look_car = {0}; 		    // 观察路径
+static Path_Start path_start_car = {0}; 	    // 起始路径
+static Path path_boom_car = {0};			    // 炸弹破局路径
 
 // ================= 函数声明 =================
 static void Init(void);
@@ -37,13 +37,13 @@ static void cam2_process(void);
 
 // ================= 外部变量声明  =================
 extern float encoder_data_FL, encoder_data_FR, encoder_data_BL, encoder_data_BR; 	// 四个轮子编码器数据
-extern volatile float yaw;            															// 小车当前角度 (航向角)
-extern volatile float yaw_continuous;  														// 解包后的连续偏航角
-extern pid pid_FL, pid_FR, pid_BL, pid_BR; 										// 四个轮子的速度环 PID
-extern pid pid_gyro,pid_yaw,pid_x, pid_y;          							    // 角速度环，角度环, X/Y位置环 PID
+extern volatile float yaw;            												// 小车当前角度 (航向角)
+extern volatile float yaw_continuous;  												// 解包后的连续偏航角
+extern pid pid_FL, pid_FR, pid_BL, pid_BR; 										    // 四个轮子的速度环 PID
+extern pid pid_gyro,pid_yaw,pid_x, pid_y;          							        // 角速度环，角度环, X/Y位置环 PID
 
 // ================= 全局变量 =================
-static uint32_t time = 0;             												// 时间计数器 (每 10ms 加1)
+static uint32_t time = 0;             											// 时间计数器 (每 10ms 加1)
 static float vx = 0, vy = 0, vz = 0; 											// 底盘合成速度
 static volatile float x_target = 10, y_target = 130; 							// 目标位置坐标
 static float x_cam = 0, y_cam = 0, x_cam_last = 0, y_cam_last = 0; 				// 摄像头检测到的车位坐标及上次值

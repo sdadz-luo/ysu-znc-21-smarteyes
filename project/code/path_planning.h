@@ -8,7 +8,7 @@
 /* ---- 地图基本尺寸 ---- */
 #define MAP_ROWS             12         /* 地图行数 */
 #define MAP_COLS             16         /* 地图列数 */
-#define MAX_BOXES            7          /* 最大箱子数量 */
+#define MAX_BOXES            8          /* 最大箱子数量 */
 #define MAX_IDS              10         /* 最大ID编号数 */
 #define MAX_VISIT_STEPS      (2 * MAX_BOXES) /* 最大访问步骤数 */
 #define MAX_PATH_LEN         500        /* 最大路径长度 */
@@ -37,7 +37,7 @@
 #define BOMB_INVALID         0xFF       /* 炸弹已消失/无效标记 */
 
 /* ---- 模式3（炸弹破局）容量上限 ---- */
-#define MAX_BOOMS            4          /* 最大炸弹数量 */
+#define MAX_BOOMS            2          /* 最大炸弹数量 */
 #define MAX_BREAK_WALLS      100        /* 最大可炸墙数量 */
 #define MAX_DETONATE_POINTS  50         /* 最大爆炸点候选数量 */
 #define MAX_PROBLEM_POINTS   10         /* 最大死锁问题点数量 */
