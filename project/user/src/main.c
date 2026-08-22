@@ -367,7 +367,11 @@ static void path_process(void){
         else if (game_mode == 1) path_car = path_calculation(grid);     		// 模式1: 正常行驶
         else if (game_mode == 2) path_look_car = path_look_calculation(grid); 	// 模式2: ID识别路径
         else if (game_mode == 3) path_car = path_id_calculation(); 		        // 模式3: ID行驶
-        else if (game_mode == 4) path_boom_car = path_boom_calculation(grid);   // 模式4: 炸弹破局路径
+        else if (game_mode == 4) {
+            grid[1][13] = 1;grid[1][14] = 1;
+            game_mode = 2;
+            path_look_car = path_look_calculation(grid);
+            }
         map_process_flag = 0; 		
         boom_flag = 0;look_flag = 0;id_flag = 0;
         has_2 = 0;has_3 = 0;has_6 = 0;
