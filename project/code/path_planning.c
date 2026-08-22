@@ -75,6 +75,7 @@ static uint16_t g_vcache_mask[VCACHE_SIZE];
 static DetonatePlan g_bomb_pb[MAX_BOOMS][MAX_PLANS_PER_BOOM];     /* search_multi_bomb_combination */
 static BombExecutionStep g_bomb_t_s[MAX_BOOMS];                   /* plan_bomb_execution_sequence */
 static BombExecutionStep g_bomb_best_s[MAX_BOOMS];                /* plan_bomb_execution_sequence */
+static BombExecutionStep g_bomb_direct_best_s[MAX_BOOMS];          /* path_boom_calculation */
 static DetonatePlan g_bomb_candidates[MAX_DETONATE_POINTS];       /* iterative_bomb_breakthrough */
 static DetonatePlan g_bomb_all_plans[MAX_DETONATE_POINTS];        /* fallback */
 static BreakableWall g_bomb_walls[MAX_BREAK_WALLS];               /* 通用墙收集 */
@@ -3981,7 +3982,9 @@ static void compute_one_bomb_push(Point bomb_pos, uint8_t bomb_index,
     memset(out_path, 0, sizeof(BombPushPath));
     if (pos_equal(bomb_pos, detonate_pos)) {
         out_path->path_valid = true; out_path->path_len = 1;
-        out_path->path[0] = player_start; return;
+        out_path->path[0] = player_start;
+        out_path->is_push[0] = true;
+        return;
     }
     /* 始终走A*计算推弹路径（含玩家走到推弹位+推动），不再短路邻接情况 */
     memcpy(g_tmp_obs, walls, sizeof(uint16_t) * MAP_ROWS);
@@ -4231,7 +4234,7 @@ Path path_id_calculation(void) {
 /**
  * @brief 模式3（炸弹破局分析）顶层接口
  */
-Path path_boom_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
+static Path path_boom_legacy_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
     memset(&g_path_out, 0, sizeof(Path));
     memset(g_boom_final_walls, 0, sizeof(g_boom_final_walls));
 
@@ -4298,6 +4301,81 @@ Path path_boom_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
             last_added = cur; total++;
         }
     }
+    g_path_out.len = total;
+    extract_turn_points(&g_path_out);
+    return g_path_out;
+}
+
+/**
+ * @brief 使用摄像头提供的两颗炸弹，直接规划到固定爆炸点
+ *
+ * 固定爆炸点的外部坐标为（列4，行7）和（列12，行1），内部Point使用（行，列）。
+ * 两种炸弹与爆炸点的绑定关系都会尝试，第二颗炸弹使用第一颗爆炸后更新的墙位图规划。
+ */
+Path path_boom_calculation(uint8_t map[MAP_ROWS][MAP_COLS]) {
+    static const Point detonate_points[2] = {{7, 4}, {1, 12}};
+    memset(&g_path_out, 0, sizeof(Path));
+    memset(g_boom_final_walls, 0, sizeof(g_boom_final_walls));
+    g_boom_used_mask = 0;
+
+    parse_map_input(map);
+    if (g_bomb_count != 2) return g_path_out;
+
+    uint8_t best_count = 0;
+    uint16_t best_cost = INF;
+    for (uint8_t mapping = 0; mapping < 2; mapping++) {
+        DetonatePlan plans[MAX_BOOMS] = {0};
+        plans[0].bomb_index = 0;
+        plans[0].bomb_initial_pos = g_initial_bombs[0];
+        plans[0].detonate_pos = detonate_points[mapping];
+        plans[1].bomb_index = 1;
+        plans[1].bomb_initial_pos = g_initial_bombs[1];
+        plans[1].detonate_pos = detonate_points[1 - mapping];
+
+        BombExecutionPlan exec_plan;
+        plan_bomb_execution_sequence(plans, 2, &exec_plan);
+        if (!exec_plan.is_valid || exec_plan.step_count != 2) continue;
+        if (best_count != 0 && exec_plan.total_cost >= best_cost) continue;
+
+        best_count = exec_plan.step_count;
+        best_cost = exec_plan.total_cost;
+        memcpy(g_bomb_direct_best_s, exec_plan.steps,
+               sizeof(BombExecutionStep) * best_count);
+    }
+
+    if (best_count != 2) return g_path_out;
+
+    memcpy(g_boom_final_walls, g_static_walls, sizeof(g_boom_final_walls));
+    uint16_t total = 0;
+    Point last_added = {0xFF, 0xFF};
+    for (uint8_t si = 0; si < best_count; si++) {
+        BombExecutionStep *st = &g_bomb_direct_best_s[si];
+        g_boom_used_mask |= (uint8_t)(1 << st->bomb_index);
+        for (uint8_t wi = 0; wi < st->walls_removed_count; wi++) {
+            Point wp = st->walls_removed[wi];
+            g_boom_final_walls[wp.x] &= (uint16_t)~(1 << wp.y);
+        }
+
+        BombPushPath *push_path = &st->push_path;
+        if (!push_path->path_valid || push_path->path_len == 0) {
+            memset(&g_path_out, 0, sizeof(Path));
+            return g_path_out;
+        }
+        for (uint16_t pi = 0; pi < push_path->path_len; pi++) {
+            Point current = push_path->path[pi];
+            if (total > 0 && pos_equal(current, last_added)) continue;
+            if (total >= MAX_PATH_LEN) {
+                memset(&g_path_out, 0, sizeof(Path));
+                return g_path_out;
+            }
+            g_path_out.x[total] = current.y;
+            g_path_out.y[total] = current.x;
+            g_path_out.is_push[total] = (uint8_t)push_path->is_push[pi];
+            last_added = current;
+            total++;
+        }
+    }
+
     g_path_out.len = total;
     extract_turn_points(&g_path_out);
     return g_path_out;

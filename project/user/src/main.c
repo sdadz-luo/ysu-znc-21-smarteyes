@@ -447,13 +447,13 @@ static void path_process(void){
         return;
     }else if (game_mode == 4 && !map_process_flag && path_boom_car.len > 0){
         if (fabsf(x_enc - x_target) <= 1 && fabsf(y_enc - y_target) <= 1) {
-            if (path_boom_car.is_push[step] == 1) system_delay_ms(1500); // 如果是爆炸动作，延时等待            
+            if (path_boom_car.is_push[step] == 1) system_delay_ms(1500); // 每颗炸弹引爆后等待爆炸完成
             step++;
             // 检查是否走完整个路径
-            if (step > path_boom_car.len) {
+            if (step >= path_boom_car.len) {
                 map_boom_out(grid); 
                 grid[origin_y_enc][origin_x_enc] = 0;
-                grid[path_boom_car.y[path_boom_car.len]][path_boom_car.x[path_boom_car.len]] = 2;
+                grid[path_boom_car.y[path_boom_car.len - 1]][path_boom_car.x[path_boom_car.len - 1]] = 2;
                 boom_flag = 1;
                 game_mode = 2;
                 car_state = Waiting;
