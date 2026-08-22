@@ -4058,9 +4058,9 @@ static bool try_execute_step(const DetonatePlan *p, uint8_t step_idx,
 }
 
 /**
- * @brief 贪心顺序推弹规划（BFS选最近+地图逐步更新）
- * 
- * 若贪心不能完成，回退到全排列搜索。
+ * @brief 双炸弹顺序推弹规划（先尝试贪心，再完整比较所有顺序）
+ *
+ * 先用BFS距离快速生成可行顺序，再对所有顺序完整规划并选择总代价最低者。
  */
 static void plan_bomb_execution_sequence(const DetonatePlan plans[],
     uint8_t plan_count, BombExecutionPlan *out_exec) {
@@ -4108,7 +4108,8 @@ static void plan_bomb_execution_sequence(const DetonatePlan plans[],
         if (!pushed) break;
     }
 
-    if (step_idx < plan_count && plan_count >= 2) {
+    /* 两颗炸弹始终完整评估两种执行顺序，避免贪心顺序掩盖更短的可行路径。 */
+    if (plan_count >= 2) {
         int order[MAX_BOOMS];
         for (int i = 0; i < (int)plan_count; i++) order[i] = i;
         uint16_t best_c = 0xFFFF; uint8_t best_n = 0;
