@@ -79,8 +79,6 @@ PRINTF_FLOAT_ENABLE=1
 
 **✅ 更新规则**：`keil-clangd-setup` 脚本会覆盖 `.clangd` / `compile_flags.txt`，但**项目自定义项全部放在 `.clangd.extra.txt`（每行一个 flag，`#` 为注释），脚本重跑自动合并、不再丢失**。需要新增自定义 flag 时改 `.clangd.extra.txt` 后重跑脚本即可。
 
-⚠️ 历史教训：旧配置曾用 `-nostdinc`（无 stub 头文件），导致 stdio.h/stdint.h 断链、clangd 满屏误报且验证漏检——修复为 `-nostdlibinc` + ARM GCC newlib 后解决（2026-08-17）。
-
 ### 文件添加规则
 
 添加 `.c`/`.h` 文件时需：
@@ -170,7 +168,7 @@ path_process():
 ```c
 #define MAP_ROWS        12          // 栅格行数
 #define MAP_COLS        16          // 栅格列数
-#define MAX_BOXES       5           // 最大箱子数
+#define MAX_BOXES       8           // 最大箱子数
 #define MAX_PATH_LEN    500         // 最大路径点
 #define MAX_OPENSET     65536       // A* 哈希表大小
 #define MAX_PQ_SIZE     10000       // 优先队列大小
@@ -564,13 +562,13 @@ else                   tx = 1;  // 默认 0°
 
 | 变量 | 默认值 | 菜单步进 | 类型 | 说明 |
 |------|--------|---------|------|------|
-| `pid_x_p` | 3.50 | 0.1 | float | X 位置环 P |
+| `pid_x_p` | 3.60 | 0.1 | float | X 位置环 P |
 | `pid_x_i` | 0.003 | 0.001 | float | X 位置环 I |
-| `pid_x_d` | 7.00 | 0.1 | float | X 位置环 D |
+| `pid_x_d` | 7.50 | 0.1 | float | X 位置环 D |
 | `pid_x_speed` | 110 | 5 | uint8_t | X 最大速度 |
-| `pid_y_p` | -3.50 | 0.1 | float | Y 位置环 P（负值） |
+| `pid_y_p` | -3.60 | 0.1 | float | Y 位置环 P（负值） |
 | `pid_y_i` | -0.003 | 0.001 | float | Y 位置环 I |
-| `pid_y_d` | -7.00 | 0.1 | float | Y 位置环 D |
+| `pid_y_d` | -7.50 | 0.1 | float | Y 位置环 D |
 | `pid_y_speed` | 110 | 5 | uint8_t | Y 最大速度 |
 | `origin_x_enc` | 1 | 1 | uint8_t | 起点栅格 X |
 | `origin_y_enc` | 7 | 1 | uint8_t | 起点栅格 Y |
@@ -594,14 +592,14 @@ Flash 存储：`Sector 127, Page 3`（共 19 个参数映射到 `flash_union_buf
 
 | # | 问题 | 文件 | 行号 | 说明 |
 |---|------|------|------|------|
-| 1 | `enc_cam()` 声明但未实现 | `cam_uart.h` | — | 编译通过（仅声明），链接会失败 |
+| 1 | ITCM MPU 属性待验证 | `mpu_config.c` | Region 2 | XN 位配置与 ITCM 可执行 section 的设计意图矛盾，需用 Keil 镜像和硬件确认 |
 | 2 | `isr.h` 为空 | `project/user/inc/isr.h` | — | 无任何内容，仅占位 |
-| 3 | `pid_gyro` 未初始化 | `pid.c` | 4,99-107 | 有定义但 `pid_init()` 未初始化，不可用 |
+| 3 | 路径边界访问风险 | `path_planning.c` | `get_successors()` | 边界邻居可能参与目标位图索引，需先验证行列范围 |
 | 4 | 头文件保护宏与文件名不一致 | `wireless_uart.h` | 2 | 保护宏 `_CODE_MY_UART_h_` 但文件为 `wireless_uart.h` |
 | 5 | 函数名拼写错误 | `isr.c` | 128 | `debug_interrupr_handler` 多了一个 'r' |
 | 6 | 按键映射命名混乱 | `menu.c` | 46-52 | `KEY_UP=key[2]=C31(下)`, `KEY_DOWN=key[3]=C28(上)` |
-| 7 | 阻塞等待无超时 | `main.c` | 445, 469 | `while(id==-1) id=cam_uart2_read()`（cam2_process 中两处）可能永久阻塞 |
-| 8 | FIFO 写满溢出 | `cam_uart.c` | 91-99 | 512 字节 FIFO，ISR 写主循环读，帧数据量大时可能溢出 |
+| 7 | 阻塞等待无超时 | `main.c` | `cam2_process()` | `while (id == -1)` 可能因摄像头或串口故障永久阻塞 |
+| 8 | FIFO 满载与不安全格式化 | `cam_uart.c` | `cam_uart_isc_*()`、发送函数 | FIFO 写入返回值未处理；发送使用 `sprintf()`，应增加边界和丢帧策略 |
 
 ### 10.2 架构约束
 
@@ -611,7 +609,7 @@ Flash 存储：`Sector 127, Page 3`（共 19 个参数映射到 `flash_union_buf
 | 2 | **裸机无 OS** | 所有实时控制在 PIT 中断中（5ms 硬实时），`main()` 仅做状态调度 |
 | 3 | **D-Cache 兼容性** | SDRAM Region 0 有 Cache，DMA 缓冲区必须在 Region 1（Device 类型），否则 cache coherence 问题 |
 | 4 | **路径规划耗时** | 推箱子 A\* 搜索上限 50000 步，可能在 Waiting 状态持续多个控制周期 |
-| 5 | **无测试框架** | 所有测试依赖实际硬件跑车验证 |
+| 5 | **无测试框架** | 目前没有主机单元测试；应补充帧解析、路径边界、ID 超时和 FIFO 满载测试，至少保留可复现的静态或硬件验收步骤 |
 
 ---
 

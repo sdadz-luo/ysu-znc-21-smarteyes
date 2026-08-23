@@ -13,6 +13,8 @@
 
 本项目是燕山大学参加 **第21届全国大学生智能汽车竞赛（智能视觉组）** 的参赛代码，基于 **NXP RT1064 (MIMXRT1064DVL6A)** 微控制器开发，运行于逐飞科技 RT1064 核心板。
 
+> 当前工程为裸机 C99 固件，实际构建入口是 Keil 工程；仓库没有命令行构建和自动化测试框架。本文中的审查发现表示尚未修复的问题，不代表已经完成硬件验证。
+
 智能视觉组要求小车具备 **自主视觉识别 + 运动控制 + 逻辑推理** 能力。OpenART_Plus 摄像头通过 UART 将栅格地图和车位坐标发送给 MCU，MCU 负责路径规划、推箱子求解、炸弹破墙规划、PID 运动控制和状态机调度。**所有推理任务均在 Cortex-M7（600MHz）裸机上完成**，无上位机、无操作系统。
 
 ### 核心能力
@@ -23,7 +25,7 @@
 | 姿态估计 | `imu963.c` | Mahony 自适应增益 AHRS，偏航角闭环 |
 | 里程计 | `encoder.c` | 麦克纳姆轮正运动学 + 体→世界坐标系旋转 |
 | 位置/速度控制 | `pid.c` + `control.c` | 串级 PID（位置环→偏航环→速度环） |
-| 路径规划 | `path_planning.c` | A\*、BFS、推箱子求解、炸弹规划、ID 学习推理 |
+| 路径规划 | `path_planning.c` | A\*、BFS、推箱子求解、炸弹规划、ID 学习推理（最多 8 个箱子） |
 | 人机交互 | `menu.c` + `key.c` | TFT 菜单调参、4 按键导航、Flash 持久化 |
 | 调试 | `wireless_uart.c` | 逐飞无线示波器（8 通道，SeekFree Assistant） |
 
@@ -40,7 +42,6 @@
 | **IMU** | IMU963RA（三轴加速度计 + 三轴陀螺仪） |
 | **无线通信** | BLE6A20 蓝牙（UART 透传，LPUART8） |
 | **电机** | 直流减速电机 × 4（麦克纳姆轮，正交编码器 × 4） |
-| **舵机** | 2 路（C30/C31，预留） |
 
 > 注：板载 CSI 摄像头接口保留但未使用，主摄像头通过 UART（OpenART_Plus）通信。
 
@@ -340,7 +341,7 @@ my_uart_send(count);           // 发送 count 通道数据
 
 ### 5.3 推箱子（Sokoban）求解器
 
-针对最多 5 个箱子的推箱子问题：
+针对最多 8 个箱子的推箱子问题：
 
 1. **`generate_greedy_pairing()`**：贪心为每个箱子分配最近未使用目标
 2. **`backtrack_validate()`**：递归回溯验证，关键优化：
@@ -483,7 +484,7 @@ solve_single_box_a_star, compute_player_region_with_walls
 | C 标准 | **C99** |
 | 构建目标 | `nor_sdram_zf_dtcm` |
 | 关键预定义宏 | `CPU_MIMXRT1064DVL6A`, `XIP_EXTERNAL_FLASH=1`, `USB_STACK_BM`, `MCUXPRESSO_SDK`, `SKIP_SYSCLK_INIT`, `PRINTF_FLOAT_ENABLE=1` |
-| clangd 配置 | `.clangd` + `compile_flags.txt`（keil-clangd-setup 生成：Cortex-M7 架构目标 + 14 宏 + 32 路径 + `__GNUC__`/`-U_WIN32`/`-nostdinc`） |
+| clangd 配置 | `.clangd` + `compile_flags.txt`（仅用于 LSP；包含 Cortex-M7 架构目标、项目宏、头文件路径和 `-nostdlibinc`） |
 
 > ⚠️ **仅支持 IDE 构建**（无命令行构建方式）。添加 `.c`/`.h` 文件时需同时放入 `project/code/` **并在 IDE 工程树中添加**。
 
@@ -510,7 +511,6 @@ ysu-znc-21-smarteyes/
 │   ├── components/                  # FATFS、SDMMC、USB 协议栈
 │   └── doc/                         # 文档、版本记录、许可证
 └── project/
-    ├── RT1064核心板丝印与芯片引脚对应表格.xlsx
     ├── RT1064智能车推荐引脚分配.txt
     ├── code/                        # ★ 用户代码目录（平铺，无子目录）
     │   ├── path_planning.c/h        # A*/BFS/推箱子/炸弹/ID 学习（~4447 行）
@@ -534,6 +534,24 @@ ysu-znc-21-smarteyes/
 ```
 
 ---
+
+## 审查结论与验证缺口
+
+以下问题已通过源码审查确认，本次仅更新文档，尚未修复：
+
+| 优先级 | 位置 | 结论 |
+| --- | --- | --- |
+| 严重 | `project/code/mpu_config.c` | ITCM Region 2 的 XN 位配置与可执行函数 section 的设计意图矛盾，需用 Keil 镜像和硬件确认。 |
+| 高 | `project/code/path_planning.c` | `get_successors()` 的边界邻居可能参与目标位图索引。 |
+| 高 | `project/code/cam_uart.c` | `find_substring()` 在短缓冲区场景存在无符号下溢，帧字段校验也不完整。 |
+| 高 | `project/user/src/main.c` | 普通路径、Look 路径和炸弹路径存在先访问后检查长度的风险。 |
+| 高 | `project/user/src/main.c` | ID 接收无超时，摄像头或串口故障可能阻塞主循环。 |
+| 中 | `project/code/cam_uart.c` | 使用 `sprintf()`；FIFO 满载时未处理返回值，可能静默丢帧。 |
+| 中 | `project/user/src/main.c` | 摄像头结构体和速度变量跨 ISR/主循环共享，`volatile` 不能保证一致快照。 |
+
+当前没有主机测试框架，也没有命令行 Keil 构建验证。后续至少应补充帧解析
+畸形输入、路径终点、边界邻居、ID 超时和 FIFO 满载测试，并用 Keil `.map`
+文件核对 ITCM、DTCM、SDRAM 占用。
 
 ## 📄 开源协议
 
