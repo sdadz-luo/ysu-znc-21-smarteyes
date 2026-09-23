@@ -40,6 +40,14 @@ Flash: 4MB FlexSPI XIP (代码原地执行)
 | ⭐ | `project/user/src/isr.c` | 320 | 中断路由 |
 | ⭐ | `project/code/mpu_config.c` | 122 | MPU + D-Cache（启动时自动运行） |
 
+### 相关资料索引
+
+| 资料 | 位置 | 说明 |
+|------|------|------|
+| 技术报告 | `技术报告/技术报告.md` | 参赛报告 Markdown 版（含勘误表与附录算法源码）；提交版 docx 同目录 |
+| 硬件原理图 | `硬件/README.md` | 三块自制 PCB 的图纸索引与器件说明（上板、下板、电驱板） |
+| 项目门户 | `README.md` | 面向人的项目概览、构建步骤、目录结构 |
+
 ---
 
 ## 二、构建与烧录
@@ -111,10 +119,7 @@ PRINTF_FLOAT_ENABLE=1
 └─ cam_uart.c─→ CAMDATA                   (局部结构体)
 ```
 
-**状态机枚举**（`main.c:12-20`）：
-```c
-typedef enum { NoGame, GameMap, Waiting, Look, Run, GameOver, End } Car_State;
-```
+**状态机枚举**（`main.c:12-20`）：`typedef enum { NoGame, GameMap, Waiting, Look, Run, GameOver, End } Car_State;`
 
 **状态转换矩阵**（`state_judgment()`, `main.c:184-271`）：
 
@@ -164,17 +169,7 @@ path_process():
 
 #### `path_planning.h` — 路径规划头文件（427 行）
 
-**关键常量**：
-```c
-#define MAP_ROWS        12          // 栅格行数
-#define MAP_COLS        16          // 栅格列数
-#define MAX_BOXES       8           // 最大箱子数
-#define MAX_PATH_LEN    500         // 最大路径点
-#define MAX_OPENSET     65536       // A* 哈希表大小
-#define MAX_PQ_SIZE     10000       // 优先队列大小
-#define MAX_SEARCH_CNT  65536       // A* 搜索上限
-#define TURN_WEIGHT     4           // 转向惩罚
-```
+**关键常量**（`path_planning.h:14-33`，改前读该处为准）：栅格 12×16、最大箱子 8、最大路径点 500、A* 哈希表 65536（2^16，`HASH_MASK` 位与取模）、优先队列 10000、A* 搜索上限 65536、转向惩罚 4
 
 **核心数据结构**（`path_planning.h:79-267`）：
 
@@ -203,22 +198,11 @@ path_process():
 
 #### `control.h` — 运动学（6 行）
 
-```c
-void motor_solution(float vx_field, float vy_field, float current_yaw, float wz);
-```
+`void motor_solution(float vx_field, float vy_field, float current_yaw, float wz);`
 
 #### `pid.h` — PID 定义（33 行）
 
-```c
-typedef struct {
-    float kp, ki, kd;
-    float error, error_last, error_last2;
-    float integral, maxintegral;
-    float output, output_1, maxOutput;
-    float target;
-    float dead;
-} pid;
-```
+`pid` 结构体字段（逐行定义见 `pid.h`）：kp/ki/kd、error/error_last/error_last2、integral/maxintegral、output/output_1/maxOutput、target、dead。
 
 **函数列表**：
 
@@ -237,89 +221,33 @@ typedef struct {
 
 #### `motor.h` — 电机（16 行）
 
-```c
-void motor_init(void);
-void motor_duty(int FL, int FR, int BL, int BR);  // 值域 [-8000, 8000]
-```
+接口 `motor_init()`、`motor_duty(int FL, int FR, int BL, int BR)`（值域 [-8000, 8000]）。
 
 #### `encoder.h` — 编码器（13 行）
 
-```c
-extern volatile float x_enc, y_enc;  // 世界坐标系位置 (cm)
-void encoder_init(void);
-void encoder_get(void);
-void distance(float yaw);
-```
+接口 `encoder_init()`、`encoder_get()`、`distance(float yaw)`；导出 `extern volatile float x_enc, y_enc`（世界坐标系位置，cm）。
 
 #### `imu963.h` — IMU（22 行）
 
-```c
-typedef struct { float w, x, y, z; } Quaternion;
-typedef struct { float roll, pitch, yaw; } EulerAngle;
-void imu_init(void);
-void imu_get(void);
-extern volatile float yaw;  // 偏航角 (-180°~180°)
-```
+接口 `imu_init()`、`imu_get()`；类型 `Quaternion{w,x,y,z}`、`EulerAngle{roll,pitch,yaw}`；导出 `extern volatile float yaw`（偏航角 -180°~180°）。
 
 #### `cam_uart.h` — 摄像头通信（18 行）
 
-```c
-typedef struct {
-    float car_cx, car_cy;          // 小车位置
-    uint8_t grid[12][16];          // 栅格地图
-} CAMDATA;
-
-void cam_uart_init(void);
-void cam_uart_isc_1(void);         // UART1 ISR (LPUART3, OpenART_Plus)
-void cam_uart_isc_2(void);         // UART2 ISR (LPUART1, ID)
-CAMDATA cam_uart1_read(void);
-void cam1_uart_send(float angle);  // 0→01, 90→02, -90→03, 180→04
-int cam_uart2_read(void);          // 返回两位数 ID, -1=无数据
-void cam_uart2_write(uint8_t id);
-```
+类型 `CAMDATA{car_cx, car_cy, grid[12][16]}`；接口 `cam_uart_init()`、`cam_uart1_read()`、`cam1_uart_send(angle)`（角度→指令编码见第八节）、`cam_uart2_read()`（返回两位数 ID，**-1=无数据**）、`cam_uart2_write(id)`；ISR 入口 `cam_uart_isc_1()`（LPUART3，OpenART_Plus）、`cam_uart_isc_2()`（LPUART1，ID）。
 
 #### `menu.h` — 菜单全局变量（35 行）
 
-```c
-// PID 参数
-extern float   pid_x_p, pid_x_i, pid_x_d;
-extern uint8_t pid_x_speed;       // 默认 110
-extern float   pid_y_p, pid_y_i, pid_y_d;
-extern uint8_t pid_y_speed;       // 默认 110
-
-// 原点
-extern uint8_t origin_x_enc, origin_y_enc;  // 默认 (1, 7)
-
-// 修正系数
-extern float  corr_x_enc, corr_y_enc;       // 默认 0.760, 0.795
-extern int8_t corr_x_cam, corr_y_cam;       // 默认 0, 1
-extern float  corr_yaw;                     // 默认 0.0
-
-// 加减速
-extern float x_acc, x_dec, y_acc, y_dec;    // 默认 0.01, 0.06, 0.01, 0.06
-```
+19 个可调 `extern` 变量的**清单、默认值、菜单步进见第九节**（同一份数据，此处不重复）。
 
 #### `key.h` — 按键（29 行）
 
-```c
-struct keys {
-    char  value;        // 状态: IDLE=0, PRESSED=1, DONE=2
-    bool  key_sta;      // 电平: 0=按下, 1=释放
-    int   time, double_time;
-    bool  single_flag;  // 单次事件标志
-};
-extern struct keys key[4];  // [0]=C30(左), [1]=C29(右), [2]=C31(下), [3]=C28(上)
-```
+`struct keys{value(状态 IDLE/PRESSED/DONE), key_sta(电平 0=按下), time, double_time, single_flag}`；`extern struct keys key[4]`——`[0]=C30(左)、[1]=C29(右)、[2]=C31(下)、[3]=C28(上)`（映射陷阱见 `key.c` 与第十节）。
 
 #### `wireless_uart.h` — 无线示波器（9 行）
 
-```c
-void my_uart_init(void);
-void my_uart_write(int num, float data);  // channel 0-7
-void my_uart_send(int sum);               // 发送 sum 个通道
-```
+接口 `my_uart_init()`、`my_uart_write(num, data)`（channel 0-7）、`my_uart_send(sum)`（发 sum 个通道）。
 
-**⚠️ 注意**：`wireless_uart.h` 头文件保护宏是 `_CODE_MY_UART_h_`（与文件名不一致）。
+**⚠️ 注意**：头文件保护宏是 `_CODE_MY_UART_h_`（与文件名不一致，见第十节）。
 
 #### `tft180.c/h` — TFT180 显示屏（13 行）
 
@@ -526,6 +454,7 @@ FIFO 缓冲: 512 字节, ISR 逐字节写入, 主循环提取帧
 90°    → "start02end\r\n"
 -90°   → "start03end\r\n"
 180°   → "start04end\r\n"
+// 非上述四个角度（含默认）一律按 0° 发 01
 
 // ID 请求 (cam_uart2_write, cam_uart.c:235-242)
 "start%02dend\r\n"  // 如 type=2 → "start02end\r\n"
@@ -542,16 +471,6 @@ FIFO 缓冲: 512 字节, ISR 逐字节写入, 主循环提取帧
 
 // ID 返回 (cam_uart2_read, cam_uart.c:183-233)
 "startNNend\r\n"    → 两位十进制数, 如 "start15end\r\n" → 15
-```
-
-### 8.5 角度指令编码
-
-```c
-if (angle == 0.0f)    tx = 1;
-if (angle == 90.0f)   tx = 2;
-if (angle == -90.0f)  tx = 3;
-if (angle == 180.0f)  tx = 4;
-else                   tx = 1;  // 默认 0°
 ```
 
 ---
@@ -600,6 +519,9 @@ Flash 存储：`Sector 127, Page 3`（共 19 个参数映射到 `flash_union_buf
 | 6 | 按键映射命名混乱 | `menu.c` | 46-52 | `KEY_UP=key[2]=C31(下)`, `KEY_DOWN=key[3]=C28(上)` |
 | 7 | 阻塞等待无超时 | `main.c` | `cam2_process()` | `while (id == -1)` 可能因摄像头或串口故障永久阻塞 |
 | 8 | FIFO 满载与不安全格式化 | `cam_uart.c` | `cam_uart_isc_*()`、发送函数 | FIFO 写入返回值未处理；发送使用 `sprintf()`，应增加边界和丢帧策略 |
+| 9 | `find_substring()` 无符号下溢 | `cam_uart.c` | 帧解析 | 短缓冲区场景存在无符号下溢，帧字段校验也不完整 |
+| 10 | 路径数组先访问后检查长度 | `main.c` | 普通 / Look / 炸弹路径 | 三条路径的执行处均存在该风险 |
+| 11 | 跨 ISR/主循环共享无一致快照 | `main.c` | 摄像头结构体、速度变量 | `volatile` 不能保证多字段读取的一致性 |
 
 ### 10.2 架构约束
 
@@ -656,7 +578,7 @@ BLE 蓝牙:    TX=D16 (LPUART8_RX), RX=D17 (LPUART8_TX)
 
 ---
 
-## 十三、Git 提交规范
+## 十三、Git 提交规范（本项目特有，与全局模板不同）
 
 ```bash
 <类型>: <描述>   # 使用中文
