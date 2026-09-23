@@ -1,565 +1,230 @@
 # ysu-znc-21-smarteyes
 
-> 🏎️ **燕山大学 · 第21届全国大学生智能汽车竞赛 — 智能视觉组**
+> 🏎️ **燕山大学第 21 届全国大学生智能汽车竞赛人工智能视觉组**
+> 🏆 **全国二等奖**
 
 [![Platform](https://img.shields.io/badge/Platform-NXP%20RT1064-blue)](https://www.nxp.com/products/processors-and-microcontrollers/arm-microcontrollers/i-mx-rt-crossover-mcus/i-mx-rt1064-crossover-mcu-with-arm-cortex-m7-core:i.MX-RT1064)
-[![IDE](https://img.shields.io/badge/IDE-Keil%205.33-green)](#开发环境)
-[![Language](https://img.shields.io/badge/Language-C99-orange)](https://en.wikipedia.org/wiki/C_(programming_language))
-[![RAM](https://img.shields.io/badge/DTCM-448KB%20%7C%20SDRAM-32MB-lightgrey)]()
+[![IDE](https://img.shields.io/badge/IDE-Keil%205.33-green)](#构建与烧录)
+[![Language](https://img.shields.io/badge/Language-C99-orange)](<https://en.wikipedia.org/wiki/C_(programming_language)>)
 
----
+![整车实物](技术报告/images/fig01-整车.jpeg)
 
-## 📖 项目简介
+## 项目简介
 
-本项目是燕山大学参加 **第21届全国大学生智能汽车竞赛（智能视觉组）** 的参赛代码，基于 **NXP RT1064 (MIMXRT1064DVL6A)** 微控制器开发，运行于逐飞科技 RT1064 核心板。
+本项目是燕山大学参加第 21 届全国大学生智能汽车竞赛（人工智能视觉组）的参赛代码，基于 **NXP RT1064（MIMXRT1064DVL6A，Cortex-M7 @ 600 MHz）** 微控制器与逐飞科技 RT1064 核心板开发，车体为四轮麦克纳姆轮全向底盘。
 
-> 当前工程为裸机 C99 固件，实际构建入口是 Keil 工程；仓库没有命令行构建和自动化测试框架。本文中的审查发现表示尚未修复的问题，不代表已经完成硬件验证。
+人工智能视觉组采用「虚实融合」赛制，是竞赛对「真实场地运动 + 虚拟任务目标」这一形式的创新：车模在真实场地中行驶，但它「看到」的世界来自车载屏幕上的虚拟推箱子游戏画面。任务目标、环境交互与决策依据全部由虚拟系统提供，车模需要识别屏幕画面、自主规划路径，并把虚拟箱子推到虚拟目标点上。**全部感知解算、路径规划与控制推理都在 MCU 裸机上完成**，无上位机、无操作系统。
 
-智能视觉组要求小车具备 **自主视觉识别 + 运动控制 + 逻辑推理** 能力。OpenART_Plus 摄像头通过 UART 将栅格地图和车位坐标发送给 MCU，MCU 负责路径规划、推箱子求解、炸弹破墙规划、PID 运动控制和状态机调度。**所有推理任务均在 Cortex-M7（600MHz）裸机上完成**，无上位机、无操作系统。
+技术难点集中在三处：一是**视觉链路**——从屏幕画面到可推理的栅格地图，全靠两块视觉模块经串口下发；二是**决策链路**——推箱子（Sokoban）是 PSPACE 完全问题，需要在 5 ms 控制周期的间隙里完成 A\* 状态空间搜索、炸弹破墙决策与模型 ID 推理；三是**控制链路**——麦克纳姆轮全向底盘要在密集推箱动作中保持厘米级定位精度，靠三级串级 PID 与里程计修正实现。
 
 ### 核心能力
 
-| 能力 | 实现模块 | 说明 |
-|------|---------|------|
-| 栅格建图 | `cam_uart.c` + `main.c` | OpenART_Plus 摄像头文本协议，解析 12×16 栅格 |
-| 姿态估计 | `imu963.c` | Mahony 自适应增益 AHRS，偏航角闭环 |
-| 里程计 | `encoder.c` | 麦克纳姆轮正运动学 + 体→世界坐标系旋转 |
-| 位置/速度控制 | `pid.c` + `control.c` | 串级 PID（位置环→偏航环→速度环） |
-| 路径规划 | `path_planning.c` | A\*、BFS、推箱子求解、炸弹规划、ID 学习推理（最多 8 个箱子） |
-| 人机交互 | `menu.c` + `key.c` | TFT 菜单调参、4 按键导航、Flash 持久化 |
-| 调试 | `wireless_uart.c` | 逐飞无线示波器（8 通道，SeekFree Assistant） |
+| 能力     | 实现模块              | 说明                                                     |
+| -------- | --------------------- | -------------------------------------------------------- |
+| 栅格建图 | `cam_uart.c`          | 双 UART 文本协议解析 12×16 栅格与车位坐标                |
+| 姿态估计 | `imu963.c`            | Mahony 自适应增益 AHRS，偏航角闭环                       |
+| 里程计   | `encoder.c`           | 麦克纳姆轮正运动学 + 体→世界坐标系旋转                   |
+| 运动控制 | `pid.c` + `control.c` | 三级串级 PID（位置环→偏航环→速度环）                     |
+| 路径规划 | `path_planning.c`     | A\*、BFS、推箱子求解、炸弹规划、ID 学习推理（最多 8 箱） |
+| 人机交互 | `menu.c` + `key.c`    | TFT 菜单调参、按键导航、Flash 持久化                     |
+| 调试     | `wireless_uart.c`     | 逐飞无线示波器（8 通道）                                 |
 
----
+## 赛题与任务
 
-## 🛠️ 硬件平台
+### 场地与虚实融合机制
 
-| 类别 | 型号 |
-|------|------|
-| **MCU** | NXP MIMXRT1064DVL6A (Cortex-M7 @ 600MHz, 4MB 内部 FlexSPI Flash) |
-| **核心板** | 逐飞科技 RT1064 核心板 |
-| **摄像头** | OpenART_Plus（主摄像头，UART 通信，LPUART3） |
-| **显示器** | TFT180 (1.8", 128×160, SPI) |
-| **IMU** | IMU963RA（三轴加速度计 + 三轴陀螺仪） |
-| **无线通信** | BLE6A20 蓝牙（UART 透传，LPUART8） |
-| **电机** | 直流减速电机 × 4（麦克纳姆轮，正交编码器 × 4） |
+比赛场地为 3.2 m × 2.4 m 的矩形区域，**没有赛道线**。场地顶部架设全局摄像头（彩钻风），通过识别车模标识牌与场地四角的 AprilTag 码，在虚拟系统里重建车模位姿与整个游戏世界，再将其简化渲染到车模搭载的无线屏幕上。
 
-> 注：板载 CSI 摄像头接口保留但未使用，主摄像头通过 UART（OpenART_Plus）通信。
+车模一侧由**两块 OpenART_Plus 视觉模块**分工承担感知：
 
----
+- **主摄像头**：颜色分割 + 形状匹配，输出 12×16 栅格类别与小车全局坐标（UART1 / LPUART3）；
+- **副摄像头**：轻量级分类网络推理，输出游戏元素的模型 ID（UART2 / LPUART1）。
 
-## 🧩 软件架构概览
+主控收到栅格地图后接管决策：规划路径、求解推箱顺序，并通过编码器里程计 + IMU 航向闭环驱动底盘。车模在起始区时用视觉下发的全局坐标重置里程计，此后依靠自身传感器定位。
+
+### 栅格地图元素
+
+| 栅格值 | 含义           | 栅格值 | 含义             |
+| ------ | -------------- | ------ | ---------------- |
+| 0      | 地板（可通行） | 3      | 箱子             |
+| 1      | 墙（不可通行） | 6      | 目标点           |
+| 2      | 小车（玩家）   | 7      | 炸弹（可炸毁墙） |
+
+### 一局游戏的推进
+
+每局开始前车模停在起始区，主控识别到起始区后开始状态机循环，一局最多 8 个箱子，需全部推至目标点；一场比赛共三局，以总用时计成绩。
+
+```text
+NoGame ─检测到起始区→ GameMap ─→ Run ─到达目标点→ Waiting
+                                                  │ path_process() 规划
+                                                  ↓
+                          Run ─→ … ─→ Look（ID 扫描）─→ Run ─→ GameOver ─→ End
+```
+
+### 五种规划模式
+
+决策层由 Waiting 状态下的 `path_process()` 依据栅格地图元素分派规划模式：
+
+| 模式 | 触发条件            | 行为                                                                |
+| ---- | ------------------- | ------------------------------------------------------------------- |
+| 0    | 每局开始            | 起点搜索：规划到最近游戏元素的路径，偏航对准后请求 ID 扫描          |
+| 1    | 未获得有效 ID       | 盲推：贪心配对 + 回溯验证，无 ID 信息直接推箱                       |
+| 2    | 需要建立 ID 映射    | ID 扫描：BFS 规划访问全部箱/目标的路径，逐个扫描记录 ID             |
+| 3    | ID 学习完成         | ID 推箱：依据箱↔目标映射精确配对推动                                |
+| 4    | 栅格中出现炸弹（7） | 炸弹破墙：搜索引爆炸点与多炸弹组合，炸开隔离区后回到模式 2 重新规划 |
+
+## 技术亮点
+
+### 推箱子求解器
+
+单箱求解采用**附加转向代价的 A\***：搜索状态编码为「玩家位置 + 箱子位置 + 目标位置 + 墙体位图」，曼哈顿距离作启发函数，转向动作额外附加 4 倍步长代价，抑制无谓折返。多箱任务用贪心配对生成初始方案，再以递归回溯验证解的存在性，其中包含**软死锁检测**（区分硬墙阻塞与另一箱子阻塞）与破锁机制（把阻塞箱子推开若干步）。
+
+工程实现上，状态以 65536 槽哈希表去重（djb2 + 线性探测，epoch 递增避免清表开销），开放集用二叉堆优先队列维护。
+
+### 炸弹破墙
+
+栅格中出现炸弹时激活，是规划系统中最复杂的子系统：先分析三类问题区域（隔离区、目标不可达、拥堵），再枚举可炸墙的引爆炸点（推距 + 玩家到推站位的 BFS 距离评分），递归搜索多炸弹组合，最后生成按可行性排序的执行序列；引爆后更新墙体位图重新规划。
+
+### ID 学习与推理
+
+箱子的模型 ID 无法从栅格地图直接读出，需要在场上扫描。模式 2 用 BFS 规划一条访问全部箱子与目标点的路径并逐个扫描；`id_inference()` 以频率均衡 + 排列枚举建立箱↔目标映射，模式 3 据此精确配对推箱，避免盲推时推错箱子。
+
+### 实时性设计
+
+推箱搜索的规模与 5 ms 控制周期之间存在矛盾，工程上用**内存分层**化解：13 个热函数（A\* 核心、哈希、优先队列、BFS）经链接脚本放入 ITCM 零等待执行；65536 槽哈希表与优先队列置于 SDRAM（开启 D-Cache），兼顾搜索规模与执行速度。
+
+### 姿态解算
+
+IMU963RA 用 Mahony 互补滤波融合陀螺仪与加速度计。针对小车加减速时加速度计测量值偏离重力的问题，比例系数 Kp 采用**自适应策略**：加速度模长偏离 1g 越远，对加速度计的信任度越低，从而抑制运动加速度引起的航向漂移。
+
+## 硬件平台
+
+| 类别   | 型号                                                                |
+| ------ | ------------------------------------------------------------------- |
+| MCU    | NXP MIMXRT1064DVL6A（Cortex-M7 @ 600 MHz，4 MB 内部 FlexSPI Flash） |
+| 核心板 | 逐飞科技 RT1064 核心板                                              |
+| 底盘   | M 型车模，四轮麦克纳姆轮全向驱动（RC380 电机 + 1024 线编码器 ×4）   |
+| 视觉   | OpenART_Plus ×2（主：栅格/坐标；副：模型 ID，UART 通信）            |
+| IMU    | IMU963RA（三轴加速度计 + 三轴陀螺仪，硬件 SPI @ 10 Mbit/s）         |
+| 显示   | TFT180（1.8"，128×160，SPI）                                        |
+| 无线   | BLE6A20 蓝牙（LPUART8）                                             |
+
+自制主板（上板信号/交互 + 下板电源）、电驱板的原理图与器件说明见 [`硬件/README.md`](硬件/README.md)。
+
+## 软件架构
+
+![系统总体框图](技术报告/images/fig02-系统总体框图.png)
 
 ### 层次结构
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    main.c 状态机调度                          │
 │  NoGame → GameMap → Run → Waiting → Look → Run → GameOver   │
 ├─────────────────────────────────────────────────────────────┤
 │               PIT_IRQHandler (5ms / 10ms)                   │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────────┐  │
-│  │ encoder  │ │  imu963  │ │   pid    │ │ motor_solution │  │
-│  │ 读取滤波 │ │ Mahony   │ │ 位置/偏航 │ │ 运动学合成     │  │
+│  │ encoder  │ │  imu963  │ │   pid    │ │ motor_solution│  │
+│  │ 读取滤波  │ │ Mahony   │ │ 位置/偏航 │ │ 运动学合成     │  │
 │  └──────────┘ └──────────┘ └──────────┘ └───────────────┘  │
 ├─────────────────────────────────────────────────────────────┤
-│                    path_planning.c (Waiting 状态)            │
-│   A* 寻路 ─ BFS 距离场 ─ 推箱子求解 ─ 炸弹规划 ─ ID 学习    │
+│                path_planning.c (Waiting 状态)                │
+│   A* 寻路 ─ BFS 距离场 ─ 推箱子求解 ─ 炸弹规划 ─ ID 学习      │
 ├─────────────────────────────────────────────────────────────┤
 │                    驱动层 (逐飞库 + SDK)                     │
-│  zf_driver ─ zf_device ─ zf_common ─ fsl_* (NXP SDK)      │
+│  zf_driver ─ zf_device ─ zf_common ─ fsl_* (NXP SDK)       │
 └─────────────────────────────────────────────────────────────┘
+```
+
+### 控制循环
+
+```text
+PIT_CH0 (5ms):  编码器 → IMU → 里程计 →[10ms]位置环 →[10ms]偏航环
+                → 运动学合成 → 四轮速度环 → PWM
+PIT_CH1 (10ms): 读取 OpenART_Plus 帧 → 低通滤波
 ```
 
 ### 初始化序列
 
-```
+```text
 main()
-  ├─ clock_init(600MHz)
-  ├─ debug_init()
-  ├─ system_delay_ms(300)
+  ├─ clock_init(600MHz) → debug_init() → system_delay_ms(300)
   └─ Init()
-      ├─ tft_init() → tft180_clear() → my_key_init()
-      ├─ flash_init() → menu()                ← TFT 菜单等待用户按"start"
-      ├─ system_delay_ms(1000)
-      ├─ encoder_init()                       ← 4 路正交编码器
-      ├─ imu_init()                           ← IMU963RA + 零偏校准 (400 样本)
-      ├─ motor_init()                         ← 8 路 PWM (10kHz)
-      ├─ pid_init()                           ← 8 个 PID 实例
-      ├─ cam_uart_init()                      ← 双 UART (LPUART1/LPUART3)
-      ├─ cam1_uart_send(0)                    ← OpenART_Plus 角度回零
+      ├─ tft_init() → my_key_init()
+      ├─ flash_init() → menu()          ← TFT 菜单等待按「start」
+      ├─ encoder_init() / imu_init() / motor_init() / pid_init()
+      ├─ cam_uart_init() → cam1_uart_send(0)
       ├─ reset_planning_system()
-      ├─ pit_ms_init(PIT_CH0, 5ms)
-      └─ pit_ms_init(PIT_CH1, 10ms)
-  └─ interrupt_global_enable()
+      └─ pit_ms_init(PIT_CH0, 5ms) / pit_ms_init(PIT_CH1, 10ms)
   └─ while(1) { state_judgment(); }
 ```
 
----
+## 技术指标
 
-## 📁 代码文件详解
+| 参数         | 数值                                           |
+| ------------ | ---------------------------------------------- |
+| 车模总重量   | 2200 g                                         |
+| 传感器       | 4× 正交编码器 + IMU + 视觉模块，共 7 个        |
+| 运动控制周期 | 速度环 5 ms；位置环、偏航环 10 ms              |
+| 位置控制精度 | ≤ 1 个栅格                                     |
+| 规划规模     | 单箱推箱求解上限 8 箱；A\* 搜索上限 50000 步   |
+| 场地与分辨率 | 3.2 m × 2.4 m 场地，12×16 栅格（单格约 20 cm） |
 
-### 主控与中断（`project/user/src/`）
+以上参数取自技术报告第七、八章，实测于场地联调阶段。
 
-| 文件 | 行数 | 职责 |
-|------|------|------|
-| `main.c` | 489 | 入口 → `Init()` → `state_judgment()` 状态机 + `PIT_IRQHandler` 控制循环 |
-| `isr.c` | 320 | 13 个外设中断处理函数（UART、CSI、GPIO、FlexIO、ToF） |
-| `isr.h` | 0 | **空占位**（当前无内容） |
+## 构建与烧录
 
-**main.c 核心结构：**
+| 项目     | 说明                                                                                                                         |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| IDE      | Keil MDK 5.33（无命令行构建）                                                                                                |
+| 工程文件 | `project/mdk/rt1064.uvprojx`                                                                                                 |
+| 构建目标 | `nor_sdram_zf_dtcm`                                                                                                          |
+| 烧录     | DAP-Link / J-Link                                                                                                            |
+| C 标准   | C99                                                                                                                          |
+| 预定义宏 | `CPU_MIMXRT1064DVL6A`、`XIP_EXTERNAL_FLASH=1`、`USB_STACK_BM`、`MCUXPRESSO_SDK`、`SKIP_SYSCLK_INIT`、`PRINTF_FLOAT_ENABLE=1` |
+| clangd   | `.clangd` + `.clangd.extra.txt` + `compile_flags.txt`（仅 LSP）                                                              |
 
-```c
-typedef enum { NoGame, GameMap, Waiting, Look, Run, GameOver, End } Car_State;
-```
+> ⚠️ 新增 `.c`/`.h` 文件需同时放入 `project/code/` **并在 IDE 工程树中手动添加**。
 
-- `state_judgment()` — 状态转换主逻辑（switch-case，每轮 while 循环执行）
-- `path_process()` — 路径规划调度核心（在 Waiting 状态被调用）
-- `process_normal_path()` — 模式 1/3 的路径跟踪逻辑
-- `uart_updata()` — 摄像头数据更新（低通滤波）
-- `cam2_process()` — Look 状态下的 ID 扫描逻辑
-- `PIT_IRQHandler()` — **所有实时控制在此完成**：
+**步骤**：打开工程 → 选择 `nor_sdram_zf_dtcm` 目标 → 编译 → 烧录。
 
-```
-PIT_CH0 (5ms):
-  1. encoder_get()          ← 编码器读取 + 低通滤波
-  2. imu_get()              ← IMU 读取 + Mahony 更新 → yaw
-  3. distance(yaw)          ← 里程计积分 → x_enc/y_enc
-  4. [每 10ms] 位置环 PID   ← pid_x 和 pid_y 计算 vx/vy
-  5. [每 10ms] 偏航环 PID   ← pid_yaw 计算 vz
-  6. motor_solution(vx,vy,yaw,vz)  ← 运动学合成
-  7. pid_increm × 4         ← 四轮速度环 PID
-  8. motor_duty(FL,FR,BL,BR) ← PWM 输出
+## 项目结构
 
-PIT_CH1 (10ms):
-  1. cam_uart1_read()       ← 读取 OpenART_Plus 数据帧
-  2. uart_updata()          ← 数据低通滤波 (α=0.8)
-```
-
-### 用户应用代码（`project/code/`）
-
-#### 1. `control.c/h` — 运动学合成（44 行）
-
-| 函数 | 功能 |
-|------|------|
-| `motor_solution(vx, vy, yaw, wz)` | 场→体坐标旋转 → 非对称滤波 → 麦克纳姆逆运动学 |
-
-**核心算法：**
-```
-1. 场→体：vx_body =  vx·cos(yaw) + vy·sin(yaw)
-           vy_body = -vx·sin(yaw) + vy·cos(yaw)
-2. 非对称滤波：加速=[x_acc=0.01,y_acc=0.01], 减速=[x_dec=0.06,y_dec=0.06]
-3. 逆运动学：FL = vx - vy - 0.64·wz  (FR/BL/BR 同理)
-4. ⇒ pid_wheel_target(FL, FR, BL, BR)
-```
-
-#### 2. `motor.c/h` — 电机 PWM 驱动（97 行）
-
-| 函数 | 功能 |
-|------|------|
-| `motor_init()` | 8 路 PWM 初始化（10kHz，初始占空比 0） |
-| `motor_duty(FL, FR, BL, BR)` | H 桥双极性控制，占空比限幅 [-8000, 8000] |
-
-**引脚映射：**
-
-| 电机 | PWM1 | PWM2 | 编码器 A/B |
-|------|------|------|-----------|
-| FL | PWM1_CH0_B (D13) | PWM1_CH0_A (D12) | QTIMER1_CH1 (C0) / CH2 (C1) |
-| FR | PWM1_CH1_B (D15) | PWM1_CH1_A (D14) | QTIMER1_CH1 (C2) / CH2 (C24) |
-| BL | PWM1_CH3_B (D1) | PWM1_CH3_A (D0) | QTIMER2_CH1 (C3) / CH2 (C25) |
-| BR | PWM2_CH3_B (D3) | PWM2_CH3_A (D2) | QTIMER3_CH1 (B18) / CH2 (B19) |
-
-#### 3. `pid.c/h` — PID 控制器（154 行）
-
-| 实例 | 类型 | 初始化参数 | 作用 |
-|------|------|-----------|------|
-| `pid_FL/FR/BL/BR` | 增量式 | kp=60, ki=10, kd=50, maxOut=8000 | 四轮速度内环 |
-| `pid_x` | 位置式 | 菜单可调 (默认 3.50/0.003/7.00/110) | X 方向位置外环 |
-| `pid_y` | 位置式 | 菜单可调 (默认 -3.50/-0.003/-7.0/110) | Y 方向位置外环 |
-| `pid_yaw` | 位置式 | 5/0.001/30/70 (Run 态 10/0.001/30) | 偏航角闭环 |
-| `pid_gyro` | 位置式 | **未初始化** | 角速度环（备⽤） |
-
-**算法：**
-- **增量式**：`Δu = kp·(e−e_last) + ki·e + kd·(e−2e_last+e_last2)`，累积输出，死区衰减 0.9
-- **位置式**：`u = kp·e + ki·∫e + kd·(e−e_last)`，积分限幅，死区衰减 0.95
-- **运行时切换**：`pid_yaw` 在 Run 态 kp=10（快速响应），其他态 kp=5（平稳）
-- **终点冲刺**：`pid_position_speed()`（GameOver 冲线时调用）将 maxOutput 从 110 提升至 130
-- **完全重置**：`pid_reset()` 清零所有累计状态
-
-#### 4. `encoder.c/h` — 编码器与里程计（151 行）
-
-| 函数 | 功能 |
-|------|------|
-| `encoder_init()` | 初始化 4 路正交编码器（QTIMER1/2/3） |
-| `encoder_get()` | 读取原始值 → 一阶低通滤波 (α=0.9) → 清计数值 |
-| `distance(yaw)` | 麦克纳姆正运动学 → 体→世界坐标旋转 → 累积 x_enc/y_enc |
-
-**机械参数：**
-- 编码器每圈脉冲 (CPR×4)：16384（4 倍频）
-- 减速比：30/70（编码器齿轮/轮齿轮）
-- 车轮半径：3.0 cm → 周长 C = 2π×3.0 ≈ 18.85 cm
-- 转换系数 `dc = C / (B × N)`，其中 B = 30/70
-
-**里程计算法：**
-```c
-// 体坐标系位移（麦克纳姆正运动学）
-dx = (FL + FR + BL + BR) / 4;
-dy = (FL - FR - BL + BR) / 4;
-
-// 体→世界坐标旋转
-world_x = dx·cos(yaw) + dy·sin(yaw);
-world_y = -dx·sin(yaw) + dy·cos(yaw);
-
-// 累积世界坐标（带修正系数 corr_x/y_enc）
-x_enc += world_x × corr_x_enc;
-y_enc += world_y × corr_y_enc;
-```
-
-#### 5. `imu963.c/h` — IMU963RA 姿态估计（212 行）
-
-| 函数 | 功能 |
-|------|------|
-| `imu_init()` | 400 样本零偏校准 → 初始化 IMU |
-| `imu_get()` | 读取 → 低通滤波 → Mahony 更新 → 输出 yaw（每 5ms 调用） |
-
-**Mahony 自适应增益算法：**
-- **自适应 Kp**：加速度模值偏离 1g 程度决定对加速度计的信任
-  - `|acc_norm - 9.8| < 1.0` → Kp = 0.5（静止信任）
-  - `|acc_norm - 9.8| > 3.0` → Kp = 0.2（机动不信任）
-  - 中间值线性插值
-- **积分限幅**：Ki = 0.002，积分值钳位 ±1.0
-- **低通滤波**：加速度计 α=0.06（~1.9Hz），陀螺仪 α=0.25（~8.8Hz）
-- **死区**：`0.005 rad/s` 以下置零
-- **偏航角修正**：运行时 `corr_yaw` 补偿（在 gyro_z 上累加）
-
-**关键输出：** `yaw`（全局变量，范围 -180°~180°）
-
-#### 6. `cam_uart.c/h` — OpenART_Plus 双 UART 通信（242 行）
-
-**硬件通道：**
-
-| 通道 | UART | 引脚 | 方向 | 用途 |
-|------|------|------|------|------|
-| UART1 | LPUART3 | TX=B22, RX=B23 | 双向 | 主摄像头：栅格 + 车位，角度指令 |
-| UART2 | LPUART1 | TX=B12, RX=B13 | 双向 | ID 通信 / 调试 |
-
-**协议格式：** `start<data>end\r\n`，FIFO 缓冲 + 帧同步精确切除
-
-| 函数 | 功能 |
-|------|------|
-| `cam_uart_init()` | 双 UART 初始化（115200 baud，FIFO 缓冲 512 字节） |
-| `cam_uart_isc_1()` | UART1 ISR：逐字节写入 FIFO |
-| `cam_uart_isc_2()` | UART2 ISR：逐字节写入 FIFO |
-| `cam_uart1_read()` | 从 FIFO 提取完整帧 → `push_cam_data()` 解析 |
-| `cam1_uart_send(angle)` | 发送角度指令：0°→01, 90°→02, -90°→03, 180°→04 |
-| `cam_uart2_read()` | 从 FIFO 提取 ID 帧，返回两位十进制数 |
-| `cam_uart2_write(id)` | 发送待识别元素类型 |
-
-**帧解析 `push_cam_data()`：**
-- `"car:%.1f,%.1f;"` → `cam_uart_data.car_cx/car_cy`
-- `"map:0123456789abcdef..."` → `uint8_t grid[12][16]`
-
-#### 7. `path_planning.c/h` — 路径规划核心（~4447 行）
-
-这是项目最复杂的模块，详见下文第五部分。
-
-#### 8. `menu.c/h` — TFT 菜单系统（505 行）
-
-5 个子菜单，4 按键导航（C30=左, C29=右, C31=下, C28=上），3 态去抖。
-
-| 菜单 | 可调参数 |
-|------|---------|
-| **PID** | `pid_x_p/i/d`, `pid_x_speed`, `pid_y_p/i/d`, `pid_y_speed` |
-| **ORIGIN** | `origin_x_enc`, `origin_y_enc` |
-| **CORR** | `corr_x_enc`, `corr_y_enc`, `corr_x_cam`, `corr_y_cam`, `corr_yaw` |
-| **control** | `x_acc`, `x_dec`, `y_acc`, `y_dec` |
-| **datasave** | 全部参数保存到 Flash (sector 127, page 3) |
-
-Flash 存储布局（`flash_union_buffer` 索引）：
-
-| 索引 | 参数 | 类型 |
-|------|------|------|
-| 0-2 | `pid_x_p/i/d` | float |
-| 3 | `pid_x_speed` | uint8_t |
-| 4-6 | `pid_y_p/i/d` | float |
-| 7 | `pid_y_speed` | uint8_t |
-| 8-9 | `corr_x/y_enc` | float |
-| 10-11 | `corr_x/y_cam` | int8_t |
-| 12 | `corr_yaw` | float |
-| 13-14 | `origin_x/y_enc` | uint8_t |
-| 15-18 | `x_acc/x_dec/y_acc/y_dec` | float |
-
-#### 9. `tft180.c/h` — TFT 显示屏（13 行）
-
-竖屏 (PORTRAIT)，8×16 字体，SPI 模式，RGB565 白底黑字。
-
-#### 10. `key.c/h` — 按键驱动（45 行）
-
-3 态去抖状态机：`IDLE → PRESSED → DONE`，4 键上拉输入。
-`key[0]=C30(左)`, `key[1]=C29(右)`, `key[2]=C31(下)`, `key[3]=C28(上)`。
-
-**注意：** 菜单中按键映射与物理引脚命名有差异（`KEY_UP=key[2]`=C31=下按键，`KEY_DOWN=key[3]`=C28=上按键）。
-
-#### 11. `wireless_uart.c/h` — 无线示波器调试（31 行）
-
-基于逐飞 SeekFree 无线示波器协议，8 通道数据发送。命名与 `my_uart` 名义重复（头文件保护宏为 `_CODE_MY_UART_h_`）。
-
-```c
-my_uart_write(channel, data);  // 写入通道 0-7
-my_uart_send(count);           // 发送 count 通道数据
-```
-
-#### 12. `mpu_config.c` — MPU 与 Cache 配置（122 行）
-
-详见下文第六部分。
-
----
-
-## 🧠 路径规划与推箱子求解器（核心算法）
-
-`path_planning.c` 是项目最大模块（~4447 行），在 MCU 裸机（600MHz Cortex-M7）上完成所有推理。
-
-### 5.1 栅格地图
-
-12 行 × 16 列 = 192 格，由 OpenART_Plus 摄像头通过 UART 实时发送。
-
-| 元素 | 值 | 说明 |
-|------|----|------|
-| 空地 | 0 | 可通行 |
-| 墙 | 1 | 不可通行 |
-| 小车 | 2 | 玩家位置 |
-| 箱子 | 3 | 可推动 |
-| 目标点 | 6 | 箱子最终归属 |
-| 炸弹 | 7 | 可破坏墙体 |
-
-### 5.2 基础算法
-
-- **`simple_astar()`**：加权 A\*（`f = g + 1.2·h`），曼哈顿距离，转向惩罚 `TURN_WEIGHT=4`
-  - 最小堆优化，5000 节点空间
-- **`bfs_compute_distances()`**：全图曼哈顿最短距离场（epoch 标记，避免 memset）
-- **`bfs_compute_reachability()`**：可达性判断（epoch 标记）
-- **障碍物位图**：每行 `uint16_t` 压缩表示 16 列，O(1) 查询
-
-### 5.3 推箱子（Sokoban）求解器
-
-针对最多 8 个箱子的推箱子问题：
-
-1. **`generate_greedy_pairing()`**：贪心为每个箱子分配最近未使用目标
-2. **`backtrack_validate()`**：递归回溯验证，关键优化：
-   - 距离排序优先尝试最近配对
-   - **软死锁检测** `is_soft_corner_deadlock()`：区分硬墙阻塞 vs 另一箱子阻塞
-   - **破锁机制**：阻塞箱子推开最多 10 步
-   - **ID 感知阻塞**：同 ID 的箱子和目标互不为障碍
-3. **`solve_single_box_a_star()`**：完整 A\* 推箱子状态搜索
-   - 状态空间：`(px, py, bx, by, wall_bitmap, last_dir)`，16-bit 编码
-   - 哈希去重：djb2 + 线性探测，65536 槽，epoch 递增
-   - 优先队列：10000 容量
-   - 搜索上限：50000 步
-
-### 5.4 炸弹墙规划（Bomb Mode）
-
-当栅格中出现炸弹（值 7）时激活，这是最复杂的子系统：
-
-1. **可炸墙检测**：`is_breakable_wall_on()` — 墙至少有一邻接空地且不在地图边界
-2. **问题区域分析**：检测隔离区（ENC）、目标不可达、拥堵三类问题
-3. **引爆炸点评分**：推距 + 玩家到推站位的 BFS 距离
-4. **多炸弹组合搜索**：`search_multi_bomb_combination()` — 递归枚举，增量收益
-5. **执行序列生成**：`plan_bomb_execution_sequence()` — 按可行性排序
-6. **验证缓存**：`hash_walls()` — 墙面配置哈希避免重复验证
-
-### 5.5 ID 学习与推理
-
-```
-Mode 2 (Look) → 逐个访问箱子和目标 → OpenART_Plus 扫描 ID → id_record()
-    ↓
-id_inference() → 频率均衡 + 排列枚举 → 建立箱↔目标映射
-    ↓
-Mode 3 (ID Run) → 利用 ID 精准配对推箱
-```
-
-- **`id_learning()`**：BFS 规划访问路径，预留最后一个锚点
-- **`id_record()`**：到达后调用 OpenART_Plus 扫描 ID
-- **`id_inference()`**：频率均衡 + `next_permutation()` 排列枚举
-- **`build_solution_from_id_pairing()`**：ID 映射 → 求解方案
-
-### 5.6 状态机与游戏模式
-
-```
-NoGame → GameMap → Run → Waiting → Look → Run → ... → GameOver → End
-```
-
-| 模式 | 触发 | 规划函数 | 行为 |
-|------|------|---------|------|
-| 0 (Start) | 首次启动 | `path_start_calculation()` | 导航到最近元素 → 偏航对准 → 扫描 ID |
-| 1 (Normal) | ID==10 或首次 | `path_calculation()` | A\* 盲推，无 ID 信息 |
-| 2 (Look) | ID≠10 或炸弹完成 | `path_look_calculation()` | BFS 访问所有箱/目标，扫描记录 ID |
-| 3 (ID Run) | Look 学习完成 | `path_id_calculation()` | 利用 ID 精准配对推箱 |
-| 4 (Bomb) | 发现炸弹 | `path_boom_calculation()` | 炸弹破墙 → 更新栅格 → 回 Mode 2 |
-
----
-
-## 💾 内存模型与 MPU 配置
-
-### 物理内存映射
-
-| 区域 | 地址范围 | 容量 | 速度 | 用途 |
-|------|---------|------|------|------|
-| ITCM | 0x00000000–0x0000FFFF | 64KB | 1-cycle | 时序关键函数（路径规划核心） |
-| DTCM | 0x20000000–0x2007FFFF | 512KB | 0-wait | BFS 距离图、访问标记、障碍物缓冲区 |
-| OCRAM | 0x20200000–0x2027FFFF | 512KB | 2-3 cycle | 备选缓冲区 |
-| FlexSPI Flash | 0x70000000–0x703FFFFF | 4MB | XIP | 代码存储+指令执行 |
-| SDRAM Cacheable | 0x80000000–0x81DFFFFF | ~30MB | D-Cache | 哈希表、优先队列 |
-| SDRAM NonCacheable | 0x81E00000–0x81FFFFFF | 2MB | Device | DMA 缓冲区、帧缓冲 |
-
-### 链接脚本分配（Keil .scf）
-
-```c
-Stack_Size = 0x8000  (32KB, DTCM 顶部)
-Heap_Size  = 0x0400  (1KB, DTCM 中)
-
-// 自定义段
-SDRAM_ZI (UNINIT):  .bss.SDRAM_CACHE   ← hash_table[65536]
-ITCM_ncache:        ITCM_NonCacheable   ← 时序函数
-OCRAM_cache:        OCRAM_CACHE         ← 备选缓冲区
-SDRAM_ncache:       SDRAM_NonCacheable  ← DMA 缓冲区
-```
-
-### MPU 6 区域配置
-
-| Region | 地址 | 大小 | 类型 | 目的 |
-|--------|------|------|------|------|
-| 0 | 0x80000000 | 32MB | Normal WB/WA | SDRAM 可缓存 |
-| 1 | 0x81E00000 | 2MB | Device nGnRnE | SDRAM 不可缓存 |
-| 2 | 0x00000000 | 64KB | Normal | ITCM |
-| 3 | 0x20000000 | 512KB | Normal | DTCM |
-| 4 | 0x20200000 | 512KB | Normal | OCRAM |
-| 5 | 0x70000000 | 4MB | Device RO | FlexSPI Flash |
-
-### ITCM 中放置的时序关键函数
-
-```c
-manhattan_distance, is_corner_deadlock, is_soft_corner_deadlock,
-hash_lookup_insert, pq_push, pq_pop, heuristic, get_successors,
-bfs_compute_distances, bfs_compute_reachability, simple_astar,
-solve_single_box_a_star, compute_player_region_with_walls
-```
-
-### D-Cache 注意事项
-
-- Region 0 SDRAM 启用了 D-Cache（Write-back/Write-allocate），加速 A\* 哈希表和优先队列访问
-- Region 1 的 DMA 缓冲区设为 Device nGnRnE，避免 cache coherence 问题
-- 时序关键函数放在 ITCM（1-cycle，绕过 Cache）
-
----
-
-## 🔌 中断路由
-
-全部中断处理位于 `project/user/src/isr.c`。
-
-| 外设 | 引脚 | 用途 | ISR |
-|------|------|------|-----|
-| PIT_CH0 | — | **5ms 控制循环** | `PIT_IRQHandler` (main.c) |
-| PIT_CH1 | — | **10ms 数据读取** | `PIT_IRQHandler` (main.c) |
-| CSI | — | 摄像头并行接口 | `CSI_DriverIRQHandler()` |
-| LPUART1 | B12/B13 | 调试串口 / ID 通信 | `cam_uart_isc_2()` |
-| LPUART2 | — | 未使用（空 handler） | — |
-| LPUART3 | B22/B23 | **OpenART_Plus 主摄像头** | `cam_uart_isc_1()` |
-| LPUART4 | — | FlexIO 摄像头 + GNSS | `flexio_camera_uart_handler()`, `gnss_uart_callback()` |
-| LPUART5 | — | 备用摄像头 | `camera_uart_handler()` |
-| LPUART6 | — | 未使用 | — |
-| LPUART8 | D16/D17 | BLE 无线 + 调试中断 | `wireless_module_uart_handler()`, `debug_interrupr_handler()` |
-| GPIO1_0_15 | B0 | GPIO 外部中断 | EXTI flag clear |
-| GPIO1_16_31 | B16 | 无线 SPI | `wireless_module_spi_handler()` + EXTI clear |
-| GPIO2_0_15 | C0 | FlexIO 帧同步 | `flexio_camera_vsync_handler()` + EXTI clear |
-| GPIO2_16_31 | C16 | **ToF 传感器** | `tof_module_exti_handler()` + EXTI clear |
-| GPIO3_0_15 | D4 | GPIO 外部中断 | EXTI flag clear |
-
----
-
-## 🔧 开发环境
-
-| 工具 | 版本 |
-|------|------|
-| Keil MDK (µVision) | 5.33 |
-| 编译器 | ARMCLANG (Keil) |
-| C 标准 | **C99** |
-| 构建目标 | `nor_sdram_zf_dtcm` |
-| 关键预定义宏 | `CPU_MIMXRT1064DVL6A`, `XIP_EXTERNAL_FLASH=1`, `USB_STACK_BM`, `MCUXPRESSO_SDK`, `SKIP_SYSCLK_INIT`, `PRINTF_FLOAT_ENABLE=1` |
-| clangd 配置 | `.clangd` + `compile_flags.txt`（仅用于 LSP；包含 Cortex-M7 架构目标、项目宏、头文件路径和 `-nostdlibinc`） |
-
-> ⚠️ **仅支持 IDE 构建**（无命令行构建方式）。添加 `.c`/`.h` 文件时需同时放入 `project/code/` **并在 IDE 工程树中添加**。
-
-**编译 / 烧录：**
-- Keil: 打开 `project/mdk/rt1064.uvprojx` → 选择 `nor_sdram_zf_dtcm` → 编译 → DAP-Link/J-Link 烧录
-
----
-
-## 📂 完整项目结构
-
-```
+```text
 ysu-znc-21-smarteyes/
-├── CLAUDE.md                        # Claude Code 指令文档
-├── README.md
-├── .clangd                          # clangd 配置（keil-clangd-setup 生成：架构目标 + 宏 + 包含路径）
-├── compile_flags.txt                # clangd 编译标志平铺版（与 .clangd 内容一致）
-├── .gitignore
-├── libraries/                       # 逐飞开源库 V3.9.2（请勿修改）
-│   ├── zf_common/                   # 通用头文件、typedef、时钟、FIFO、数学
-│   ├── zf_driver/                   # 底层驱动抽象层
-│   ├── zf_device/                   # 外设驱动（摄像头、IMU、显示屏、BLE、TOF 等）
-│   ├── zf_components/               # 助手/调试接口
-│   ├── sdk/                         # NXP MCUXpresso SDK 2.12（fsl_* 驱动）
-│   ├── components/                  # FATFS、SDMMC、USB 协议栈
-│   └── doc/                         # 文档、版本记录、许可证
+├── README.md                # 本文档（项目门户）
+├── CLAUDE.md                # 完整技术细节（AI 协作用，含内存模型/中断路由/引脚表）
+├── 技术报告/                # 参赛技术报告（Markdown 版 + 提交版 docx + 图片）
+├── 硬件/                    # 自制主板与电驱板原理图 + 说明
+├── libraries/               # 逐飞开源库 V3.9.2 + NXP SDK 2.12（请勿修改）
 └── project/
-    ├── RT1064智能车推荐引脚分配.txt
-    ├── code/                        # ★ 用户代码目录（平铺，无子目录）
-    │   ├── path_planning.c/h        # A*/BFS/推箱子/炸弹/ID 学习（~4447 行）
-    │   ├── control.c/h              # 麦克纳姆轮运动学合成
-    │   ├── pid.c/h                  # PID 控制器（增量式+位置式，8 实例）
-    │   ├── motor.c/h                # PWM 电机驱动（10kHz，H 桥双极性）
-    │   ├── encoder.c/h              # 正交编码器 + 里程计
-    │   ├── imu963.c/h               # IMU963RA + Mahony AHRS
-    │   ├── cam_uart.c/h             # OpenART_Plus 双 UART 通信协议
-    │   ├── menu.c/h                 # TFT 菜单 + Flash 持久化
-    │   ├── tft180.c/h               # TFT180 显示屏驱动
-    │   ├── wireless_uart.c/h        # 无线示波器调试（与 my_uart 名义重复）
-    │   ├── key.c/h                  # 4 按键 3 态去抖
-    │   ├── mpu_config.c             # MPU 6 Region + D-Cache 使能
-    │   └── 本文件夹作用.txt          # 文件放置说明
-    ├── user/src/
-    │   ├── main.c                   # 入口、状态机、PIT 中断（489 行）
-    │   └── isr.c                    # 外设中断处理（320 行）
-    │   inc/isr.h                    # 空占位文件
-    └── mdk/                         # Keil MDK 工程（uvprojx/uvoptx/scf）
+    ├── code/                # 用户代码（平铺）：path_planning / pid / control /
+    │                        #   motor / encoder / imu963 / cam_uart / menu /
+    │                        #   tft180 / key / wireless_uart / mpu_config
+    ├── user/src/            # main.c（状态机 + PIT 中断）、isr.c（中断路由）
+    └── mdk/                 # Keil 工程（uvprojx / uvoptx / scf 链接脚本）
 ```
 
----
+## 资料索引
 
-## 审查结论与验证缺口
+| 资料               | 位置                                           | 内容                                                 |
+| ------------------ | ---------------------------------------------- | ---------------------------------------------------- |
+| 技术报告           | [`技术报告/技术报告.md`](技术报告/技术报告.md) | 机械、电路、算法、调试全过程 + 附录核心算法源码      |
+| 技术报告（提交版） | `技术报告/燕山大学_燕视队_智能视觉.docx`       | 参赛提交原件（排版版）                               |
+| 硬件原理图         | [`硬件/README.md`](硬件/README.md)             | 三块 PCB 的图纸索引与器件说明                        |
+| 完整技术细节       | [`CLAUDE.md`](CLAUDE.md)                       | 内存模型、中断路由、引脚分配、路径规划架构、已知问题 |
 
-以下问题已通过源码审查确认，本次仅更新文档，尚未修复：
+## 已知问题
 
-| 优先级 | 位置 | 结论 |
-| --- | --- | --- |
-| 严重 | `project/code/mpu_config.c` | ITCM Region 2 的 XN 位配置与可执行函数 section 的设计意图矛盾，需用 Keil 镜像和硬件确认。 |
-| 高 | `project/code/path_planning.c` | `get_successors()` 的边界邻居可能参与目标位图索引。 |
-| 高 | `project/code/cam_uart.c` | `find_substring()` 在短缓冲区场景存在无符号下溢，帧字段校验也不完整。 |
-| 高 | `project/user/src/main.c` | 普通路径、Look 路径和炸弹路径存在先访问后检查长度的风险。 |
-| 高 | `project/user/src/main.c` | ID 接收无超时，摄像头或串口故障可能阻塞主循环。 |
-| 中 | `project/code/cam_uart.c` | 使用 `sprintf()`；FIFO 满载时未处理返回值，可能静默丢帧。 |
-| 中 | `project/user/src/main.c` | 摄像头结构体和速度变量跨 ISR/主循环共享，`volatile` 不能保证一致快照。 |
+源码审查发现若干待修复项（ITCM MPU 属性待验证、路径边界访问、ID 接收无超时、FIFO 满载丢帧等），完整清单与架构约束见 [`CLAUDE.md`](CLAUDE.md) 第十节。
 
-当前没有主机测试框架，也没有命令行 Keil 构建验证。后续至少应补充帧解析
-畸形输入、路径终点、边界邻居、ID 超时和 FIFO 满载测试，并用 Keil `.map`
-文件核对 ITCM、DTCM、SDRAM 占用。
+当前没有主机测试框架，也没有命令行构建验证。后续应补充帧解析畸形输入、路径终点、边界邻居、ID 超时与 FIFO 满载测试，并用 Keil `.map` 文件核对 ITCM、DTCM、SDRAM 占用。
 
-## 📄 开源协议
+## 开源协议
 
-本项目基于逐飞科技 RT1064 开源库开发，底层库遵循 **GNU General Public License v3.0**。
+本项目采用 **GNU General Public License v3.0**（见 [LICENSE](LICENSE)），与所依赖的逐飞科技 RT1064 开源库保持一致。
 
----
-
-## 🙏 致谢
+## 致谢
 
 - [逐飞科技 (SeekFree)](https://seekfree.com.cn/) — RT1064 开源库与核心板
 - [NXP Semiconductors](https://www.nxp.com/) — i.MX RT1064 平台
@@ -567,4 +232,4 @@ ysu-znc-21-smarteyes/
 
 ---
 
-> 🏁 *Keep Racing, Keep Dreaming!*
+> 🏁 _Keep Racing, Keep Dreaming!_
